@@ -3,51 +3,37 @@
 [![CI](https://github.com/daciocambraia/pyLSTemp/actions/workflows/ci.yml/badge.svg)](https://github.com/daciocambraia/pyLSTemp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-`pyLSTemp` is a professional rebuild of the original library with a cleaner architecture, publication-ready documentation, and room for future algorithm expansion.
+`pyLSTemp` is a modular Python library for land surface temperature workflows built from Landsat imagery.
 
 Repository: <https://github.com/daciocambraia/pyLSTemp>
 
 ## Goals
 
-- preserve the public conversion workflow: `ndvi`, `brightness_temperature`, `emissivity`, `single_window`, `split_window`
+- preserve the public workflow: `ndvi`, `brightness_temperature`, `emissivity`, `single_window`, `split_window`
 - keep the published formulas and bibliographic references used by the original project
-- make it easy to add new algorithms without restructuring the package
-- include validation, automated tests and CI from the start
+- make new algorithms easy to add by dropping a new `.py` file into the correct family folder
+- keep the repository clean and readable, with one main responsibility per file
 - retain visible credit to the original library by Oladimeji Mudele
 
-## Project layout
+## Current layout
 
 ```text
 pyLSTemp/
-  src/pylstemp/
-    core/
-    vegetation/
-      ndvi.py
-    thermal/
-      brightness.py
-    emissivity/
-      base.py
-      avdan.py
-      xiaolei.py
-      gopinadh.py
-      registry.py
-    temperature/
-      base.py
-      mono_window.py
-      registry.py
-      split_window/
-        base.py
-        jiminez_munoz.py
-        kerr.py
-        mc_millin.py
-        price.py
-        sobrino_1993.py
+  pylstemp/
     api.py
-    references.py
-  tests/
+    registry.py
+    validation.py
+    utils.py
+    algorithms/
+      emissivity/
+      single_channel/
+      split_window/
+      thermal/
+      vegetation/
+      radiative_transfer/
   docs/
-  .github/workflows/
-  pyproject.toml
+  tests/
+  tutorial/
 ```
 
 ## Public API
@@ -59,44 +45,30 @@ from pylstemp import (
     emissivity,
     single_window,
     split_window,
+    list_algorithms,
 )
 ```
 
-The signatures of the main conversion functions were preserved so the migration path stays simple.
+The public functions stay small and stable while the implementations live in modular families under `pylstemp/algorithms/`.
 
-Internally, the project is now organized by domain:
+## Modular architecture
 
-- `vegetation/` for vegetation indices such as NDVI
-- `thermal/` for thermal band conversions such as brightness temperature
-- `emissivity/` for emissivity models
-- `temperature/` for land surface temperature algorithms
-- `core/` for registries, metadata and validation
+The project now supports automatic discovery at two levels:
 
-## Extensibility
+- algorithm discovery inside a family:
+  add a new `.py` file with an `ALGORITHM_SPEC`
+- family discovery inside `pylstemp/algorithms/`:
+  add a new family package that exposes `<family_name>_registry`
 
-New algorithms are meant to be registered through internal registries instead of being hardcoded into the public API. That allows future additions with minimal changes:
-
-1. implement a new algorithm class
-2. register it in the correct registry
-3. expose its metadata and tests
-
-The codebase now uses a domain-first layout and one file per algorithm in the main execution path.
-
-## Credits
-
-This rebuild keeps explicit credit to the original project:
-
-- Original library: `pylandtemp`
-- Original author: `Oladimeji Mudele`
-- Original repository: <https://github.com/pylandtemp/pylandtemp>
-
-See [docs/references.md](docs/references.md) for the bibliographic references and [CREDITS.md](CREDITS.md) for attribution details.
+That means `list_algorithms()` grows with the codebase instead of depending on a central hardcoded list.
 
 ## Documentation
 
+- [Documentation Index](docs/index.md)
 - [Installation](docs/installation.md)
 - [Usage Guide](docs/usage.md)
 - [API Reference](docs/api-reference.md)
+- [Architecture](docs/architecture.md)
 - [Extending the Library](docs/extending.md)
 - [References](docs/references.md)
 
@@ -108,18 +80,10 @@ Install locally:
 pip install -e .[dev]
 ```
 
-Confirm that the import resolves to this repository:
+Confirm that Python is importing this checkout:
 
 ```bash
 python -c "import pylstemp; print(pylstemp.__file__)"
-```
-
-If Python reports a different checkout, uninstall the older editable install and
-install this repository again:
-
-```bash
-python -m pip uninstall pylandtemp pylstemp
-python -m pip install -e .[dev]
 ```
 
 Run tests:
@@ -128,8 +92,12 @@ Run tests:
 pytest
 ```
 
-## Publishing Notes
+## Credits
 
-- PyPI/project name: `pylstemp`
-- Python import name: `pylstemp`
-- repository: `https://github.com/daciocambraia/pyLSTemp`
+This rebuild keeps explicit credit to the original project:
+
+- Original library: `pylandtemp`
+- Original author: `Oladimeji Mudele`
+- Original repository: <https://github.com/pylandtemp/pylandtemp>
+
+See [docs/references.md](docs/references.md) and [CREDITS.md](CREDITS.md) for attribution details.

@@ -11,7 +11,7 @@
 pip install pylstemp
 ```
 
-## Install for local development
+## Install for development
 
 From the project root:
 
@@ -19,14 +19,13 @@ From the project root:
 pip install -e .[dev]
 ```
 
-Verify that Python is importing this checkout and not an older editable install:
+## Verify the import path
 
 ```bash
 python -c "import pylstemp; print(pylstemp.__file__)"
 ```
 
-If the printed path points to another checkout such as `pylandtemp` or a different
-`pylstemp` folder, remove the old editable install before continuing:
+If Python points to another checkout, uninstall the old editable install and reinstall this repository:
 
 ```bash
 python -m pip uninstall pylandtemp pylstemp

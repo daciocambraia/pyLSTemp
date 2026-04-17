@@ -2,9 +2,8 @@ import unittest
 
 import numpy as np
 
-from pylstemp.temperature import (
-    BaseTemperatureAlgorithm,
-    MonoWindowLST,
+from pylstemp.algorithms.single_channel import BaseTemperatureAlgorithm, MonoWindowLST
+from pylstemp.algorithms.split_window import (
     SplitWindowJiminezMunozLST,
     SplitWindowKerrLST,
     SplitWindowMcClainLST,

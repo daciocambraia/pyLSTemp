@@ -1,8 +1,8 @@
 # Usage Guide
 
-This guide shows the main workflows supported by the package.
+This guide shows the main workflows exposed by the public API.
 
-## Importing the public API
+## Import the public functions
 
 ```python
 from pylstemp import (
@@ -11,6 +11,7 @@ from pylstemp import (
     emissivity,
     single_window,
     split_window,
+    list_algorithms,
 )
 ```
 
@@ -41,9 +42,8 @@ brightness_10, brightness_11 = brightness_temperature(band_10, band_11)
 ## 3. Compute emissivity
 
 ```python
-from pylstemp import emissivity, ndvi
+from pylstemp import emissivity
 
-ndvi_image = ndvi(nir_band, red_band)
 emissivity_10, emissivity_11 = emissivity(
     ndvi_image,
     landsat_band_4=red_band,
@@ -51,7 +51,7 @@ emissivity_10, emissivity_11 = emissivity(
 )
 ```
 
-## 4. Compute single-window LST
+## 4. Compute single-channel LST
 
 ```python
 from pylstemp import single_window
@@ -82,8 +82,18 @@ lst_split = split_window(
 )
 ```
 
+## 6. Inspect available families and methods
+
+```python
+from pylstemp import list_algorithms
+
+catalog = list_algorithms()
+print(catalog.keys())
+print(catalog["split_window"].keys())
+```
+
 ## Notes on invalid pixels
 
 - zero values are treated as invalid in the thermal workflow mask
 - `NaN` values are propagated through the calculations
-- if you pass a mask manually to `ndvi` or `brightness_temperature`, it must be boolean
+- manual masks passed to `ndvi()` or `brightness_temperature()` must be boolean

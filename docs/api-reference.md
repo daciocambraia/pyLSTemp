@@ -24,22 +24,43 @@ Computes land surface temperature using a split-window method.
 
 ### `list_algorithms()`
 
-Returns metadata about the registered algorithms and the original library credit.
+Returns a catalog of discovered families, algorithm metadata, and original-library credit.
 
-## Public domains
+## Current algorithm families
 
-### Vegetation
+### `emissivity`
 
-- `src/pylstemp/vegetation/ndvi.py`
+- `avdan`
+- `gopinadh`
+- `xiaolei`
 
-### Thermal
+### `single_channel`
 
-- `src/pylstemp/thermal/brightness.py`
+- `mono-window`
 
-### Emissivity
+### `split_window`
 
-- `src/pylstemp/emissivity/`
+- `jiminez-munoz`
+- `kerr`
+- `mc-millin`
+- `price`
+- `sobrino-1993`
 
-### Temperature
+### `thermal`
 
-- `src/pylstemp/temperature/`
+- `landsat-brightness`
+
+### `vegetation`
+
+- `ndvi`
+
+### `radiative_transfer`
+
+- reserved for future methods
+
+## Internal organization
+
+- shared public orchestration: `pylstemp/api.py`
+- algorithm family discovery: `pylstemp/algorithms/__init__.py`
+- algorithm module discovery inside each family: `pylstemp/registry.py`
+- family implementations: `pylstemp/algorithms/*`

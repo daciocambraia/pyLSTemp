@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from pylstemp.api import emissivity, ndvi
-from pylstemp.core.validation import build_mask_from, normalize_temperature_unit
+from pylstemp.validation import build_mask_from, normalize_temperature_unit
 from pylstemp.exceptions import InvalidMaskError
 
 
