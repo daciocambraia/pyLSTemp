@@ -108,6 +108,20 @@ Install locally:
 pip install -e .[dev]
 ```
 
+Confirm that the import resolves to this repository:
+
+```bash
+python -c "import pylstemp; print(pylstemp.__file__)"
+```
+
+If Python reports a different checkout, uninstall the older editable install and
+install this repository again:
+
+```bash
+python -m pip uninstall pylandtemp pylstemp
+python -m pip install -e .[dev]
+```
+
 Run tests:
 
 ```bash
@@ -116,6 +130,6 @@ pytest
 
 ## Publishing Notes
 
-- PyPI/project name: `pyLSTemp`
+- PyPI/project name: `pylstemp`
 - Python import name: `pylstemp`
 - repository: `https://github.com/daciocambraia/pyLSTemp`

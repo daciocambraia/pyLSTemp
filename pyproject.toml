@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyLSTemp"
+name = "pylstemp"
 version = "0.1.0"
 description = "Professional Python library for land surface temperature workflows from Landsat imagery."
 readme = "README.md"
