@@ -19,6 +19,54 @@ class BrightnessTemperatureLandsat:
     These values are distinct from the sensor constants ``K1`` and ``K2``.
     """
 
+    def compute_band_10(
+        self,
+        thermal_band,
+        sensor: str,
+        rad_gain: float,
+        rad_bias: float,
+        mask=None,
+    ) -> np.ndarray:
+        constants = get_landsat_thermal_constants(sensor)
+        thermal_image = to_float_array("thermal_band", thermal_band)
+
+        validated_mask = None
+        if mask is not None:
+            validated_mask = ensure_boolean_mask(mask, shape=thermal_image.shape)
+
+        return compute_brightness_temperature(
+            thermal_image,
+            float(rad_gain),
+            float(rad_bias),
+            constants.k1_constant_10,
+            constants.k2_constant_10,
+            mask=validated_mask,
+        )
+
+    def compute_band_11(
+        self,
+        thermal_band,
+        sensor: str,
+        rad_gain: float,
+        rad_bias: float,
+        mask=None,
+    ) -> np.ndarray:
+        constants = get_landsat_thermal_constants(sensor)
+        thermal_image = to_float_array("thermal_band", thermal_band)
+
+        validated_mask = None
+        if mask is not None:
+            validated_mask = ensure_boolean_mask(mask, shape=thermal_image.shape)
+
+        return compute_brightness_temperature(
+            thermal_image,
+            float(rad_gain),
+            float(rad_bias),
+            constants.k1_constant_11,
+            constants.k2_constant_11,
+            mask=validated_mask,
+        )
+
     def __call__(
         self,
         band_10,
@@ -30,22 +78,16 @@ class BrightnessTemperatureLandsat:
         rad_bias_band_11: float | None = None,
         mask=None,
     ) -> tuple[np.ndarray, np.ndarray | None]:
-        constants = get_landsat_thermal_constants(sensor)
         band_10_image = to_float_array("band_10", band_10)
         band_11_image = None if band_11 is None else to_float_array("band_11", band_11)
         ensure_same_shape(band_10=band_10_image, band_11=band_11_image)
 
-        validated_mask = None
-        if mask is not None:
-            validated_mask = ensure_boolean_mask(mask, shape=band_10_image.shape)
-
-        brightness_10 = compute_brightness_temperature(
+        brightness_10 = self.compute_band_10(
             band_10_image,
-            float(rad_gain_band_10),
-            float(rad_bias_band_10),
-            constants.k1_constant_10,
-            constants.k2_constant_10,
-            mask=validated_mask,
+            sensor=sensor,
+            rad_gain=rad_gain_band_10,
+            rad_bias=rad_bias_band_10,
+            mask=mask,
         )
 
         brightness_11 = None
@@ -55,16 +97,51 @@ class BrightnessTemperatureLandsat:
                     "band_11 requires explicit rad_gain_band_11 and rad_bias_band_11 "
                     "passed in the function call."
                 )
-            brightness_11 = compute_brightness_temperature(
+            brightness_11 = self.compute_band_11(
                 band_11_image,
-                float(rad_gain_band_11),
-                float(rad_bias_band_11),
-                constants.k1_constant_11,
-                constants.k2_constant_11,
-                mask=validated_mask,
+                sensor=sensor,
+                rad_gain=rad_gain_band_11,
+                rad_bias=rad_bias_band_11,
+                mask=mask,
             )
 
         return brightness_10, brightness_11
+
+
+def brightness_temperature_band_10(
+    thermal_band,
+    sensor: str,
+    rad_gain: float,
+    rad_bias: float,
+    mask=None,
+):
+    """Compute brightness temperature for Landsat thermal band 10."""
+
+    return BrightnessTemperatureLandsat().compute_band_10(
+        thermal_band,
+        sensor=sensor,
+        rad_gain=rad_gain,
+        rad_bias=rad_bias,
+        mask=mask,
+    )
+
+
+def brightness_temperature_band_11(
+    thermal_band,
+    sensor: str,
+    rad_gain: float,
+    rad_bias: float,
+    mask=None,
+):
+    """Compute brightness temperature for Landsat thermal band 11."""
+
+    return BrightnessTemperatureLandsat().compute_band_11(
+        thermal_band,
+        sensor=sensor,
+        rad_gain=rad_gain,
+        rad_bias=rad_bias,
+        mask=mask,
+    )
 
 
 def brightness_temperature(

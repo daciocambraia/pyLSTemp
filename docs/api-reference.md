@@ -6,6 +6,14 @@
 
 Computes NDVI from the NIR and red bands.
 
+### `brightness_temperature_band_10(thermal_band, sensor, rad_gain, rad_bias, mask=None)`
+
+Computes brightness temperature for Landsat thermal band 10 using `sensor="landsat_8"` or `sensor="landsat_9"`.
+
+### `brightness_temperature_band_11(thermal_band, sensor, rad_gain, rad_bias, mask=None)`
+
+Computes brightness temperature for Landsat thermal band 11 using `sensor="landsat_8"` or `sensor="landsat_9"`.
+
 ### `brightness_temperature(landsat_band_10, sensor, rad_gain_band_10, rad_bias_band_10, landsat_band_11=None, rad_gain_band_11=None, rad_bias_band_11=None, mask=None)`
 
 Computes brightness temperature for Landsat thermal bands using `sensor="landsat_8"` or `sensor="landsat_9"`.
@@ -15,11 +23,11 @@ Computes brightness temperature for Landsat thermal bands using `sensor="landsat
 
 Computes emissivity for band 10 and band 11 from an NDVI image.
 
-### `single_window(brightness_temperature_10, landsat_band_4, landsat_band_5, lst_method="mono-window", emissivity_method="avdan", unit="kelvin")`
+### `single_window(brightness_temperature_10, red_band, nir_band, lst_method="mono-window", emissivity_method="avdan", unit="kelvin")`
 
 Computes land surface temperature using a single-channel method. `brightness_temperature_10` must be computed beforehand with `brightness_temperature(...)`.
 
-### `split_window(brightness_temperature_10, brightness_temperature_11, landsat_band_4, landsat_band_5, lst_method, emissivity_method, unit="kelvin")`
+### `split_window(brightness_temperature_10, brightness_temperature_11, red_band, nir_band, lst_method, emissivity_method, unit="kelvin")`
 
 Computes land surface temperature using a split-window method. `brightness_temperature_10` and `brightness_temperature_11` must be computed beforehand with `brightness_temperature(...)`.
 

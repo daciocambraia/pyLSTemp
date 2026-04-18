@@ -7,7 +7,8 @@ This guide shows the main workflows exposed by the public API.
 ```python
 from pylstemp import (
     ndvi,
-    brightness_temperature,
+    brightness_temperature_band_10,
+    brightness_temperature_band_11,
     emissivity,
     single_window,
     split_window,
@@ -31,24 +32,28 @@ ndvi_image = ndvi(nir_band, red_band)
 
 ```python
 import numpy as np
-from pylstemp import brightness_temperature
+from pylstemp import brightness_temperature_band_10, brightness_temperature_band_11
 
 band_10 = np.full((3, 3), 1000.0)
 band_11 = np.full((3, 3), 900.0)
 sensor = "landsat_8"
-rad_gain_band_10 = 0.0003342
-rad_bias_band_10 = 0.1
-rad_gain_band_11 = 0.0003342
-rad_bias_band_11 = 0.1
+rad_gain_10 = 0.0003342
+rad_bias_10 = 0.1
+rad_gain_11 = 0.0003342
+rad_bias_11 = 0.1
 
-brightness_10, brightness_11 = brightness_temperature(
+brightness_10 = brightness_temperature_band_10(
     band_10,
     sensor=sensor,
-    rad_gain_band_10=rad_gain_band_10,
-    rad_bias_band_10=rad_bias_band_10,
-    landsat_band_11=band_11,
-    rad_gain_band_11=rad_gain_band_11,
-    rad_bias_band_11=rad_bias_band_11,
+    rad_gain=rad_gain_10,
+    rad_bias=rad_bias_10,
+)
+
+brightness_11 = brightness_temperature_band_11(
+    band_11,
+    sensor=sensor,
+    rad_gain=rad_gain_11,
+    rad_bias=rad_bias_11,
 )
 ```
 
@@ -71,8 +76,8 @@ from pylstemp import single_window
 
 lst_single = single_window(
     brightness_temperature_10=brightness_10,
-    landsat_band_4=red_band,
-    landsat_band_5=nir_band,
+    red_band=red_band,
+    nir_band=nir_band,
     lst_method="mono-window",
     emissivity_method="avdan",
     unit="kelvin",
@@ -87,8 +92,8 @@ from pylstemp import split_window
 lst_split = split_window(
     brightness_temperature_10=brightness_10,
     brightness_temperature_11=brightness_11,
-    landsat_band_4=red_band,
-    landsat_band_5=nir_band,
+    red_band=red_band,
+    nir_band=nir_band,
     lst_method="jiminez-munoz",
     emissivity_method="avdan",
     unit="celsius",
@@ -111,5 +116,5 @@ print(catalog["split_window"].keys())
 - `NaN` values are propagated through the calculations
 - manual masks passed to `ndvi()` or `brightness_temperature()` must be boolean
 - `sensor` must be `landsat_8` or `landsat_9`
-- `rad_gain_band_x` and `rad_bias_band_x` must be informed manually in the function call
+- `rad_gain` and `rad_bias` must be informed manually in the brightness temperature function call
 - these radiance values are different from the sensor constants `K1` and `K2`

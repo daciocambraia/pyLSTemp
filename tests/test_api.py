@@ -4,6 +4,8 @@ import numpy as np
 
 from pylstemp import (
     brightness_temperature,
+    brightness_temperature_band_10,
+    brightness_temperature_band_11,
     emissivity,
     ndvi,
     single_window,
@@ -38,6 +40,22 @@ class TestPublicApi(unittest.TestCase):
             landsat_band_11=self.band_11,
             rad_gain_band_11=self.rad_gain_band_11,
             rad_bias_band_11=self.rad_bias_band_11,
+        )
+        self.assertEqual(brightness_10.shape, self.band_10.shape)
+        self.assertEqual(brightness_11.shape, self.band_11.shape)
+
+    def test_individual_brightness_helpers_preserve_shape(self):
+        brightness_10 = brightness_temperature_band_10(
+            self.band_10,
+            sensor=self.sensor_8,
+            rad_gain=self.rad_gain_band_10,
+            rad_bias=self.rad_bias_band_10,
+        )
+        brightness_11 = brightness_temperature_band_11(
+            self.band_11,
+            sensor=self.sensor_8,
+            rad_gain=self.rad_gain_band_11,
+            rad_bias=self.rad_bias_band_11,
         )
         self.assertEqual(brightness_10.shape, self.band_10.shape)
         self.assertEqual(brightness_11.shape, self.band_11.shape)
@@ -92,8 +110,8 @@ class TestPublicApi(unittest.TestCase):
         )
         output = single_window(
             brightness_10,
-            self.band_4,
-            self.band_5,
+            red_band=self.band_4,
+            nir_band=self.band_5,
         )
         self.assertEqual(output.shape, self.band_10.shape)
 
@@ -110,8 +128,8 @@ class TestPublicApi(unittest.TestCase):
         output = split_window(
             brightness_10,
             brightness_11,
-            self.band_4,
-            self.band_5,
+            red_band=self.band_4,
+            nir_band=self.band_5,
             lst_method="jiminez-munoz",
             emissivity_method="avdan",
         )

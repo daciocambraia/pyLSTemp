@@ -8,7 +8,11 @@ from .algorithms import FAMILY_REGISTRIES
 from .algorithms.emissivity import emissivity_registry
 from .algorithms.single_channel import single_channel_registry
 from .algorithms.split_window import split_window_registry
-from .algorithms.thermal import brightness_temperature
+from .algorithms.thermal import (
+    brightness_temperature,
+    brightness_temperature_band_10,
+    brightness_temperature_band_11,
+)
 from .algorithms.vegetation import ndvi
 from .exceptions import InputShapesNotEqual
 from .references import ORIGINAL_LIBRARY_CREDIT
@@ -34,8 +38,8 @@ def emissivity(ndvi_image, landsat_band_4=None, emissivity_method: str = "avdan"
 
 def single_window(
     brightness_temperature_10,
-    landsat_band_4,
-    landsat_band_5,
+    red_band,
+    nir_band,
     lst_method: str = "mono-window",
     emissivity_method: str = "avdan",
     unit: str = "kelvin",
@@ -44,17 +48,17 @@ def single_window(
     normalized_unit = normalize_temperature_unit(unit)
 
     brightness_10 = to_float_array("brightness_temperature_10", brightness_temperature_10)
-    band_4 = to_float_array("landsat_band_4", landsat_band_4)
-    band_5 = to_float_array("landsat_band_5", landsat_band_5)
+    red = to_float_array("red_band", red_band)
+    nir = to_float_array("nir_band", nir_band)
     ensure_same_shape(
         brightness_temperature_10=brightness_10,
-        landsat_band_4=band_4,
-        landsat_band_5=band_5,
+        red_band=red,
+        nir_band=nir,
     )
 
     mask = build_mask_from(brightness_10)
-    ndvi_image = ndvi(band_5, band_4, mask=mask)
-    emissivity_10, _ = emissivity(ndvi_image, landsat_band_4=band_4, emissivity_method=emissivity_method)
+    ndvi_image = ndvi(nir, red, mask=mask)
+    emissivity_10, _ = emissivity(ndvi_image, landsat_band_4=red, emissivity_method=emissivity_method)
 
     result = single_channel_registry.create(lst_method)(
         emissivity_10=emissivity_10,
@@ -67,8 +71,8 @@ def single_window(
 def split_window(
     brightness_temperature_10,
     brightness_temperature_11,
-    landsat_band_4,
-    landsat_band_5,
+    red_band,
+    nir_band,
     lst_method: str,
     emissivity_method: str,
     unit: str = "kelvin",
@@ -78,20 +82,20 @@ def split_window(
 
     brightness_10 = to_float_array("brightness_temperature_10", brightness_temperature_10)
     brightness_11 = to_float_array("brightness_temperature_11", brightness_temperature_11)
-    band_4 = to_float_array("landsat_band_4", landsat_band_4)
-    band_5 = to_float_array("landsat_band_5", landsat_band_5)
+    red = to_float_array("red_band", red_band)
+    nir = to_float_array("nir_band", nir_band)
     ensure_same_shape(
         brightness_temperature_10=brightness_10,
         brightness_temperature_11=brightness_11,
-        landsat_band_4=band_4,
-        landsat_band_5=band_5,
+        red_band=red,
+        nir_band=nir,
     )
 
     mask = build_mask_from(brightness_10)
-    ndvi_image = ndvi(band_5, band_4, mask=mask)
+    ndvi_image = ndvi(nir, red, mask=mask)
     emissivity_10, emissivity_11 = emissivity(
         ndvi_image,
-        landsat_band_4=band_4,
+        landsat_band_4=red,
         emissivity_method=emissivity_method,
     )
 
