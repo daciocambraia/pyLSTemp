@@ -54,6 +54,8 @@ from pylstemp import (
 The public functions stay small and stable while the implementations live in modular families under `pylstemp/algorithms/`.
 Sensor-specific thermal constants live under `pylstemp/sensors/`.
 
+`brightness_temperature(...)` is the explicit radiometric conversion step. `single_window(...)` and `split_window(...)` now expect brightness temperature arrays that were computed beforehand.
+
 ## Modular architecture
 
 The project now supports automatic discovery at two levels:

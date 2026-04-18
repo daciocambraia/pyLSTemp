@@ -70,12 +70,9 @@ emissivity_10, emissivity_11 = emissivity(
 from pylstemp import single_window
 
 lst_single = single_window(
-    landsat_band_10=band_10,
+    brightness_temperature_10=brightness_10,
     landsat_band_4=red_band,
     landsat_band_5=nir_band,
-    sensor="landsat_8",
-    rad_gain_band_10=rad_gain_band_10,
-    rad_bias_band_10=rad_bias_band_10,
     lst_method="mono-window",
     emissivity_method="avdan",
     unit="kelvin",
@@ -88,15 +85,10 @@ lst_single = single_window(
 from pylstemp import split_window
 
 lst_split = split_window(
-    landsat_band_10=band_10,
-    landsat_band_11=band_11,
+    brightness_temperature_10=brightness_10,
+    brightness_temperature_11=brightness_11,
     landsat_band_4=red_band,
     landsat_band_5=nir_band,
-    sensor="landsat_9",
-    rad_gain_band_10=rad_gain_band_10,
-    rad_bias_band_10=rad_bias_band_10,
-    rad_gain_band_11=rad_gain_band_11,
-    rad_bias_band_11=rad_bias_band_11,
     lst_method="jiminez-munoz",
     emissivity_method="avdan",
     unit="celsius",

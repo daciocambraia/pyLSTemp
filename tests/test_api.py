@@ -84,27 +84,34 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(emissivity_11.shape, ndvi_image.shape)
 
     def test_single_window_preserves_shape(self):
-        output = single_window(
+        brightness_10, _ = brightness_temperature(
             self.band_10,
-            self.band_4,
-            self.band_5,
             sensor=self.sensor_8,
             rad_gain_band_10=self.rad_gain_band_10,
             rad_bias_band_10=self.rad_bias_band_10,
         )
+        output = single_window(
+            brightness_10,
+            self.band_4,
+            self.band_5,
+        )
         self.assertEqual(output.shape, self.band_10.shape)
 
     def test_split_window_preserves_shape(self):
-        output = split_window(
+        brightness_10, brightness_11 = brightness_temperature(
             self.band_10,
-            self.band_11,
-            self.band_4,
-            self.band_5,
             sensor=self.sensor_9,
             rad_gain_band_10=self.rad_gain_band_10,
             rad_bias_band_10=self.rad_bias_band_10,
+            landsat_band_11=self.band_11,
             rad_gain_band_11=self.rad_gain_band_11,
             rad_bias_band_11=self.rad_bias_band_11,
+        )
+        output = split_window(
+            brightness_10,
+            brightness_11,
+            self.band_4,
+            self.band_5,
             lst_method="jiminez-munoz",
             emissivity_method="avdan",
         )

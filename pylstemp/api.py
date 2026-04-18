@@ -33,12 +33,9 @@ def emissivity(ndvi_image, landsat_band_4=None, emissivity_method: str = "avdan"
 
 
 def single_window(
-    landsat_band_10,
+    brightness_temperature_10,
     landsat_band_4,
     landsat_band_5,
-    sensor: str,
-    rad_gain_band_10: float,
-    rad_bias_band_10: float,
     lst_method: str = "mono-window",
     emissivity_method: str = "avdan",
     unit: str = "kelvin",
@@ -46,20 +43,17 @@ def single_window(
     """Compute land surface temperature using a single-channel method."""
     normalized_unit = normalize_temperature_unit(unit)
 
-    band_10 = to_float_array("landsat_band_10", landsat_band_10)
+    brightness_10 = to_float_array("brightness_temperature_10", brightness_temperature_10)
     band_4 = to_float_array("landsat_band_4", landsat_band_4)
     band_5 = to_float_array("landsat_band_5", landsat_band_5)
-    ensure_same_shape(landsat_band_10=band_10, landsat_band_4=band_4, landsat_band_5=band_5)
-
-    mask = build_mask_from(band_10)
-    ndvi_image = ndvi(band_5, band_4, mask=mask)
-    brightness_10, _ = brightness_temperature(
-        band_10,
-        sensor=sensor,
-        rad_gain_band_10=rad_gain_band_10,
-        rad_bias_band_10=rad_bias_band_10,
-        mask=mask,
+    ensure_same_shape(
+        brightness_temperature_10=brightness_10,
+        landsat_band_4=band_4,
+        landsat_band_5=band_5,
     )
+
+    mask = build_mask_from(brightness_10)
+    ndvi_image = ndvi(band_5, band_4, mask=mask)
     emissivity_10, _ = emissivity(ndvi_image, landsat_band_4=band_4, emissivity_method=emissivity_method)
 
     result = single_channel_registry.create(lst_method)(
@@ -71,15 +65,10 @@ def single_window(
 
 
 def split_window(
-    landsat_band_10,
-    landsat_band_11,
+    brightness_temperature_10,
+    brightness_temperature_11,
     landsat_band_4,
     landsat_band_5,
-    sensor: str,
-    rad_gain_band_10: float,
-    rad_bias_band_10: float,
-    rad_gain_band_11: float,
-    rad_bias_band_11: float,
     lst_method: str,
     emissivity_method: str,
     unit: str = "kelvin",
@@ -87,29 +76,19 @@ def split_window(
     """Compute land surface temperature using a split-window method."""
     normalized_unit = normalize_temperature_unit(unit)
 
-    band_10 = to_float_array("landsat_band_10", landsat_band_10)
-    band_11 = to_float_array("landsat_band_11", landsat_band_11)
+    brightness_10 = to_float_array("brightness_temperature_10", brightness_temperature_10)
+    brightness_11 = to_float_array("brightness_temperature_11", brightness_temperature_11)
     band_4 = to_float_array("landsat_band_4", landsat_band_4)
     band_5 = to_float_array("landsat_band_5", landsat_band_5)
     ensure_same_shape(
-        landsat_band_10=band_10,
-        landsat_band_11=band_11,
+        brightness_temperature_10=brightness_10,
+        brightness_temperature_11=brightness_11,
         landsat_band_4=band_4,
         landsat_band_5=band_5,
     )
 
-    mask = build_mask_from(band_10)
+    mask = build_mask_from(brightness_10)
     ndvi_image = ndvi(band_5, band_4, mask=mask)
-    brightness_10, brightness_11 = brightness_temperature(
-        band_10,
-        sensor=sensor,
-        rad_gain_band_10=rad_gain_band_10,
-        rad_bias_band_10=rad_bias_band_10,
-        landsat_band_11=band_11,
-        rad_gain_band_11=rad_gain_band_11,
-        rad_bias_band_11=rad_bias_band_11,
-        mask=mask,
-    )
     emissivity_10, emissivity_11 = emissivity(
         ndvi_image,
         landsat_band_4=band_4,
