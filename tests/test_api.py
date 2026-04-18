@@ -7,6 +7,8 @@ from pylstemp import (
     brightness_temperature_band_10,
     brightness_temperature_band_11,
     emissivity,
+    emissivity_band_10,
+    emissivity_band_11,
     ndvi,
     single_window,
     split_window,
@@ -97,9 +99,16 @@ class TestPublicApi(unittest.TestCase):
 
     def test_emissivity_returns_both_bands(self):
         ndvi_image = ndvi(self.band_5, self.band_4)
-        emissivity_10, emissivity_11 = emissivity(ndvi_image, self.band_4, emissivity_method="avdan")
+        emissivity_10, emissivity_11 = emissivity(ndvi_image, red_band=self.band_4, emissivity_method="avdan")
         self.assertEqual(emissivity_10.shape, ndvi_image.shape)
         self.assertEqual(emissivity_11.shape, ndvi_image.shape)
+
+    def test_individual_emissivity_helpers_preserve_shape(self):
+        ndvi_image = ndvi(self.band_5, self.band_4)
+        output_10 = emissivity_band_10(ndvi_image, red_band=self.band_4, emissivity_method="avdan")
+        output_11 = emissivity_band_11(ndvi_image, red_band=self.band_4, emissivity_method="avdan")
+        self.assertEqual(output_10.shape, ndvi_image.shape)
+        self.assertEqual(output_11.shape, ndvi_image.shape)
 
     def test_single_window_preserves_shape(self):
         brightness_10, _ = brightness_temperature(

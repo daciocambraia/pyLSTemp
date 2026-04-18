@@ -19,9 +19,17 @@ Computes brightness temperature for Landsat thermal band 11 using `sensor="lands
 Computes brightness temperature for Landsat thermal bands using `sensor="landsat_8"` or `sensor="landsat_9"`.
 `rad_gain_band_x` and `rad_bias_band_x` are informed manually in the function call and are different from `K1` and `K2`.
 
-### `emissivity(ndvi_image, landsat_band_4=None, emissivity_method="avdan")`
+### `emissivity(ndvi_image, red_band=None, emissivity_method="avdan")`
 
 Computes emissivity for band 10 and band 11 from an NDVI image.
+
+### `emissivity_band_10(ndvi_image, red_band=None, emissivity_method="avdan")`
+
+Computes emissivity for the thermal band 10 workflow.
+
+### `emissivity_band_11(ndvi_image, red_band=None, emissivity_method="avdan")`
+
+Computes emissivity for the thermal band 11 workflow.
 
 ### `single_window(brightness_temperature_10, red_band, nir_band, lst_method="mono-window", emissivity_method="avdan", unit="kelvin")`
 

@@ -26,14 +26,36 @@ from .validation import (
 CELSIUS_SCALER = 273.15
 
 
-def emissivity(ndvi_image, landsat_band_4=None, emissivity_method: str = "avdan"):
+def emissivity(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
     """Compute band-specific emissivity from an NDVI image."""
     ndvi_array = to_float_array("ndvi_image", ndvi_image)
-    red_band = None if landsat_band_4 is None else to_float_array("landsat_band_4", landsat_band_4)
-    ensure_same_shape(ndvi_image=ndvi_array, landsat_band_4=red_band)
+    validated_red_band = None if red_band is None else to_float_array("red_band", red_band)
+    ensure_same_shape(ndvi_image=ndvi_array, red_band=validated_red_band)
 
     algorithm = emissivity_registry.create(emissivity_method)
-    return algorithm(ndvi=ndvi_array, red_band=red_band)
+    return algorithm(ndvi=ndvi_array, red_band=validated_red_band)
+
+
+def emissivity_band_10(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
+    """Compute emissivity for the thermal band 10 workflow."""
+
+    emissivity_10, _ = emissivity(
+        ndvi_image,
+        red_band=red_band,
+        emissivity_method=emissivity_method,
+    )
+    return emissivity_10
+
+
+def emissivity_band_11(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
+    """Compute emissivity for the thermal band 11 workflow."""
+
+    _, emissivity_11 = emissivity(
+        ndvi_image,
+        red_band=red_band,
+        emissivity_method=emissivity_method,
+    )
+    return emissivity_11
 
 
 def single_window(
@@ -58,7 +80,7 @@ def single_window(
 
     mask = build_mask_from(brightness_10)
     ndvi_image = ndvi(nir, red, mask=mask)
-    emissivity_10, _ = emissivity(ndvi_image, landsat_band_4=red, emissivity_method=emissivity_method)
+    emissivity_10, _ = emissivity(ndvi_image, red_band=red, emissivity_method=emissivity_method)
 
     result = single_channel_registry.create(lst_method)(
         emissivity_10=emissivity_10,
@@ -95,7 +117,7 @@ def split_window(
     ndvi_image = ndvi(nir, red, mask=mask)
     emissivity_10, emissivity_11 = emissivity(
         ndvi_image,
-        landsat_band_4=red,
+        red_band=red,
         emissivity_method=emissivity_method,
     )
 

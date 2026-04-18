@@ -10,6 +10,8 @@ from pylstemp import (
     brightness_temperature_band_10,
     brightness_temperature_band_11,
     emissivity,
+    emissivity_band_10,
+    emissivity_band_11,
     single_window,
     split_window,
     list_algorithms,
@@ -60,11 +62,17 @@ brightness_11 = brightness_temperature_band_11(
 ## 3. Compute emissivity
 
 ```python
-from pylstemp import emissivity
+from pylstemp import emissivity_band_10, emissivity_band_11
 
-emissivity_10, emissivity_11 = emissivity(
+emissivity_10 = emissivity_band_10(
     ndvi_image,
-    landsat_band_4=red_band,
+    red_band=red_band,
+    emissivity_method="avdan",
+)
+
+emissivity_11 = emissivity_band_11(
+    ndvi_image,
+    red_band=red_band,
     emissivity_method="avdan",
 )
 ```
