@@ -79,3 +79,6 @@ You only need to touch `pylstemp/api.py` if the new family needs a dedicated top
 If the family only needs to be discoverable and listed, the registry layer already handles that.
 
 Sensor-specific constants that should not be duplicated across algorithms can live under `pylstemp/sensors/`.
+
+For the current thermal workflow, keep the radiometric conversion concentrated in `brightness_temperature(...)`.
+The `single_window(...)` and `split_window(...)` public functions should stay focused on LST computation from precomputed brightness temperature arrays.

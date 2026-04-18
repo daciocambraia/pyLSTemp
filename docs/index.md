@@ -14,6 +14,8 @@ This folder contains the user-facing documentation for the current modular `pyLS
 ## Main ideas
 
 - the public API stays small and stable
+- brightness temperature is an explicit preprocessing step before LST workflows
+- sensor-specific thermal constants live in `pylstemp/sensors/`
 - the real implementations live in `pylstemp/algorithms/`
 - new algorithms are discovered automatically from their family folder
 - new families can also be discovered automatically when they expose a family registry

@@ -10,6 +10,7 @@ Repository: <https://github.com/daciocambraia/pyLSTemp>
 ## Goals
 
 - preserve the public workflow: `ndvi`, `brightness_temperature`, `emissivity`, `single_window`, `split_window`
+- make `brightness_temperature(...)` the explicit radiometric conversion step before LST workflows
 - support Landsat 8 and Landsat 9 through a `sensor` argument plus sensor-specific constants
 - keep the published formulas and bibliographic references used by the original project
 - make new algorithms easy to add by dropping a new `.py` file into the correct family folder
@@ -55,6 +56,11 @@ The public functions stay small and stable while the implementations live in mod
 Sensor-specific thermal constants live under `pylstemp/sensors/`.
 
 `brightness_temperature(...)` is the explicit radiometric conversion step. `single_window(...)` and `split_window(...)` now expect brightness temperature arrays that were computed beforehand.
+
+Typical thermal workflow:
+
+1. compute `brightness_temperature(...)` using `sensor`, `rad_gain_band_x`, and `rad_bias_band_x`
+2. pass the resulting brightness temperature arrays into `single_window(...)` or `split_window(...)`
 
 ## Modular architecture
 

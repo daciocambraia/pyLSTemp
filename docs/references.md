@@ -15,7 +15,7 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 ## Thermal
 
 - `landsat-brightness`
-  Brightness temperature conversion using the published multiplicative, additive, K1, and K2 calibration constants preserved from the original library.
+  Brightness temperature conversion using scene-specific radiance gain and bias supplied in the function call together with sensor-specific `K1` and `K2` constants for Landsat 8 or Landsat 9.
 
 ## Single-channel temperature algorithms
 

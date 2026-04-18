@@ -52,8 +52,9 @@ The public functions in `pylstemp/api.py` orchestrate the workflow:
 
 - validate inputs
 - build masks
-- call vegetation and thermal helpers
-- resolve sensor-specific constants
+- compute brightness temperature with sensor-specific constants when the user calls `brightness_temperature(...)`
+- call vegetation and emissivity helpers for LST workflows
+- pass precomputed brightness temperature arrays into `single_window(...)` or `split_window(...)`
 - select the requested algorithm from the proper family registry
 - return final arrays in the requested unit
 
