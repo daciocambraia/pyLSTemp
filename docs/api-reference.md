@@ -6,13 +6,21 @@
 
 Computes NDVI from the NIR and red bands.
 
-### `brightness_temperature_band_10(band_10, sensor, rad_gain, rad_bias, mask=None)`
+### `brightness_temperature_band_10(band_10, sensor, rad_gain=None, rad_bias=None, mask=None)`
 
 Computes brightness temperature for Landsat thermal band 10 using `sensor="landsat_8"` or `sensor="landsat_9"`.
+Default values:
+- `landsat_8`: `rad_gain=0.0003342`, `rad_bias=0.1`
+- `landsat_9`: `rad_gain=0.00038`, `rad_bias=0.1`
+You can override these values in the function call.
 
-### `brightness_temperature_band_11(band_11, sensor, rad_gain, rad_bias, mask=None)`
+### `brightness_temperature_band_11(band_11, sensor, rad_gain=None, rad_bias=None, mask=None)`
 
 Computes brightness temperature for Landsat thermal band 11 using `sensor="landsat_8"` or `sensor="landsat_9"`.
+Default values:
+- `landsat_8`: `rad_gain=0.0003342`, `rad_bias=0.1`
+- `landsat_9`: `rad_gain=0.000349`, `rad_bias=0.1`
+You can override these values in the function call.
 
 ### `emissivity_band_10(ndvi_image, red_band=None, emissivity_method="avdan")`
 

@@ -39,25 +39,19 @@ from pylstemp import brightness_temperature_band_10, brightness_temperature_band
 band_10 = np.full((3, 3), 1000.0)
 band_11 = np.full((3, 3), 900.0)
 sensor = "landsat_8"
-rad_gain_10 = 0.0003342
-rad_bias_10 = 0.1
-rad_gain_11 = 0.0003342
-rad_bias_11 = 0.1
 
 brightness_10 = brightness_temperature_band_10(
     band_10,
     sensor=sensor,
-    rad_gain=rad_gain_10,
-    rad_bias=rad_bias_10,
 )
 
 brightness_11 = brightness_temperature_band_11(
     band_11,
     sensor=sensor,
-    rad_gain=rad_gain_11,
-    rad_bias=rad_bias_11,
 )
 ```
+
+To override the default sensor metadata values, pass `rad_gain=` and `rad_bias=` explicitly.
 
 ## 3. Compute emissivity
 
@@ -124,5 +118,5 @@ print(catalog["split_window"].keys())
 - `NaN` values are propagated through the calculations
 - manual masks passed to `ndvi()` or `brightness_temperature()` must be boolean
 - `sensor` must be `landsat_8` or `landsat_9`
-- `rad_gain` and `rad_bias` must be informed manually in the brightness temperature function call
+- `rad_gain` and `rad_bias` default to the sensor metadata values and can be overridden manually in the brightness temperature function call
 - these radiance values are different from the sensor constants `K1` and `K2`
