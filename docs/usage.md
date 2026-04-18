@@ -35,8 +35,21 @@ from pylstemp import brightness_temperature
 
 band_10 = np.full((3, 3), 1000.0)
 band_11 = np.full((3, 3), 900.0)
+sensor = "landsat_8"
+rad_gain_band_10 = 0.0003342
+rad_bias_band_10 = 0.1
+rad_gain_band_11 = 0.0003342
+rad_bias_band_11 = 0.1
 
-brightness_10, brightness_11 = brightness_temperature(band_10, band_11)
+brightness_10, brightness_11 = brightness_temperature(
+    band_10,
+    sensor=sensor,
+    rad_gain_band_10=rad_gain_band_10,
+    rad_bias_band_10=rad_bias_band_10,
+    landsat_band_11=band_11,
+    rad_gain_band_11=rad_gain_band_11,
+    rad_bias_band_11=rad_bias_band_11,
+)
 ```
 
 ## 3. Compute emissivity
@@ -60,6 +73,9 @@ lst_single = single_window(
     landsat_band_10=band_10,
     landsat_band_4=red_band,
     landsat_band_5=nir_band,
+    sensor="landsat_8",
+    rad_gain_band_10=rad_gain_band_10,
+    rad_bias_band_10=rad_bias_band_10,
     lst_method="mono-window",
     emissivity_method="avdan",
     unit="kelvin",
@@ -76,6 +92,11 @@ lst_split = split_window(
     landsat_band_11=band_11,
     landsat_band_4=red_band,
     landsat_band_5=nir_band,
+    sensor="landsat_9",
+    rad_gain_band_10=rad_gain_band_10,
+    rad_bias_band_10=rad_bias_band_10,
+    rad_gain_band_11=rad_gain_band_11,
+    rad_bias_band_11=rad_bias_band_11,
     lst_method="jiminez-munoz",
     emissivity_method="avdan",
     unit="celsius",
@@ -97,3 +118,6 @@ print(catalog["split_window"].keys())
 - zero values are treated as invalid in the thermal workflow mask
 - `NaN` values are propagated through the calculations
 - manual masks passed to `ndvi()` or `brightness_temperature()` must be boolean
+- `sensor` must be `landsat_8` or `landsat_9`
+- `rad_gain_band_x` and `rad_bias_band_x` must be informed manually in the function call
+- these radiance values are different from the sensor constants `K1` and `K2`

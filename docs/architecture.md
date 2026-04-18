@@ -8,6 +8,7 @@ The codebase is split into a small public layer and a modular algorithm layer.
 pylstemp/
   api.py
   registry.py
+  sensors/
   validation.py
   utils.py
   algorithms/
@@ -52,6 +53,7 @@ The public functions in `pylstemp/api.py` orchestrate the workflow:
 - validate inputs
 - build masks
 - call vegetation and thermal helpers
+- resolve sensor-specific constants
 - select the requested algorithm from the proper family registry
 - return final arrays in the requested unit
 

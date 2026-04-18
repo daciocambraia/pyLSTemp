@@ -36,6 +36,9 @@ def single_window(
     landsat_band_10,
     landsat_band_4,
     landsat_band_5,
+    sensor: str,
+    rad_gain_band_10: float,
+    rad_bias_band_10: float,
     lst_method: str = "mono-window",
     emissivity_method: str = "avdan",
     unit: str = "kelvin",
@@ -50,7 +53,13 @@ def single_window(
 
     mask = build_mask_from(band_10)
     ndvi_image = ndvi(band_5, band_4, mask=mask)
-    brightness_10, _ = brightness_temperature(band_10, mask=mask)
+    brightness_10, _ = brightness_temperature(
+        band_10,
+        sensor=sensor,
+        rad_gain_band_10=rad_gain_band_10,
+        rad_bias_band_10=rad_bias_band_10,
+        mask=mask,
+    )
     emissivity_10, _ = emissivity(ndvi_image, landsat_band_4=band_4, emissivity_method=emissivity_method)
 
     result = single_channel_registry.create(lst_method)(
@@ -66,6 +75,11 @@ def split_window(
     landsat_band_11,
     landsat_band_4,
     landsat_band_5,
+    sensor: str,
+    rad_gain_band_10: float,
+    rad_bias_band_10: float,
+    rad_gain_band_11: float,
+    rad_bias_band_11: float,
     lst_method: str,
     emissivity_method: str,
     unit: str = "kelvin",
@@ -86,7 +100,16 @@ def split_window(
 
     mask = build_mask_from(band_10)
     ndvi_image = ndvi(band_5, band_4, mask=mask)
-    brightness_10, brightness_11 = brightness_temperature(band_10, band_11, mask=mask)
+    brightness_10, brightness_11 = brightness_temperature(
+        band_10,
+        sensor=sensor,
+        rad_gain_band_10=rad_gain_band_10,
+        rad_bias_band_10=rad_bias_band_10,
+        landsat_band_11=band_11,
+        rad_gain_band_11=rad_gain_band_11,
+        rad_bias_band_11=rad_bias_band_11,
+        mask=mask,
+    )
     emissivity_10, emissivity_11 = emissivity(
         ndvi_image,
         landsat_band_4=band_4,

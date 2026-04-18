@@ -77,3 +77,5 @@ You only need to touch `pylstemp/api.py` if the new family needs a dedicated top
 - `split_window(...)`
 
 If the family only needs to be discoverable and listed, the registry layer already handles that.
+
+Sensor-specific constants that should not be duplicated across algorithms can live under `pylstemp/sensors/`.

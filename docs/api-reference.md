@@ -6,21 +6,22 @@
 
 Computes NDVI from the NIR and red bands.
 
-### `brightness_temperature(landsat_band_10, landsat_band_11=None, mask=None)`
+### `brightness_temperature(landsat_band_10, sensor, rad_gain_band_10, rad_bias_band_10, landsat_band_11=None, rad_gain_band_11=None, rad_bias_band_11=None, mask=None)`
 
-Computes brightness temperature for Landsat thermal bands.
+Computes brightness temperature for Landsat thermal bands using `sensor="landsat_8"` or `sensor="landsat_9"`.
+`rad_gain_band_x` and `rad_bias_band_x` are informed manually in the function call and are different from `K1` and `K2`.
 
 ### `emissivity(ndvi_image, landsat_band_4=None, emissivity_method="avdan")`
 
 Computes emissivity for band 10 and band 11 from an NDVI image.
 
-### `single_window(landsat_band_10, landsat_band_4, landsat_band_5, lst_method="mono-window", emissivity_method="avdan", unit="kelvin")`
+### `single_window(landsat_band_10, landsat_band_4, landsat_band_5, sensor, rad_gain_band_10, rad_bias_band_10, lst_method="mono-window", emissivity_method="avdan", unit="kelvin")`
 
-Computes land surface temperature using a single-channel method.
+Computes land surface temperature using a single-channel method for `landsat_8` or `landsat_9`.
 
-### `split_window(landsat_band_10, landsat_band_11, landsat_band_4, landsat_band_5, lst_method, emissivity_method, unit="kelvin")`
+### `split_window(landsat_band_10, landsat_band_11, landsat_band_4, landsat_band_5, sensor, rad_gain_band_10, rad_bias_band_10, rad_gain_band_11, rad_bias_band_11, lst_method, emissivity_method, unit="kelvin")`
 
-Computes land surface temperature using a split-window method.
+Computes land surface temperature using a split-window method for `landsat_8` or `landsat_9`.
 
 ### `list_algorithms()`
 
@@ -49,6 +50,8 @@ Returns a catalog of discovered families, algorithm metadata, and original-libra
 ### `thermal`
 
 - `landsat-brightness`
+
+Sensor constants are stored under `pylstemp/sensors/`.
 
 ### `vegetation`
 

@@ -10,6 +10,7 @@ Repository: <https://github.com/daciocambraia/pyLSTemp>
 ## Goals
 
 - preserve the public workflow: `ndvi`, `brightness_temperature`, `emissivity`, `single_window`, `split_window`
+- support Landsat 8 and Landsat 9 through a `sensor` argument plus sensor-specific constants
 - keep the published formulas and bibliographic references used by the original project
 - make new algorithms easy to add by dropping a new `.py` file into the correct family folder
 - keep the repository clean and readable, with one main responsibility per file
@@ -22,6 +23,7 @@ pyLSTemp/
   pylstemp/
     api.py
     registry.py
+    sensors/
     validation.py
     utils.py
     algorithms/
@@ -50,6 +52,7 @@ from pylstemp import (
 ```
 
 The public functions stay small and stable while the implementations live in modular families under `pylstemp/algorithms/`.
+Sensor-specific thermal constants live under `pylstemp/sensors/`.
 
 ## Modular architecture
 
