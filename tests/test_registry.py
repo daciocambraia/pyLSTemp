@@ -33,5 +33,5 @@ class TestRegistries(unittest.TestCase):
         self.assertEqual(metadata.key, "mc-millin")
 
     def test_thermal_and_vegetation_registries_discover_default_modules(self):
-        self.assertIn("landsat-brightness", thermal_registry.available_keys())
+        self.assertIn("brightness", thermal_registry.available_keys())
         self.assertIn("ndvi", vegetation_registry.available_keys())

@@ -6,22 +6,13 @@
 
 Computes NDVI from the NIR and red bands.
 
-### `brightness_temperature_band_10(thermal_band, sensor, rad_gain, rad_bias, mask=None)`
+### `brightness_temperature_band_10(band_10, sensor, rad_gain, rad_bias, mask=None)`
 
 Computes brightness temperature for Landsat thermal band 10 using `sensor="landsat_8"` or `sensor="landsat_9"`.
 
-### `brightness_temperature_band_11(thermal_band, sensor, rad_gain, rad_bias, mask=None)`
+### `brightness_temperature_band_11(band_11, sensor, rad_gain, rad_bias, mask=None)`
 
 Computes brightness temperature for Landsat thermal band 11 using `sensor="landsat_8"` or `sensor="landsat_9"`.
-
-### `brightness_temperature(landsat_band_10, sensor, rad_gain_band_10, rad_bias_band_10, landsat_band_11=None, rad_gain_band_11=None, rad_bias_band_11=None, mask=None)`
-
-Computes brightness temperature for Landsat thermal bands using `sensor="landsat_8"` or `sensor="landsat_9"`.
-`rad_gain_band_x` and `rad_bias_band_x` are informed manually in the function call and are different from `K1` and `K2`.
-
-### `emissivity(ndvi_image, red_band=None, emissivity_method="avdan")`
-
-Computes emissivity for band 10 and band 11 from an NDVI image.
 
 ### `emissivity_band_10(ndvi_image, red_band=None, emissivity_method="avdan")`
 
@@ -65,7 +56,7 @@ Returns a catalog of discovered families, algorithm metadata, and original-libra
 
 ### `thermal`
 
-- `landsat-brightness`
+- `brightness`
 
 Sensor constants are stored under `pylstemp/sensors/`.
 

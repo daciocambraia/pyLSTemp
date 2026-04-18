@@ -9,7 +9,6 @@ from .algorithms.emissivity import emissivity_registry
 from .algorithms.single_channel import single_channel_registry
 from .algorithms.split_window import split_window_registry
 from .algorithms.thermal import (
-    brightness_temperature,
     brightness_temperature_band_10,
     brightness_temperature_band_11,
 )
@@ -26,8 +25,8 @@ from .validation import (
 CELSIUS_SCALER = 273.15
 
 
-def emissivity(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
-    """Compute band-specific emissivity from an NDVI image."""
+def _emissivity_pair(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
+    """Compute emissivity pair from an NDVI image."""
     ndvi_array = to_float_array("ndvi_image", ndvi_image)
     validated_red_band = None if red_band is None else to_float_array("red_band", red_band)
     ensure_same_shape(ndvi_image=ndvi_array, red_band=validated_red_band)
@@ -39,7 +38,7 @@ def emissivity(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
 def emissivity_band_10(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
     """Compute emissivity for the thermal band 10 workflow."""
 
-    emissivity_10, _ = emissivity(
+    emissivity_10, _ = _emissivity_pair(
         ndvi_image,
         red_band=red_band,
         emissivity_method=emissivity_method,
@@ -50,7 +49,7 @@ def emissivity_band_10(ndvi_image, red_band=None, emissivity_method: str = "avda
 def emissivity_band_11(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
     """Compute emissivity for the thermal band 11 workflow."""
 
-    _, emissivity_11 = emissivity(
+    _, emissivity_11 = _emissivity_pair(
         ndvi_image,
         red_band=red_band,
         emissivity_method=emissivity_method,
@@ -80,7 +79,7 @@ def single_window(
 
     mask = build_mask_from(brightness_10)
     ndvi_image = ndvi(nir, red, mask=mask)
-    emissivity_10, _ = emissivity(ndvi_image, red_band=red, emissivity_method=emissivity_method)
+    emissivity_10 = emissivity_band_10(ndvi_image, red_band=red, emissivity_method=emissivity_method)
 
     result = single_channel_registry.create(lst_method)(
         emissivity_10=emissivity_10,
@@ -115,11 +114,8 @@ def split_window(
 
     mask = build_mask_from(brightness_10)
     ndvi_image = ndvi(nir, red, mask=mask)
-    emissivity_10, emissivity_11 = emissivity(
-        ndvi_image,
-        red_band=red,
-        emissivity_method=emissivity_method,
-    )
+    emissivity_10 = emissivity_band_10(ndvi_image, red_band=red, emissivity_method=emissivity_method)
+    emissivity_11 = emissivity_band_11(ndvi_image, red_band=red, emissivity_method=emissivity_method)
 
     if brightness_11 is None or emissivity_11 is None:
         raise InputShapesNotEqual(

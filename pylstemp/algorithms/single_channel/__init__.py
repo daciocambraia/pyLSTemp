@@ -2,7 +2,7 @@
 
 from ...registry import discover_algorithms
 from ..base_temperature import BaseTemperatureAlgorithm
-from ..thermal import BrightnessTemperatureLandsat, brightness_temperature
+from ..thermal import BrightnessTemperatureLandsat, brightness_temperature_band_10
 from .mono_window import MonoWindowLST
 
 single_channel_registry = discover_algorithms(__name__, "single_channel")
@@ -10,7 +10,7 @@ default_algorithms = single_channel_registry.as_mapping()
 
 __all__ = [
     "BrightnessTemperatureLandsat",
-    "brightness_temperature",
+    "brightness_temperature_band_10",
     "BaseTemperatureAlgorithm",
     "MonoWindowLST",
     "default_algorithms",

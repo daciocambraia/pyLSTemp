@@ -3,10 +3,8 @@ import unittest
 import numpy as np
 
 from pylstemp import (
-    brightness_temperature,
     brightness_temperature_band_10,
     brightness_temperature_band_11,
-    emissivity,
     emissivity_band_10,
     emissivity_band_11,
     ndvi,
@@ -33,19 +31,6 @@ class TestPublicApi(unittest.TestCase):
         output = ndvi(self.band_5, self.band_4)
         self.assertEqual(output.shape, self.band_5.shape)
 
-    def test_brightness_temperature_returns_tuple(self):
-        brightness_10, brightness_11 = brightness_temperature(
-            self.band_10,
-            sensor=self.sensor_8,
-            rad_gain_band_10=self.rad_gain_band_10,
-            rad_bias_band_10=self.rad_bias_band_10,
-            landsat_band_11=self.band_11,
-            rad_gain_band_11=self.rad_gain_band_11,
-            rad_bias_band_11=self.rad_bias_band_11,
-        )
-        self.assertEqual(brightness_10.shape, self.band_10.shape)
-        self.assertEqual(brightness_11.shape, self.band_11.shape)
-
     def test_individual_brightness_helpers_preserve_shape(self):
         brightness_10 = brightness_temperature_band_10(
             self.band_10,
@@ -62,46 +47,49 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(brightness_10.shape, self.band_10.shape)
         self.assertEqual(brightness_11.shape, self.band_11.shape)
 
-    def test_brightness_temperature_supports_landsat_9(self):
-        brightness_10, brightness_11 = brightness_temperature(
+    def test_individual_brightness_helpers_support_landsat_9(self):
+        brightness_10 = brightness_temperature_band_10(
             self.band_10,
             sensor=self.sensor_9,
-            rad_gain_band_10=self.rad_gain_band_10,
-            rad_bias_band_10=self.rad_bias_band_10,
-            landsat_band_11=self.band_11,
-            rad_gain_band_11=self.rad_gain_band_11,
-            rad_bias_band_11=self.rad_bias_band_11,
+            rad_gain=self.rad_gain_band_10,
+            rad_bias=self.rad_bias_band_10,
+        )
+        brightness_11 = brightness_temperature_band_11(
+            self.band_11,
+            sensor=self.sensor_9,
+            rad_gain=self.rad_gain_band_11,
+            rad_bias=self.rad_bias_band_11,
         )
         self.assertEqual(brightness_10.shape, self.band_10.shape)
         self.assertEqual(brightness_11.shape, self.band_11.shape)
 
     def test_brightness_temperature_changes_with_sensor_constants(self):
-        brightness_8_10, brightness_8_11 = brightness_temperature(
+        brightness_8_10 = brightness_temperature_band_10(
             self.band_10,
             sensor=self.sensor_8,
-            rad_gain_band_10=self.rad_gain_band_10,
-            rad_bias_band_10=self.rad_bias_band_10,
-            landsat_band_11=self.band_11,
-            rad_gain_band_11=self.rad_gain_band_11,
-            rad_bias_band_11=self.rad_bias_band_11,
+            rad_gain=self.rad_gain_band_10,
+            rad_bias=self.rad_bias_band_10,
         )
-        brightness_9_10, brightness_9_11 = brightness_temperature(
+        brightness_9_10 = brightness_temperature_band_10(
             self.band_10,
             sensor=self.sensor_9,
-            rad_gain_band_10=self.rad_gain_band_10,
-            rad_bias_band_10=self.rad_bias_band_10,
-            landsat_band_11=self.band_11,
-            rad_gain_band_11=self.rad_gain_band_11,
-            rad_bias_band_11=self.rad_bias_band_11,
+            rad_gain=self.rad_gain_band_10,
+            rad_bias=self.rad_bias_band_10,
+        )
+        brightness_8_11 = brightness_temperature_band_11(
+            self.band_11,
+            sensor=self.sensor_8,
+            rad_gain=self.rad_gain_band_11,
+            rad_bias=self.rad_bias_band_11,
+        )
+        brightness_9_11 = brightness_temperature_band_11(
+            self.band_11,
+            sensor=self.sensor_9,
+            rad_gain=self.rad_gain_band_11,
+            rad_bias=self.rad_bias_band_11,
         )
         self.assertFalse(np.allclose(brightness_8_10, brightness_9_10))
         self.assertFalse(np.allclose(brightness_8_11, brightness_9_11))
-
-    def test_emissivity_returns_both_bands(self):
-        ndvi_image = ndvi(self.band_5, self.band_4)
-        emissivity_10, emissivity_11 = emissivity(ndvi_image, red_band=self.band_4, emissivity_method="avdan")
-        self.assertEqual(emissivity_10.shape, ndvi_image.shape)
-        self.assertEqual(emissivity_11.shape, ndvi_image.shape)
 
     def test_individual_emissivity_helpers_preserve_shape(self):
         ndvi_image = ndvi(self.band_5, self.band_4)
@@ -111,11 +99,11 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(output_11.shape, ndvi_image.shape)
 
     def test_single_window_preserves_shape(self):
-        brightness_10, _ = brightness_temperature(
+        brightness_10 = brightness_temperature_band_10(
             self.band_10,
             sensor=self.sensor_8,
-            rad_gain_band_10=self.rad_gain_band_10,
-            rad_bias_band_10=self.rad_bias_band_10,
+            rad_gain=self.rad_gain_band_10,
+            rad_bias=self.rad_bias_band_10,
         )
         output = single_window(
             brightness_10,
@@ -125,14 +113,17 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(output.shape, self.band_10.shape)
 
     def test_split_window_preserves_shape(self):
-        brightness_10, brightness_11 = brightness_temperature(
+        brightness_10 = brightness_temperature_band_10(
             self.band_10,
             sensor=self.sensor_9,
-            rad_gain_band_10=self.rad_gain_band_10,
-            rad_bias_band_10=self.rad_bias_band_10,
-            landsat_band_11=self.band_11,
-            rad_gain_band_11=self.rad_gain_band_11,
-            rad_bias_band_11=self.rad_bias_band_11,
+            rad_gain=self.rad_gain_band_10,
+            rad_bias=self.rad_bias_band_10,
+        )
+        brightness_11 = brightness_temperature_band_11(
+            self.band_11,
+            sensor=self.sensor_9,
+            rad_gain=self.rad_gain_band_11,
+            rad_bias=self.rad_bias_band_11,
         )
         output = split_window(
             brightness_10,
