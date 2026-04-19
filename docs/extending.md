@@ -72,7 +72,8 @@ Because `pylstemp/algorithms/__init__.py` discovers families automatically, the 
 You only need to touch `pylstemp/api.py` if the new family needs a dedicated top-level public function such as:
 
 - `ndvi(...)`
-- `brightness_temperature(...)`
+- `brightness_band_10(...)`
+- `brightness_band_11(...)`
 - `single_window(...)`
 - `split_window(...)`
 
@@ -80,5 +81,5 @@ If the family only needs to be discoverable and listed, the registry layer alrea
 
 Sensor-specific constants that should not be duplicated across algorithms can live under `pylstemp/sensors/`.
 
-For the current thermal workflow, keep the radiometric conversion concentrated in `brightness_temperature(...)`.
+For the current thermal workflow, keep the radiometric conversion concentrated in `brightness_band_10(...)` and `brightness_band_11(...)`.
 The `single_window(...)` and `split_window(...)` public functions should stay focused on LST computation from precomputed brightness temperature arrays.

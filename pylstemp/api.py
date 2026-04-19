@@ -9,8 +9,8 @@ from .algorithms.emissivity import emissivity_registry
 from .algorithms.single_channel import single_channel_registry
 from .algorithms.split_window import split_window_registry
 from .algorithms.thermal import (
-    brightness_temperature_band_10,
-    brightness_temperature_band_11,
+    brightness_band_10,
+    brightness_band_11,
 )
 from .algorithms.vegetation import ndvi
 from .exceptions import InputShapesNotEqual

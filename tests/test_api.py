@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 
 from pylstemp import (
-    brightness_temperature_band_10,
-    brightness_temperature_band_11,
+    brightness_band_10,
+    brightness_band_11,
     emissivity_band_10,
     emissivity_band_11,
     ndvi,
@@ -32,13 +32,13 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(output.shape, self.band_5.shape)
 
     def test_individual_brightness_helpers_preserve_shape(self):
-        brightness_10 = brightness_temperature_band_10(
+        brightness_10 = brightness_band_10(
             self.band_10,
             sensor=self.sensor_8,
             rad_gain=self.rad_gain_band_10,
             rad_bias=self.rad_bias_band_10,
         )
-        brightness_11 = brightness_temperature_band_11(
+        brightness_11 = brightness_band_11(
             self.band_11,
             sensor=self.sensor_8,
             rad_gain=self.rad_gain_band_11,
@@ -48,13 +48,13 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(brightness_11.shape, self.band_11.shape)
 
     def test_individual_brightness_helpers_support_landsat_9(self):
-        brightness_10 = brightness_temperature_band_10(
+        brightness_10 = brightness_band_10(
             self.band_10,
             sensor=self.sensor_9,
             rad_gain=self.rad_gain_band_10,
             rad_bias=self.rad_bias_band_10,
         )
-        brightness_11 = brightness_temperature_band_11(
+        brightness_11 = brightness_band_11(
             self.band_11,
             sensor=self.sensor_9,
             rad_gain=self.rad_gain_band_11,
@@ -64,25 +64,25 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(brightness_11.shape, self.band_11.shape)
 
     def test_brightness_temperature_changes_with_sensor_constants(self):
-        brightness_8_10 = brightness_temperature_band_10(
+        brightness_8_10 = brightness_band_10(
             self.band_10,
             sensor=self.sensor_8,
             rad_gain=self.rad_gain_band_10,
             rad_bias=self.rad_bias_band_10,
         )
-        brightness_9_10 = brightness_temperature_band_10(
+        brightness_9_10 = brightness_band_10(
             self.band_10,
             sensor=self.sensor_9,
             rad_gain=self.rad_gain_band_10,
             rad_bias=self.rad_bias_band_10,
         )
-        brightness_8_11 = brightness_temperature_band_11(
+        brightness_8_11 = brightness_band_11(
             self.band_11,
             sensor=self.sensor_8,
             rad_gain=self.rad_gain_band_11,
             rad_bias=self.rad_bias_band_11,
         )
-        brightness_9_11 = brightness_temperature_band_11(
+        brightness_9_11 = brightness_band_11(
             self.band_11,
             sensor=self.sensor_9,
             rad_gain=self.rad_gain_band_11,
@@ -90,6 +90,22 @@ class TestPublicApi(unittest.TestCase):
         )
         self.assertFalse(np.allclose(brightness_8_10, brightness_9_10))
         self.assertFalse(np.allclose(brightness_8_11, brightness_9_11))
+
+    def test_brightness_helpers_use_sensor_default_radiance_values(self):
+        brightness_10 = brightness_band_10(self.band_10, sensor=self.sensor_8)
+        brightness_11 = brightness_band_11(self.band_11, sensor=self.sensor_9)
+        self.assertEqual(brightness_10.shape, self.band_10.shape)
+        self.assertEqual(brightness_11.shape, self.band_11.shape)
+
+    def test_brightness_helpers_allow_manual_radiance_override(self):
+        default_output = brightness_band_10(self.band_10, sensor=self.sensor_8)
+        custom_output = brightness_band_10(
+            self.band_10,
+            sensor=self.sensor_8,
+            rad_gain=0.0005,
+            rad_bias=0.2,
+        )
+        self.assertFalse(np.allclose(default_output, custom_output))
 
     def test_individual_emissivity_helpers_preserve_shape(self):
         ndvi_image = ndvi(self.band_5, self.band_4)
@@ -99,7 +115,7 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(output_11.shape, ndvi_image.shape)
 
     def test_single_window_preserves_shape(self):
-        brightness_10 = brightness_temperature_band_10(
+        brightness_10 = brightness_band_10(
             self.band_10,
             sensor=self.sensor_8,
             rad_gain=self.rad_gain_band_10,
@@ -113,13 +129,13 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(output.shape, self.band_10.shape)
 
     def test_split_window_preserves_shape(self):
-        brightness_10 = brightness_temperature_band_10(
+        brightness_10 = brightness_band_10(
             self.band_10,
             sensor=self.sensor_9,
             rad_gain=self.rad_gain_band_10,
             rad_bias=self.rad_bias_band_10,
         )
-        brightness_11 = brightness_temperature_band_11(
+        brightness_11 = brightness_band_11(
             self.band_11,
             sensor=self.sensor_9,
             rad_gain=self.rad_gain_band_11,

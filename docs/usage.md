@@ -7,9 +7,8 @@ This guide shows the main workflows exposed by the public API.
 ```python
 from pylstemp import (
     ndvi,
-    brightness_temperature_band_10,
-    brightness_temperature_band_11,
-    emissivity,
+    brightness_band_10,
+    brightness_band_11,
     emissivity_band_10,
     emissivity_band_11,
     single_window,
@@ -34,18 +33,18 @@ ndvi_image = ndvi(nir_band, red_band)
 
 ```python
 import numpy as np
-from pylstemp import brightness_temperature_band_10, brightness_temperature_band_11
+from pylstemp import brightness_band_10, brightness_band_11
 
 band_10 = np.full((3, 3), 1000.0)
 band_11 = np.full((3, 3), 900.0)
 sensor = "landsat_8"
 
-brightness_10 = brightness_temperature_band_10(
+brightness_10 = brightness_band_10(
     band_10,
     sensor=sensor,
 )
 
-brightness_11 = brightness_temperature_band_11(
+brightness_11 = brightness_band_11(
     band_11,
     sensor=sensor,
 )
@@ -116,7 +115,7 @@ print(catalog["split_window"].keys())
 
 - zero values are treated as invalid in the thermal workflow mask
 - `NaN` values are propagated through the calculations
-- manual masks passed to `ndvi()` or `brightness_temperature()` must be boolean
+- manual masks passed to `ndvi()`, `brightness_band_10()` or `brightness_band_11()` must be boolean
 - `sensor` must be `landsat_8` or `landsat_9`
 - `rad_gain` and `rad_bias` default to the sensor metadata values and can be overridden manually in the brightness temperature function call
 - these radiance values are different from the sensor constants `K1` and `K2`

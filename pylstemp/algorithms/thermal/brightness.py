@@ -73,7 +73,7 @@ class BrightnessTemperatureLandsat:
             mask=validated_mask,
         )
 
-def brightness_temperature_band_10(
+def brightness_band_10(
     band_10,
     sensor: str,
     rad_gain: float | None = None,
@@ -98,7 +98,7 @@ def brightness_temperature_band_10(
     )
 
 
-def brightness_temperature_band_11(
+def brightness_band_11(
     band_11,
     sensor: str,
     rad_gain: float | None = None,
@@ -132,5 +132,5 @@ ALGORITHM_SPEC = AlgorithmSpec(
         "Brightness temperature conversion using sensor-specific Landsat K1 and K2 constants "
         "with explicit per-band radiance gain and bias inputs."
     ),
-    aliases=("landsat-brightness", "landsat-8-brightness", "landsat-9-brightness", "landsat8-brightness", "landsat9-brightness"),
+    aliases=(),
 )
