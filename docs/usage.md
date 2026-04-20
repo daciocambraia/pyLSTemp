@@ -100,17 +100,15 @@ lst_split = split_window(
     brightness_temperature_11=brightness_11,
     red_band=red_band,
     nir_band=nir_band,
-    lst_method="jimenez-munoz-2014",
+    lst_method="du-2015",
     emissivity_method="gopinadh-2018",
-    water_vapor=2.0,
     unit="celsius",
 )
 ```
 
 `split_window(...)` blocks `emissivity_method="avdan-2016"` because Avdan is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` for split-window workflows.
-For `lst_method="jimenez-munoz-2014"`, `water_vapor` is required and must be supplied in `g/cm2`.
 
-For `lst_method="du-2015"`, `water_vapor` is optional. If omitted, the method uses the general Du et al. coefficient range `[0.0, 6.3] g/cm2`.
+Only `lst_method="du-2015"` uses `water_vapor`. It is optional; if omitted, the method uses the general Du et al. coefficient range `[0.0, 6.3] g/cm2`.
 
 ```python
 lst_du = split_window(

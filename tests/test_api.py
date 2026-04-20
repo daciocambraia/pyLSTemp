@@ -154,28 +154,9 @@ class TestPublicApi(unittest.TestCase):
             brightness_11,
             red_band=self.band_4,
             nir_band=self.band_5,
-            lst_method="jimenez-munoz-2014",
-            water_vapor=2.0,
+            lst_method="du-2015",
         )
         self.assertEqual(output.shape, self.band_10.shape)
-
-    def test_split_window_jimenez_munoz_requires_water_vapor(self):
-        brightness_10 = brightness_band_10(
-            self.band_10,
-            sensor=self.sensor_9,
-        )
-        brightness_11 = brightness_band_11(
-            self.band_11,
-            sensor=self.sensor_9,
-        )
-        with self.assertRaisesRegex(ValueError, "requires water_vapor"):
-            split_window(
-                brightness_10,
-                brightness_11,
-                red_band=self.band_4,
-                nir_band=self.band_5,
-                lst_method="jimenez-munoz-2014",
-            )
 
     def test_split_window_rejects_single_channel_emissivity_method(self):
         brightness_10 = brightness_band_10(

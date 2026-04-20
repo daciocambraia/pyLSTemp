@@ -6,7 +6,6 @@ from pylstemp.algorithms.emissivity import ComputeEmissivityAvdan2016
 from pylstemp.algorithms.single_channel import BaseTemperatureAlgorithm, MonoWindow2016LST
 from pylstemp.algorithms.split_window import (
     SplitWindowDu2015LST,
-    SplitWindowJimenezMunoz2014LST,
     SplitWindowKerr1992LST,
     SplitWindowPrice1984LST,
     SplitWindowSobrino1993LST,
@@ -44,14 +43,6 @@ class TestAlgorithms(unittest.TestCase):
         ndvi = np.full((3, 3), 0.4)
 
         algorithms = [
-            SplitWindowJimenezMunoz2014LST()(
-                emissivity_10=emissivity,
-                emissivity_11=emissivity,
-                brightness_temperature_10=self.base,
-                brightness_temperature_11=self.base - 2,
-                mask=self.mask,
-                water_vapor=2.0,
-            ),
             SplitWindowDu2015LST()(
                 emissivity_10=emissivity,
                 emissivity_11=emissivity,
@@ -83,17 +74,6 @@ class TestAlgorithms(unittest.TestCase):
 
         for output in algorithms:
             self.assertEqual(output.shape, self.base.shape)
-
-    def test_jimenez_munoz_2014_requires_water_vapor(self):
-        with self.assertRaisesRegex(ValueError, "requires water_vapor"):
-            SplitWindowJimenezMunoz2014LST()(
-                emissivity_10=np.full((3, 3), 0.98),
-                emissivity_11=np.full((3, 3), 0.98),
-                brightness_temperature_10=self.base,
-                brightness_temperature_11=self.base - 2,
-                mask=self.mask,
-                water_vapor=None,
-            )
 
     def test_du_2015_uses_all_cwv_coefficients_by_default(self):
         output = SplitWindowDu2015LST()(

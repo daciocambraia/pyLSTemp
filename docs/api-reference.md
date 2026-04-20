@@ -53,8 +53,7 @@ When `water_vapor` is provided, the method selects the matching Du et al. CWV su
 - `[4.0, 5.5]`
 - `[5.0, 6.3]`
 
-For `lst_method="jimenez-munoz-2014"`, `water_vapor` is required in `g/cm2`.
-This method does not use a default CWV value because the result depends directly on scene atmospheric water vapor.
+Current non-Du split-window methods do not use `water_vapor`.
 
 ### `list_algorithms()`
 
@@ -74,7 +73,6 @@ Returns a catalog of discovered families, algorithm metadata, and original-libra
 
 ### `split_window`
 
-- `jimenez-munoz-2014`
 - `du-2015`
 - `kerr-1992`
 - `price-1984`
