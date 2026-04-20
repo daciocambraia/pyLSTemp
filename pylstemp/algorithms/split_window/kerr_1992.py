@@ -1,15 +1,19 @@
-"""Kerr split-window temperature algorithm."""
+"""Kerr 1992 split-window temperature algorithm."""
 
 from __future__ import annotations
 
+import numpy as np
+
 from ...exceptions import assert_required_keywords_provided
 from ...metadata import AlgorithmSpec
-from ...utils import fractional_vegetation_cover
 from .base import SplitWindowParentLST
 
 
-class SplitWindowKerrLST(SplitWindowParentLST):
-    """Kerr split-window LST."""
+class SplitWindowKerr1992LST(SplitWindowParentLST):
+    """Kerr 1992 split-window LST."""
+
+    ndvi_bare_soil = 0.11
+    ndvi_vegetation = 0.72
 
     def _compute_lst(self, **kwargs):
         required_keywords = [
@@ -30,23 +34,27 @@ class SplitWindowKerrLST(SplitWindowParentLST):
             ndvi=ndvi,
         )
 
-        pv = fractional_vegetation_cover(ndvi)
+        pv = (ndvi - self.ndvi_bare_soil) / (self.ndvi_vegetation - self.ndvi_bare_soil)
+        pv = np.clip(pv, 0, 1)
         result = (
             (tb_10 * ((0.5 * pv) + 3.1))
             + (tb_11 * ((-0.5 * pv) - 2.1))
-            - ((5.5 * pv) + 3.1)
+            + (3.1 - (5.5 * pv))
         )
         return result, mask
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="kerr",
-    factory=SplitWindowKerrLST,
-    name="Kerr split-window LST",
-    reference="Kerr et al. (2004)",
+    key="kerr-1992",
+    factory=SplitWindowKerr1992LST,
+    name="Kerr 1992 split-window LST",
+    reference="Kerr et al. (1992)",
     citation=(
-        "Kerr, Y., Lagouarde, J., Nerry, F., and Ottle, C. Land surface "
-        "temperature retrieval techniques and applications: case of the AVHRR. "
-        "Thermal Remote Sensing in Land Surface Processing, 2004."
+        "Kerr, Y. H., Lagouarde, J. P., Nerry, F., and Ottle, C. A semiempirical "
+        "approach to the retrieval of land surface temperature from AVHRR data. "
+        "Remote Sensing of Environment, 1992. This implementation interpolates "
+        "the bare-soil and vegetation coefficients reported in Table 1 using "
+        "the article's linear NDVI cover with NDVIbs=0.11 and NDVIv=0.72, "
+        "cited from Begue (1991)."
     ),
 )

@@ -1,4 +1,4 @@
-"""Gopinadh emissivity implementation."""
+"""Gopinadh 2018 emissivity implementation."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from ...utils import fractional_vegetation_cover
 from .base import BaseEmissivityAlgorithm
 
 
-class ComputeEmissivityGopinadh(BaseEmissivityAlgorithm):
+class ComputeEmissivityGopinadh2018(BaseEmissivityAlgorithm):
     """Weighted emissivity blend from Rongali et al. (2018)."""
 
     emissivity_soil_10 = 0.971
@@ -25,9 +25,9 @@ class ComputeEmissivityGopinadh(BaseEmissivityAlgorithm):
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="gopinadh",
-    factory=ComputeEmissivityGopinadh,
-    name="Gopinadh emissivity",
+    key="gopinadh-2018",
+    factory=ComputeEmissivityGopinadh2018,
+    name="Gopinadh 2018 emissivity",
     reference="Rongali et al. (2018)",
     citation=(
         "Rongali, G., et al. Split-window algorithm for retrieval of land surface "

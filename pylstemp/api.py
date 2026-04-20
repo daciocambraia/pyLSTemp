@@ -23,9 +23,10 @@ from .validation import (
 )
 
 CELSIUS_SCALER = 273.15
+SINGLE_CHANNEL_EMISSIVITY_METHODS = {"avdan-2016"}
 
 
-def _emissivity_pair(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
+def _emissivity_pair(ndvi_image, red_band=None, emissivity_method: str = "avdan-2016"):
     """Compute emissivity pair from an NDVI image."""
     ndvi_array = to_float_array("ndvi_image", ndvi_image)
     validated_red_band = None if red_band is None else to_float_array("red_band", red_band)
@@ -35,7 +36,7 @@ def _emissivity_pair(ndvi_image, red_band=None, emissivity_method: str = "avdan"
     return algorithm(ndvi=ndvi_array, red_band=validated_red_band)
 
 
-def emissivity_band_10(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
+def emissivity_band_10(ndvi_image, red_band=None, emissivity_method: str = "avdan-2016"):
     """Compute emissivity for the thermal band 10 workflow."""
 
     emissivity_10, _ = _emissivity_pair(
@@ -46,7 +47,7 @@ def emissivity_band_10(ndvi_image, red_band=None, emissivity_method: str = "avda
     return emissivity_10
 
 
-def emissivity_band_11(ndvi_image, red_band=None, emissivity_method: str = "avdan"):
+def emissivity_band_11(ndvi_image, red_band=None, emissivity_method: str = "avdan-2016"):
     """Compute emissivity for the thermal band 11 workflow."""
 
     _, emissivity_11 = _emissivity_pair(
@@ -61,8 +62,8 @@ def single_window(
     brightness_temperature_10,
     red_band,
     nir_band,
-    lst_method: str = "mono-window",
-    emissivity_method: str = "avdan",
+    lst_method: str = "mono-window-2016",
+    emissivity_method: str = "avdan-2016",
     unit: str = "kelvin",
 ) -> np.ndarray:
     """Compute land surface temperature using a single-channel method."""
@@ -95,11 +96,18 @@ def split_window(
     red_band,
     nir_band,
     lst_method: str,
-    emissivity_method: str,
+    emissivity_method: str = "gopinadh-2018",
     unit: str = "kelvin",
+    water_vapor: float | None = None,
 ) -> np.ndarray:
     """Compute land surface temperature using a split-window method."""
     normalized_unit = normalize_temperature_unit(unit)
+    if emissivity_method in SINGLE_CHANNEL_EMISSIVITY_METHODS:
+        raise ValueError(
+            f"'{emissivity_method}' is a single-channel emissivity method and should not be used "
+            "with split_window(). Use a band-specific emissivity method such as "
+            "'gopinadh-2018' or 'xiaolei-2014'."
+        )
 
     brightness_10 = to_float_array("brightness_temperature_10", brightness_temperature_10)
     brightness_11 = to_float_array("brightness_temperature_11", brightness_temperature_11)
@@ -130,6 +138,7 @@ def split_window(
         brightness_temperature_11=brightness_11,
         ndvi=ndvi_image,
         mask=mask,
+        water_vapor=water_vapor,
     )
     return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
 

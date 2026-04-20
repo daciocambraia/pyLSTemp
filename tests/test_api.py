@@ -109,8 +109,16 @@ class TestPublicApi(unittest.TestCase):
 
     def test_individual_emissivity_helpers_preserve_shape(self):
         ndvi_image = ndvi(self.band_5, self.band_4)
-        output_10 = emissivity_band_10(ndvi_image, red_band=self.band_4, emissivity_method="avdan")
-        output_11 = emissivity_band_11(ndvi_image, red_band=self.band_4, emissivity_method="avdan")
+        output_10 = emissivity_band_10(
+            ndvi_image,
+            red_band=self.band_4,
+            emissivity_method="avdan-2016",
+        )
+        output_11 = emissivity_band_11(
+            ndvi_image,
+            red_band=self.band_4,
+            emissivity_method="avdan-2016",
+        )
         self.assertEqual(output_10.shape, ndvi_image.shape)
         self.assertEqual(output_11.shape, ndvi_image.shape)
 
@@ -146,7 +154,92 @@ class TestPublicApi(unittest.TestCase):
             brightness_11,
             red_band=self.band_4,
             nir_band=self.band_5,
-            lst_method="jiminez-munoz",
-            emissivity_method="avdan",
+            lst_method="jimenez-munoz-2014",
+            water_vapor=2.0,
         )
         self.assertEqual(output.shape, self.band_10.shape)
+
+    def test_split_window_jimenez_munoz_requires_water_vapor(self):
+        brightness_10 = brightness_band_10(
+            self.band_10,
+            sensor=self.sensor_9,
+        )
+        brightness_11 = brightness_band_11(
+            self.band_11,
+            sensor=self.sensor_9,
+        )
+        with self.assertRaisesRegex(ValueError, "requires water_vapor"):
+            split_window(
+                brightness_10,
+                brightness_11,
+                red_band=self.band_4,
+                nir_band=self.band_5,
+                lst_method="jimenez-munoz-2014",
+            )
+
+    def test_split_window_rejects_single_channel_emissivity_method(self):
+        brightness_10 = brightness_band_10(
+            self.band_10,
+            sensor=self.sensor_9,
+            rad_gain=self.rad_gain_band_10,
+            rad_bias=self.rad_bias_band_10,
+        )
+        brightness_11 = brightness_band_11(
+            self.band_11,
+            sensor=self.sensor_9,
+            rad_gain=self.rad_gain_band_11,
+            rad_bias=self.rad_bias_band_11,
+        )
+        with self.assertRaisesRegex(ValueError, "single-channel emissivity method"):
+            split_window(
+                brightness_10,
+                brightness_11,
+                red_band=self.band_4,
+                nir_band=self.band_5,
+                lst_method="du-2015",
+                emissivity_method="avdan-2016",
+            )
+
+    def test_split_window_supports_du_2015_method(self):
+        brightness_10 = brightness_band_10(
+            self.band_10,
+            sensor=self.sensor_8,
+        )
+        brightness_11 = brightness_band_11(
+            self.band_11,
+            sensor=self.sensor_8,
+        )
+        output = split_window(
+            brightness_10,
+            brightness_11,
+            red_band=self.band_4,
+            nir_band=self.band_5,
+            lst_method="du-2015",
+        )
+        self.assertEqual(output.shape, self.band_10.shape)
+
+    def test_split_window_du_2015_accepts_water_vapor(self):
+        brightness_10 = brightness_band_10(
+            self.band_10,
+            sensor=self.sensor_8,
+        )
+        brightness_11 = brightness_band_11(
+            self.band_11,
+            sensor=self.sensor_8,
+        )
+        default_output = split_window(
+            brightness_10,
+            brightness_11,
+            red_band=self.band_4,
+            nir_band=self.band_5,
+            lst_method="du-2015",
+        )
+        cwv_output = split_window(
+            brightness_10,
+            brightness_11,
+            red_band=self.band_4,
+            nir_band=self.band_5,
+            lst_method="du-2015",
+            water_vapor=3.8,
+        )
+        self.assertFalse(np.allclose(default_output, cwv_output))

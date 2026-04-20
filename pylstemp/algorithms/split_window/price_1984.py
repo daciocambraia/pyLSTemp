@@ -1,4 +1,4 @@
-"""Jiminez-Munoz split-window temperature algorithm."""
+"""Price 1984 split-window temperature algorithm."""
 
 from __future__ import annotations
 
@@ -7,10 +7,8 @@ from ...metadata import AlgorithmSpec
 from .base import SplitWindowParentLST
 
 
-class SplitWindowJiminezMunozLST(SplitWindowParentLST):
-    """Jiminez-Munoz split-window LST."""
-
-    cwv = 0.013
+class SplitWindowPrice1984LST(SplitWindowParentLST):
+    """Price 1984 split-window LST adapted from AVHRR to Landsat TIRS bands."""
 
     def _compute_lst(self, **kwargs):
         required_keywords = [
@@ -34,29 +32,21 @@ class SplitWindowJiminezMunozLST(SplitWindowParentLST):
             emissivity_11=emissivity_11,
         )
 
-        mean_e = (emissivity_10 + emissivity_11) / 2
-        diff_e = emissivity_10 - emissivity_11
-        diff_tb = tb_10 - tb_11
-
-        result = (
-            tb_10
-            + (1.387 * diff_tb)
-            + (0.183 * (diff_tb**2))
-            - 0.268
-            + ((54.3 - (2.238 * self.cwv)) * (1 - mean_e))
-            + ((-129.2 + (16.4 * self.cwv)) * diff_e)
+        result = (tb_10 + 3.33 * (tb_10 - tb_11)) * ((5.5 - emissivity_10) / 4.5) + (
+            0.75 * tb_11 * (emissivity_10 - emissivity_11)
         )
         return result, mask
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="jiminez-munoz",
-    factory=SplitWindowJiminezMunozLST,
-    name="Jiminez-Munoz split-window LST",
-    reference="Jimenez-Munoz and Sobrino (2008)",
+    key="price-1984",
+    factory=SplitWindowPrice1984LST,
+    name="Price 1984 split-window LST",
+    reference="Price (1984)",
     citation=(
-        "Jimenez-Munoz, J.-C., and Sobrino, J. A. Split-window coefficients for "
-        "land surface temperature retrieval from low-resolution thermal infrared "
-        "sensors. IEEE Geoscience and Remote Sensing Letters, 2008."
+        "Price, J. C. Land surface temperature measurements from the split "
+        "window channels of the NOAA advanced very high-resolution radiometer. "
+        "Journal of Geophysical Research, 1984. This implementation applies the "
+        "Price split-window structure as a Landsat Band 10/11 adaptation."
     ),
 )

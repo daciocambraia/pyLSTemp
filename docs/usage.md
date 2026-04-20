@@ -60,15 +60,17 @@ from pylstemp import emissivity_band_10, emissivity_band_11
 emissivity_10 = emissivity_band_10(
     ndvi_image,
     red_band=red_band,
-    emissivity_method="avdan",
+    emissivity_method="avdan-2016",
 )
 
 emissivity_11 = emissivity_band_11(
     ndvi_image,
     red_band=red_band,
-    emissivity_method="avdan",
+    emissivity_method="avdan-2016",
 )
 ```
+
+`avdan-2016` follows the NDVI conditional emissivity rules from Avdan and Jovanovska: water, soil, mixed pixels using fractional vegetation cover plus `C=0.005`, and vegetation. Because this source method is single-channel, it returns the same emissivity for band 10 and band 11 workflows. For split-window methods, consider `gopinadh-2018` or `xiaolei-2014` when you want band-specific emissivity.
 
 ## 4. Compute single-channel LST
 
@@ -79,11 +81,14 @@ lst_single = single_window(
     brightness_temperature_10=brightness_10,
     red_band=red_band,
     nir_band=nir_band,
-    lst_method="mono-window",
-    emissivity_method="avdan",
+    lst_method="mono-window-2016",
+    emissivity_method="avdan-2016",
     unit="kelvin",
 )
 ```
+
+The default `mono-window-2016` method uses `lambda=10.895e-6 m`, the midpoint of the Landsat 8/9 TIRS Band 10 range (`10.6-11.19 um`). This avoids using the Band 11 lower wavelength (`11.5 um`) in a Band 10 single-channel workflow.
+Use only `brightness_temperature_10` with `mono-window-2016`; do not use Band 11 brightness temperature in this workflow.
 
 ## 5. Compute split-window LST
 
@@ -95,11 +100,31 @@ lst_split = split_window(
     brightness_temperature_11=brightness_11,
     red_band=red_band,
     nir_band=nir_band,
-    lst_method="jiminez-munoz",
-    emissivity_method="avdan",
+    lst_method="jimenez-munoz-2014",
+    emissivity_method="gopinadh-2018",
+    water_vapor=2.0,
     unit="celsius",
 )
 ```
+
+`split_window(...)` blocks `emissivity_method="avdan-2016"` because Avdan is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` for split-window workflows.
+For `lst_method="jimenez-munoz-2014"`, `water_vapor` is required and must be supplied in `g/cm2`.
+
+For `lst_method="du-2015"`, `water_vapor` is optional. If omitted, the method uses the general Du et al. coefficient range `[0.0, 6.3] g/cm2`.
+
+```python
+lst_du = split_window(
+    brightness_temperature_10=brightness_10,
+    brightness_temperature_11=brightness_11,
+    red_band=red_band,
+    nir_band=nir_band,
+    lst_method="du-2015",
+    emissivity_method="gopinadh-2018",
+    water_vapor=3.8,
+)
+```
+
+Use `water_vapor` in `g/cm2` when you have an atmospheric column water vapor estimate and want the method to select the corresponding Du et al. coefficient sub-range.
 
 ## 6. Inspect available families and methods
 

@@ -14,7 +14,7 @@ class TestValidation(unittest.TestCase):
 
     def test_xiaolei_requires_red_band(self):
         with self.assertRaises(ValueError):
-            emissivity_band_10(np.ones((2, 2)), emissivity_method="xiaolei")
+            emissivity_band_10(np.ones((2, 2)), emissivity_method="xiaolei-2014")
 
     def test_mask_builder_marks_zero_and_nan(self):
         image = np.array([[1.0, 0.0], [np.nan, 2.0]])

@@ -1,4 +1,4 @@
-"""Xiaolei/NBEM emissivity implementation."""
+"""Xiaolei 2014 NBEM emissivity implementation."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from ...utils import cavity_effect, fractional_vegetation_cover, rescale_band
 from .base import BaseEmissivityAlgorithm
 
 
-class ComputeEmissivityNBEM(BaseEmissivityAlgorithm):
+class ComputeEmissivityXiaolei2014(BaseEmissivityAlgorithm):
     """NBEM emissivity approach used by the original library."""
 
     emissivity_soil_10 = 0.9668
@@ -19,7 +19,7 @@ class ComputeEmissivityNBEM(BaseEmissivityAlgorithm):
 
     def _compute_emissivity(self, *, ndvi: np.ndarray, red_band: np.ndarray | None):
         if red_band is None:
-            raise ValueError("red_band must be provided for the 'xiaolei' emissivity method.")
+            raise ValueError("red_band must be provided for the 'xiaolei-2014' emissivity method.")
 
         masks = self._landcover_masks(ndvi)
         red_band_rescaled = rescale_band(red_band)
@@ -52,9 +52,9 @@ class ComputeEmissivityNBEM(BaseEmissivityAlgorithm):
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="xiaolei",
-    factory=ComputeEmissivityNBEM,
-    name="Xiaolei emissivity",
+    key="xiaolei-2014",
+    factory=ComputeEmissivityXiaolei2014,
+    name="Xiaolei 2014 emissivity",
     reference="Yu, Guo and Wu (2014)",
     citation=(
         "Yu, X., Guo, X., and Wu, Z. Land surface temperature retrieval from "

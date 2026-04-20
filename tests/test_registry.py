@@ -26,11 +26,11 @@ class TestRegistries(unittest.TestCase):
         self.assertIn("radiative_transfer", FAMILY_REGISTRIES)
 
     def test_emissivity_registry_exposes_canonical_keys(self):
-        self.assertIn("avdan", emissivity_registry.available_keys())
+        self.assertIn("avdan-2016", emissivity_registry.available_keys())
 
-    def test_split_window_alias_resolves(self):
-        metadata = split_window_registry.metadata("mc-clain")
-        self.assertEqual(metadata.key, "mc-millin")
+    def test_split_window_registry_exposes_year_keys(self):
+        self.assertIn("price-1984", split_window_registry.available_keys())
+        self.assertNotIn("mc-millin-1975", split_window_registry.available_keys())
 
     def test_thermal_and_vegetation_registries_discover_default_modules(self):
         self.assertIn("brightness", thermal_registry.available_keys())

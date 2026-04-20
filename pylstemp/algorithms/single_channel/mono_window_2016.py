@@ -1,4 +1,4 @@
-"""Mono-window land-surface temperature algorithm."""
+"""Avdan 2016 mono-window land-surface temperature algorithm."""
 
 from __future__ import annotations
 
@@ -9,8 +9,11 @@ from ...metadata import AlgorithmSpec
 from .base import BaseTemperatureAlgorithm
 
 
-class MonoWindowLST(BaseTemperatureAlgorithm):
-    """Mono-window LST from Avdan and Jovanovska (2016)."""
+class MonoWindow2016LST(BaseTemperatureAlgorithm):
+    """Band 10 mono-window LST from Avdan and Jovanovska (2016)."""
+
+    wavelength_band_10 = 10.895e-6
+    rho = 14380
 
     def __call__(self, **kwargs) -> np.ndarray:
         required_keywords = ["brightness_temperature_10", "emissivity_10", "mask"]
@@ -25,15 +28,15 @@ class MonoWindowLST(BaseTemperatureAlgorithm):
         )
 
         result = brightness_temperature_10 / (
-            1 + (((0.0000115 * brightness_temperature_10) / 14380) * np.log(emissivity_10))
+            1 + (((self.wavelength_band_10 * brightness_temperature_10) / self.rho) * np.log(emissivity_10))
         )
         return self._finalize(result, mask=mask)
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="mono-window",
-    factory=MonoWindowLST,
-    name="Mono-window LST",
+    key="mono-window-2016",
+    factory=MonoWindow2016LST,
+    name="Mono-window 2016 LST",
     reference="Avdan and Jovanovska (2016)",
     citation=(
         "Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land "
