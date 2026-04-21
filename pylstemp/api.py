@@ -151,16 +151,17 @@ def split_window(
     return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
 
 
-def water_vapor_wang_2015(
+def water_vapor(
     brightness_band_10,
     brightness_band_11,
     ndvi_image,
+    method: str = "wang-2015",
     window_size: int = 5,
     group_count: int = 5,
 ) -> np.ndarray:
-    """Estimate precipitable water vapor with Wang et al. (2015)."""
+    """Estimate precipitable water vapor using the selected method."""
 
-    return water_vapor_registry.create("wang-2015")(
+    return water_vapor_registry.create(method)(
         brightness_band_10=brightness_band_10,
         brightness_band_11=brightness_band_11,
         ndvi_image=ndvi_image,

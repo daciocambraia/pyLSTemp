@@ -9,7 +9,7 @@ from .api import (
     spectral_indices,
     single_window,
     split_window,
-    water_vapor_wang_2015,
+    water_vapor,
 )
 from .references import ORIGINAL_LIBRARY_CREDIT
 
@@ -22,7 +22,7 @@ __all__ = [
     "spectral_indices",
     "single_window",
     "split_window",
-    "water_vapor_wang_2015",
+    "water_vapor",
     "ORIGINAL_LIBRARY_CREDIT",
 ]
 

@@ -11,7 +11,7 @@ from pylstemp import (
     brightness_band_11,
     emissivity_band_10,
     emissivity_band_11,
-    water_vapor_wang_2015,
+    water_vapor,
     single_window,
     split_window,
     list_algorithms,
@@ -133,12 +133,13 @@ Use `water_vapor` in `g/cm2` when you have an atmospheric column water vapor est
 ## 6. Estimate water vapor from Landsat 8 imagery
 
 ```python
-from pylstemp import water_vapor_wang_2015
+from pylstemp import water_vapor
 
-water_vapor = water_vapor_wang_2015(
+water = water_vapor(
     brightness_band_10=brightness_10,
     brightness_band_11=brightness_11,
     ndvi_image=ndvi_image,
+    method="wang-2015",
     window_size=5,
     group_count=5,
 )
@@ -154,7 +155,7 @@ lst_jimenez = split_window(
     band_5_nir=band_5_nir,
     lst_method="jimenez-munoz-2014",
     emissivity_method="gopinadh-2018",
-    water_vapor=water_vapor,
+    water_vapor=water,
 )
 ```
 

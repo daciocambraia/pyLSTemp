@@ -10,7 +10,7 @@ from pylstemp import (
     single_window,
     spectral_indices,
     split_window,
-    water_vapor_wang_2015,
+    water_vapor,
 )
 
 
@@ -234,7 +234,7 @@ class TestPublicApi(unittest.TestCase):
         )
         self.assertFalse(np.allclose(default_output, cwv_output))
 
-    def test_water_vapor_wang_2015_preserves_shape(self):
+    def test_water_vapor_preserves_shape(self):
         brightness_10 = np.array(
             [
                 [300.0, 301.0, 302.0, 303.0, 304.0],
@@ -247,10 +247,11 @@ class TestPublicApi(unittest.TestCase):
         brightness_11 = 0.8 * brightness_10
         ndvi_image = np.full((5, 5), 0.35)
 
-        output = water_vapor_wang_2015(
+        output = water_vapor(
             brightness_10,
             brightness_11,
             ndvi_image,
+            method="wang-2015",
             window_size=5,
             group_count=1,
         )

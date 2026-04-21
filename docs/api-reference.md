@@ -80,23 +80,28 @@ When `water_vapor` is provided for `du-2015`, the method selects the matching Du
 - `[4.0, 5.5]`
 - `[5.0, 6.3]`
 
-`jimenez-munoz-2014` requires `water_vapor` and accepts either a single scene-level value or a raster with the same shape as the brightness temperature arrays. Use `water_vapor_wang_2015(...)` for pixel-by-pixel water vapor or provide an external estimate.
+`jimenez-munoz-2014` requires `water_vapor` and accepts either a single scene-level value or a raster with the same shape as the brightness temperature arrays. Use `water_vapor(method="wang-2015", ...)` for pixel-by-pixel water vapor or provide an external estimate.
 Current non-Du/Jimenez split-window methods do not use `water_vapor`.
 
-### `water_vapor_wang_2015(brightness_band_10, brightness_band_11, ndvi_image, window_size=5, group_count=5)`
+### `water_vapor(brightness_band_10, brightness_band_11, ndvi_image, method="wang-2015", window_size=5, group_count=5)`
 
-Estimates precipitable water vapor (`PWV`) in `g/cm2` using the NDVI-based split-window covariance-variance ratio method from Wang et al. (2015).
+Estimates precipitable water vapor (`PWV`) in `g/cm2` using the selected method.
+Currently supported:
+
+- `method="wang-2015"`: NDVI-based split-window covariance-variance ratio method from Wang et al. (2015)
+
 This method uses Landsat 8 TIRS brightness temperatures for bands 10 and 11 plus NDVI. It returns a water vapor array with the same shape as the input images.
 
 ```python
-water_vapor = water_vapor_wang_2015(
+water = water_vapor(
     brightness_band_10=brightness_10,
     brightness_band_11=brightness_11,
     ndvi_image=ndvi_image,
+    method="wang-2015",
 )
 ```
 
-The resulting `water_vapor` raster can be used directly in `split_window(..., lst_method="jimenez-munoz-2014", water_vapor=water_vapor)`. For `du-2015`, provide a single scene-level value such as the mean of a water vapor raster if you want to select a specific CWV coefficient sub-range.
+The resulting water vapor raster can be used directly in `split_window(..., lst_method="jimenez-munoz-2014", water_vapor=water)`. For `du-2015`, provide a single scene-level value such as the mean of a water vapor raster if you want to select a specific CWV coefficient sub-range.
 
 ### `list_algorithms()`
 
