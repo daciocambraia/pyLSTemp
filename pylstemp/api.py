@@ -26,42 +26,42 @@ CELSIUS_SCALER = 273.15
 SINGLE_CHANNEL_EMISSIVITY_METHODS = {"avdan-2016"}
 
 
-def _emissivity_pair(ndvi_image, red_band=None, emissivity_method: str = "avdan-2016"):
+def _emissivity_pair(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
     """Compute emissivity pair from an NDVI image."""
     ndvi_array = to_float_array("ndvi_image", ndvi_image)
-    validated_red_band = None if red_band is None else to_float_array("red_band", red_band)
-    ensure_same_shape(ndvi_image=ndvi_array, red_band=validated_red_band)
+    validated_red_band = None if band_4_red is None else to_float_array("band_4_red", band_4_red)
+    ensure_same_shape(ndvi_image=ndvi_array, band_4_red=validated_red_band)
 
     algorithm = emissivity_registry.create(emissivity_method)
     return algorithm(ndvi=ndvi_array, red_band=validated_red_band)
 
 
-def emissivity_band_10(ndvi_image, red_band=None, emissivity_method: str = "avdan-2016"):
+def emissivity_band_10(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
     """Compute emissivity for the thermal band 10 workflow."""
 
     emissivity_10, _ = _emissivity_pair(
         ndvi_image,
-        red_band=red_band,
+        band_4_red=band_4_red,
         emissivity_method=emissivity_method,
     )
     return emissivity_10
 
 
-def emissivity_band_11(ndvi_image, red_band=None, emissivity_method: str = "avdan-2016"):
+def emissivity_band_11(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
     """Compute emissivity for the thermal band 11 workflow."""
 
     _, emissivity_11 = _emissivity_pair(
         ndvi_image,
-        red_band=red_band,
+        band_4_red=band_4_red,
         emissivity_method=emissivity_method,
     )
     return emissivity_11
 
 
 def single_window(
-    brightness_temperature_10,
-    red_band,
-    nir_band,
+    brightness_band_10,
+    band_4_red,
+    band_5_nir,
     lst_method: str = "mono-window-2016",
     emissivity_method: str = "avdan-2016",
     unit: str = "kelvin",
@@ -69,18 +69,18 @@ def single_window(
     """Compute land surface temperature using a single-channel method."""
     normalized_unit = normalize_temperature_unit(unit)
 
-    brightness_10 = to_float_array("brightness_temperature_10", brightness_temperature_10)
-    red = to_float_array("red_band", red_band)
-    nir = to_float_array("nir_band", nir_band)
+    brightness_10 = to_float_array("brightness_band_10", brightness_band_10)
+    red = to_float_array("band_4_red", band_4_red)
+    nir = to_float_array("band_5_nir", band_5_nir)
     ensure_same_shape(
-        brightness_temperature_10=brightness_10,
-        red_band=red,
-        nir_band=nir,
+        brightness_band_10=brightness_10,
+        band_4_red=red,
+        band_5_nir=nir,
     )
 
     mask = build_mask_from(brightness_10)
     ndvi_image = ndvi(nir, red, mask=mask)
-    emissivity_10 = emissivity_band_10(ndvi_image, red_band=red, emissivity_method=emissivity_method)
+    emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 
     result = single_channel_registry.create(lst_method)(
         emissivity_10=emissivity_10,
@@ -91,10 +91,10 @@ def single_window(
 
 
 def split_window(
-    brightness_temperature_10,
-    brightness_temperature_11,
-    red_band,
-    nir_band,
+    brightness_band_10,
+    brightness_band_11,
+    band_4_red,
+    band_5_nir,
     lst_method: str,
     emissivity_method: str = "gopinadh-2018",
     unit: str = "kelvin",
@@ -109,21 +109,21 @@ def split_window(
             "'gopinadh-2018' or 'xiaolei-2014'."
         )
 
-    brightness_10 = to_float_array("brightness_temperature_10", brightness_temperature_10)
-    brightness_11 = to_float_array("brightness_temperature_11", brightness_temperature_11)
-    red = to_float_array("red_band", red_band)
-    nir = to_float_array("nir_band", nir_band)
+    brightness_10 = to_float_array("brightness_band_10", brightness_band_10)
+    brightness_11 = to_float_array("brightness_band_11", brightness_band_11)
+    red = to_float_array("band_4_red", band_4_red)
+    nir = to_float_array("band_5_nir", band_5_nir)
     ensure_same_shape(
-        brightness_temperature_10=brightness_10,
-        brightness_temperature_11=brightness_11,
-        red_band=red,
-        nir_band=nir,
+        brightness_band_10=brightness_10,
+        brightness_band_11=brightness_11,
+        band_4_red=red,
+        band_5_nir=nir,
     )
 
     mask = build_mask_from(brightness_10)
     ndvi_image = ndvi(nir, red, mask=mask)
-    emissivity_10 = emissivity_band_10(ndvi_image, red_band=red, emissivity_method=emissivity_method)
-    emissivity_11 = emissivity_band_11(ndvi_image, red_band=red, emissivity_method=emissivity_method)
+    emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
+    emissivity_11 = emissivity_band_11(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 
     if brightness_11 is None or emissivity_11 is None:
         raise InputShapesNotEqual(

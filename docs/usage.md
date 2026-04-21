@@ -23,10 +23,10 @@ from pylstemp import (
 import numpy as np
 from pylstemp import ndvi
 
-red_band = np.array([[0.2, 0.3], [0.4, 0.5]])
-nir_band = np.array([[0.6, 0.7], [0.8, 0.9]])
+band_4_red = np.array([[0.2, 0.3], [0.4, 0.5]])
+band_5_nir = np.array([[0.6, 0.7], [0.8, 0.9]])
 
-ndvi_image = ndvi(nir_band, red_band)
+ndvi_image = ndvi(band_5_nir, band_4_red)
 ```
 
 ## 2. Compute brightness temperature
@@ -59,13 +59,13 @@ from pylstemp import emissivity_band_10, emissivity_band_11
 
 emissivity_10 = emissivity_band_10(
     ndvi_image,
-    red_band=red_band,
+    band_4_red=band_4_red,
     emissivity_method="avdan-2016",
 )
 
 emissivity_11 = emissivity_band_11(
     ndvi_image,
-    red_band=red_band,
+    band_4_red=band_4_red,
     emissivity_method="avdan-2016",
 )
 ```
@@ -78,9 +78,9 @@ emissivity_11 = emissivity_band_11(
 from pylstemp import single_window
 
 lst_single = single_window(
-    brightness_temperature_10=brightness_10,
-    red_band=red_band,
-    nir_band=nir_band,
+    brightness_band_10=brightness_10,
+    band_4_red=band_4_red,
+    band_5_nir=band_5_nir,
     lst_method="mono-window-2016",
     emissivity_method="avdan-2016",
     unit="kelvin",
@@ -88,7 +88,7 @@ lst_single = single_window(
 ```
 
 The default `mono-window-2016` method uses `lambda=10.895e-6 m`, the midpoint of the Landsat 8/9 TIRS Band 10 range (`10.6-11.19 um`). This avoids using the Band 11 lower wavelength (`11.5 um`) in a Band 10 single-channel workflow.
-Use only `brightness_temperature_10` with `mono-window-2016`; do not use Band 11 brightness temperature in this workflow.
+Use only `brightness_band_10` with `mono-window-2016`; do not use Band 11 brightness temperature in this workflow.
 
 ## 5. Compute split-window LST
 
@@ -96,10 +96,10 @@ Use only `brightness_temperature_10` with `mono-window-2016`; do not use Band 11
 from pylstemp import split_window
 
 lst_split = split_window(
-    brightness_temperature_10=brightness_10,
-    brightness_temperature_11=brightness_11,
-    red_band=red_band,
-    nir_band=nir_band,
+    brightness_band_10=brightness_10,
+    brightness_band_11=brightness_11,
+    band_4_red=band_4_red,
+    band_5_nir=band_5_nir,
     lst_method="du-2015",
     emissivity_method="gopinadh-2018",
     unit="celsius",
@@ -112,10 +112,10 @@ Only `lst_method="du-2015"` uses `water_vapor`. It is optional; if omitted, the 
 
 ```python
 lst_du = split_window(
-    brightness_temperature_10=brightness_10,
-    brightness_temperature_11=brightness_11,
-    red_band=red_band,
-    nir_band=nir_band,
+    brightness_band_10=brightness_10,
+    brightness_band_11=brightness_11,
+    band_4_red=band_4_red,
+    band_5_nir=band_5_nir,
     lst_method="du-2015",
     emissivity_method="gopinadh-2018",
     water_vapor=3.8,

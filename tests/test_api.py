@@ -111,12 +111,12 @@ class TestPublicApi(unittest.TestCase):
         ndvi_image = ndvi(self.band_5, self.band_4)
         output_10 = emissivity_band_10(
             ndvi_image,
-            red_band=self.band_4,
+            band_4_red=self.band_4,
             emissivity_method="avdan-2016",
         )
         output_11 = emissivity_band_11(
             ndvi_image,
-            red_band=self.band_4,
+            band_4_red=self.band_4,
             emissivity_method="avdan-2016",
         )
         self.assertEqual(output_10.shape, ndvi_image.shape)
@@ -131,8 +131,8 @@ class TestPublicApi(unittest.TestCase):
         )
         output = single_window(
             brightness_10,
-            red_band=self.band_4,
-            nir_band=self.band_5,
+            band_4_red=self.band_4,
+            band_5_nir=self.band_5,
         )
         self.assertEqual(output.shape, self.band_10.shape)
 
@@ -152,8 +152,8 @@ class TestPublicApi(unittest.TestCase):
         output = split_window(
             brightness_10,
             brightness_11,
-            red_band=self.band_4,
-            nir_band=self.band_5,
+            band_4_red=self.band_4,
+            band_5_nir=self.band_5,
             lst_method="du-2015",
         )
         self.assertEqual(output.shape, self.band_10.shape)
@@ -175,8 +175,8 @@ class TestPublicApi(unittest.TestCase):
             split_window(
                 brightness_10,
                 brightness_11,
-                red_band=self.band_4,
-                nir_band=self.band_5,
+                band_4_red=self.band_4,
+                band_5_nir=self.band_5,
                 lst_method="du-2015",
                 emissivity_method="avdan-2016",
             )
@@ -193,8 +193,8 @@ class TestPublicApi(unittest.TestCase):
         output = split_window(
             brightness_10,
             brightness_11,
-            red_band=self.band_4,
-            nir_band=self.band_5,
+            band_4_red=self.band_4,
+            band_5_nir=self.band_5,
             lst_method="du-2015",
         )
         self.assertEqual(output.shape, self.band_10.shape)
@@ -211,15 +211,15 @@ class TestPublicApi(unittest.TestCase):
         default_output = split_window(
             brightness_10,
             brightness_11,
-            red_band=self.band_4,
-            nir_band=self.band_5,
+            band_4_red=self.band_4,
+            band_5_nir=self.band_5,
             lst_method="du-2015",
         )
         cwv_output = split_window(
             brightness_10,
             brightness_11,
-            red_band=self.band_4,
-            nir_band=self.band_5,
+            band_4_red=self.band_4,
+            band_5_nir=self.band_5,
             lst_method="du-2015",
             water_vapor=3.8,
         )

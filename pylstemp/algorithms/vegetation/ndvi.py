@@ -9,11 +9,11 @@ from ...utils import compute_ndvi
 from ...validation import ensure_boolean_mask, ensure_same_shape, to_float_array
 
 
-def ndvi(landsat_band_5, landsat_band_4, mask=None) -> np.ndarray:
-    """Compute NDVI using Landsat band 5 (NIR) and band 4 (red)."""
-    band_5 = to_float_array("landsat_band_5", landsat_band_5)
-    band_4 = to_float_array("landsat_band_4", landsat_band_4)
-    ensure_same_shape(landsat_band_5=band_5, landsat_band_4=band_4)
+def ndvi(band_5_nir, band_4_red, mask=None) -> np.ndarray:
+    """Compute NDVI using band 5 as NIR and band 4 as red."""
+    band_5 = to_float_array("band_5_nir", band_5_nir)
+    band_4 = to_float_array("band_4_red", band_4_red)
+    ensure_same_shape(band_5_nir=band_5, band_4_red=band_4)
 
     validated_mask = None
     if mask is not None:
@@ -25,8 +25,8 @@ def ndvi(landsat_band_5, landsat_band_4, mask=None) -> np.ndarray:
 class NDVIAlgorithm:
     """Object wrapper that lets NDVI participate in the shared family discovery."""
 
-    def __call__(self, landsat_band_5, landsat_band_4, mask=None):
-        return ndvi(landsat_band_5, landsat_band_4, mask=mask)
+    def __call__(self, band_5_nir, band_4_red, mask=None):
+        return ndvi(band_5_nir, band_4_red, mask=mask)
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
