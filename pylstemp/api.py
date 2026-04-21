@@ -12,7 +12,8 @@ from .algorithms.thermal import (
     brightness_band_10,
     brightness_band_11,
 )
-from .algorithms.spectral_indices import ndvi
+from .algorithms.spectral_indices import ndvi as _ndvi
+from .algorithms.spectral_indices import spectral_indices_registry
 from .algorithms.water_vapor import water_vapor_registry
 from .exceptions import InputShapesNotEqual
 from .references import ORIGINAL_LIBRARY_CREDIT
@@ -25,6 +26,12 @@ from .validation import (
 
 CELSIUS_SCALER = 273.15
 SINGLE_CHANNEL_EMISSIVITY_METHODS = {"avdan-2016"}
+
+
+def spectral_indices(indice: str, **kwargs):
+    """Compute a spectral index selected by name."""
+
+    return spectral_indices_registry.create(indice)(**kwargs)
 
 
 def _emissivity_pair(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
@@ -80,7 +87,7 @@ def single_window(
     )
 
     mask = build_mask_from(brightness_10)
-    ndvi_image = ndvi(nir, red, mask=mask)
+    ndvi_image = _ndvi(nir, red, mask=mask)
     emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 
     result = single_channel_registry.create(lst_method)(
@@ -122,7 +129,7 @@ def split_window(
     )
 
     mask = build_mask_from(brightness_10)
-    ndvi_image = ndvi(nir, red, mask=mask)
+    ndvi_image = _ndvi(nir, red, mask=mask)
     emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
     emissivity_11 = emissivity_band_11(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 

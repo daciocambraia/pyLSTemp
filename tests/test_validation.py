@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from pylstemp.api import emissivity_band_10, ndvi
+from pylstemp.api import emissivity_band_10, spectral_indices
 from pylstemp.validation import build_mask_from, normalize_temperature_unit
 from pylstemp.exceptions import InvalidMaskError
 
@@ -10,7 +10,12 @@ from pylstemp.exceptions import InvalidMaskError
 class TestValidation(unittest.TestCase):
     def test_ndvi_rejects_non_boolean_mask(self):
         with self.assertRaises(InvalidMaskError):
-            ndvi(np.ones((2, 2)), np.ones((2, 2)), mask=np.ones((2, 2), dtype=int))
+            spectral_indices(
+                indice="ndvi",
+                band_5_nir=np.ones((2, 2)),
+                band_4_red=np.ones((2, 2)),
+                mask=np.ones((2, 2), dtype=int),
+            )
 
     def test_xiaolei_requires_red_band(self):
         with self.assertRaises(ValueError):

@@ -9,7 +9,7 @@ Repository: <https://github.com/daciocambraia/pyLSTemp>
 
 ## Goals
 
-- preserve the public workflow: `ndvi`, `brightness_band_10`, `brightness_band_11`, `emissivity_band_10`, `emissivity_band_11`, `single_window`, `split_window`
+- preserve the public workflow: `spectral_indices`, `brightness_band_10`, `brightness_band_11`, `emissivity_band_10`, `emissivity_band_11`, `single_window`, `split_window`
 - make `brightness_band_10(...)` and `brightness_band_11(...)` the explicit radiometric conversion steps before LST workflows
 - support Landsat 8 and Landsat 9 through a `sensor` argument plus sensor-specific constants
 - keep the published formulas and bibliographic references used by the original project
@@ -43,7 +43,7 @@ pyLSTemp/
 
 ```python
 from pylstemp import (
-    ndvi,
+    spectral_indices,
     brightness_band_10,
     brightness_band_11,
     emissivity_band_10,

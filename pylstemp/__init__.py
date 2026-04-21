@@ -6,7 +6,7 @@ from .api import (
     emissivity_band_10,
     emissivity_band_11,
     list_algorithms,
-    ndvi,
+    spectral_indices,
     single_window,
     split_window,
     water_vapor_wang_2015,
@@ -19,11 +19,11 @@ __all__ = [
     "emissivity_band_10",
     "emissivity_band_11",
     "list_algorithms",
-    "ndvi",
+    "spectral_indices",
     "single_window",
     "split_window",
     "water_vapor_wang_2015",
     "ORIGINAL_LIBRARY_CREDIT",
 ]
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"

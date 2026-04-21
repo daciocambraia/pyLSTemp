@@ -6,7 +6,7 @@ This guide shows the main workflows exposed by the public API.
 
 ```python
 from pylstemp import (
-    ndvi,
+    spectral_indices,
     brightness_band_10,
     brightness_band_11,
     emissivity_band_10,
@@ -22,12 +22,16 @@ from pylstemp import (
 
 ```python
 import numpy as np
-from pylstemp import ndvi
+from pylstemp import spectral_indices
 
 band_4_red = np.array([[0.2, 0.3], [0.4, 0.5]])
 band_5_nir = np.array([[0.6, 0.7], [0.8, 0.9]])
 
-ndvi_image = ndvi(band_5_nir, band_4_red)
+ndvi_image = spectral_indices(
+    indice="ndvi",
+    band_5_nir=band_5_nir,
+    band_4_red=band_4_red,
+)
 ```
 
 ## 2. Compute brightness temperature
@@ -169,7 +173,7 @@ print(catalog["water_vapor"].keys())
 
 - zero values are treated as invalid in the thermal workflow mask
 - `NaN` values are propagated through the calculations
-- manual masks passed to `ndvi()`, `brightness_band_10()` or `brightness_band_11()` must be boolean
+- manual masks passed to `spectral_indices(indice="ndvi", ...)`, `brightness_band_10()` or `brightness_band_11()` must be boolean
 - `sensor` must be `landsat_8` or `landsat_9`
 - `rad_gain` and `rad_bias` default to the sensor metadata values and can be overridden manually in the brightness temperature function call
 - these radiance values are different from the sensor constants `K1` and `K2`

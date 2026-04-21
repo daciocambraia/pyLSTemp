@@ -7,8 +7,8 @@ from pylstemp import (
     brightness_band_11,
     emissivity_band_10,
     emissivity_band_11,
-    ndvi,
     single_window,
+    spectral_indices,
     split_window,
     water_vapor_wang_2015,
 )
@@ -29,7 +29,11 @@ class TestPublicApi(unittest.TestCase):
         self.sensor_9 = "landsat_9"
 
     def test_ndvi_returns_expected_shape(self):
-        output = ndvi(self.band_5, self.band_4)
+        output = spectral_indices(
+            indice="ndvi",
+            band_5_nir=self.band_5,
+            band_4_red=self.band_4,
+        )
         self.assertEqual(output.shape, self.band_5.shape)
 
     def test_individual_brightness_helpers_preserve_shape(self):
@@ -109,7 +113,11 @@ class TestPublicApi(unittest.TestCase):
         self.assertFalse(np.allclose(default_output, custom_output))
 
     def test_individual_emissivity_helpers_preserve_shape(self):
-        ndvi_image = ndvi(self.band_5, self.band_4)
+        ndvi_image = spectral_indices(
+            indice="ndvi",
+            band_5_nir=self.band_5,
+            band_4_red=self.band_4,
+        )
         output_10 = emissivity_band_10(
             ndvi_image,
             band_4_red=self.band_4,

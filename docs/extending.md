@@ -71,7 +71,7 @@ Because `pylstemp/algorithms/__init__.py` discovers families automatically, the 
 
 You only need to touch `pylstemp/api.py` if the new family needs a dedicated top-level public function such as:
 
-- `ndvi(...)`
+- `spectral_indices(...)`
 - `brightness_band_10(...)`
 - `brightness_band_11(...)`
 - `single_window(...)`

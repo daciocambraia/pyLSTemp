@@ -2,9 +2,22 @@
 
 ## Public functions
 
-### `ndvi(band_5_nir, band_4_red, mask=None)`
+### `spectral_indices(indice, **kwargs)`
 
-Computes NDVI from the NIR and red bands.
+Computes a spectral index selected by name.
+Currently supported:
+
+- `indice="ndvi"` with `band_5_nir`, `band_4_red`, and optional `mask`
+
+Example:
+
+```python
+ndvi_image = spectral_indices(
+    indice="ndvi",
+    band_5_nir=band_5_nir,
+    band_4_red=band_4_red,
+)
+```
 
 ### `brightness_band_10(band_10, sensor, rad_gain=None, rad_bias=None, mask=None)`
 
