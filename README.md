@@ -32,7 +32,7 @@ pyLSTemp/
       single_channel/
       split_window/
       thermal/
-      vegetation/
+      spectral_indices/
       radiative_transfer/
   docs/
   tests/
@@ -48,6 +48,7 @@ from pylstemp import (
     brightness_band_11,
     emissivity_band_10,
     emissivity_band_11,
+    water_vapor_wang_2015,
     single_window,
     split_window,
     list_algorithms,
@@ -62,7 +63,8 @@ Sensor-specific thermal constants live under `pylstemp/sensors/`.
 Typical thermal workflow:
 
 1. compute `brightness_band_10(...)` and, when needed, `brightness_band_11(...)` using `sensor`, `rad_gain`, and `rad_bias`
-2. pass the resulting brightness temperature arrays into `single_window(...)` or `split_window(...)`
+2. optionally estimate water vapor with `water_vapor_wang_2015(...)`
+3. pass the resulting brightness temperature arrays into `single_window(...)` or `split_window(...)`
 
 ## Modular architecture
 

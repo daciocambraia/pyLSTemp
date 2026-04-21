@@ -10,6 +10,7 @@ from pylstemp import (
     ndvi,
     single_window,
     split_window,
+    water_vapor_wang_2015,
 )
 
 
@@ -224,3 +225,71 @@ class TestPublicApi(unittest.TestCase):
             water_vapor=3.8,
         )
         self.assertFalse(np.allclose(default_output, cwv_output))
+
+    def test_water_vapor_wang_2015_preserves_shape(self):
+        brightness_10 = np.array(
+            [
+                [300.0, 301.0, 302.0, 303.0, 304.0],
+                [301.0, 302.0, 303.0, 304.0, 305.0],
+                [302.0, 303.0, 304.0, 305.0, 306.0],
+                [303.0, 304.0, 305.0, 306.0, 307.0],
+                [304.0, 305.0, 306.0, 307.0, 308.0],
+            ]
+        )
+        brightness_11 = 0.8 * brightness_10
+        ndvi_image = np.full((5, 5), 0.35)
+
+        output = water_vapor_wang_2015(
+            brightness_10,
+            brightness_11,
+            ndvi_image,
+            window_size=5,
+            group_count=1,
+        )
+
+        self.assertEqual(output.shape, brightness_10.shape)
+        self.assertTrue(np.isfinite(output[2, 2]))
+
+    def test_split_window_jimenez_munoz_accepts_water_vapor(self):
+        brightness_10 = brightness_band_10(self.band_10, sensor=self.sensor_8)
+        brightness_11 = brightness_band_11(self.band_11, sensor=self.sensor_8)
+
+        output = split_window(
+            brightness_10,
+            brightness_11,
+            band_4_red=self.band_4,
+            band_5_nir=self.band_5,
+            lst_method="jimenez-munoz-2014",
+            water_vapor=2.0,
+        )
+
+        self.assertEqual(output.shape, self.band_10.shape)
+
+    def test_split_window_jimenez_munoz_accepts_pixel_water_vapor(self):
+        brightness_10 = brightness_band_10(self.band_10, sensor=self.sensor_8)
+        brightness_11 = brightness_band_11(self.band_11, sensor=self.sensor_8)
+        water_vapor = np.full(self.band_10.shape, 2.0)
+
+        output = split_window(
+            brightness_10,
+            brightness_11,
+            band_4_red=self.band_4,
+            band_5_nir=self.band_5,
+            lst_method="jimenez-munoz-2014",
+            water_vapor=water_vapor,
+        )
+
+        self.assertEqual(output.shape, self.band_10.shape)
+
+    def test_split_window_jimenez_munoz_requires_water_vapor(self):
+        brightness_10 = brightness_band_10(self.band_10, sensor=self.sensor_8)
+        brightness_11 = brightness_band_11(self.band_11, sensor=self.sensor_8)
+
+        with self.assertRaisesRegex(ValueError, "requires water_vapor"):
+            split_window(
+                brightness_10,
+                brightness_11,
+                band_4_red=self.band_4,
+                band_5_nir=self.band_5,
+                lst_method="jimenez-munoz-2014",
+            )

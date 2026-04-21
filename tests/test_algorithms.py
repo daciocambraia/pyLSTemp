@@ -6,6 +6,7 @@ from pylstemp.algorithms.emissivity import ComputeEmissivityAvdan2016
 from pylstemp.algorithms.single_channel import BaseTemperatureAlgorithm, MonoWindow2016LST
 from pylstemp.algorithms.split_window import (
     SplitWindowDu2015LST,
+    SplitWindowJimenezMunoz2014LST,
     SplitWindowKerr1992LST,
     SplitWindowPrice1984LST,
     SplitWindowSobrino1993LST,
@@ -49,6 +50,14 @@ class TestAlgorithms(unittest.TestCase):
                 brightness_temperature_10=self.base,
                 brightness_temperature_11=self.base - 2,
                 mask=self.mask,
+            ),
+            SplitWindowJimenezMunoz2014LST()(
+                emissivity_10=emissivity,
+                emissivity_11=emissivity,
+                brightness_temperature_10=self.base,
+                brightness_temperature_11=self.base - 2,
+                mask=self.mask,
+                water_vapor=2.0,
             ),
             SplitWindowKerr1992LST()(
                 brightness_temperature_10=self.base,
@@ -118,6 +127,28 @@ class TestAlgorithms(unittest.TestCase):
                 brightness_temperature_11=self.base - 2,
                 mask=self.mask,
                 water_vapor=7.0,
+            )
+
+    def test_jimenez_munoz_2014_accepts_pixel_water_vapor(self):
+        output = SplitWindowJimenezMunoz2014LST()(
+            emissivity_10=np.full((3, 3), 0.98),
+            emissivity_11=np.full((3, 3), 0.97),
+            brightness_temperature_10=self.base,
+            brightness_temperature_11=self.base - 2,
+            mask=self.mask,
+            water_vapor=np.full((3, 3), 2.0),
+        )
+        self.assertEqual(output.shape, self.base.shape)
+
+    def test_jimenez_munoz_2014_rejects_pixel_water_vapor_shape_mismatch(self):
+        with self.assertRaisesRegex(Exception, "same shape"):
+            SplitWindowJimenezMunoz2014LST()(
+                emissivity_10=np.full((3, 3), 0.98),
+                emissivity_11=np.full((3, 3), 0.97),
+                brightness_temperature_10=self.base,
+                brightness_temperature_11=self.base - 2,
+                mask=self.mask,
+                water_vapor=np.full((2, 2), 2.0),
             )
 
     def test_kerr_1992_interpolates_article_coefficients(self):

@@ -25,6 +25,8 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 
 ## Split-window temperature algorithms
 
+- `jimenez-munoz-2014`
+  Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. IEEE Geoscience and Remote Sensing Letters, 2014.
 - `du-2015`
   Du, C., Ren, H., Qin, Q., Meng, J., and Zhao, S. A practical split-window algorithm for estimating land surface temperature from Landsat 8 data. Remote Sensing, 2015.
 - `sobrino-1993`
@@ -45,6 +47,11 @@ This rebuild keeps the conversion methods tied to the references listed by the o
   Yu, X., Guo, X., and Wu, Z. Land surface temperature retrieval from Landsat 8 TIRS - comparison between radiative transfer equation-based method, split window algorithm and single channel method. Remote Sensing, 2014.
 - `gopinadh-2018`
   Rongali, G., et al. Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data. Journal of Geovisualization and Spatial Analysis, 2018.
+
+## Water vapor algorithms
+
+- `wang-2015`
+  Wang, M., He, G., Zhang, Z., Wang, G., and Long, T. NDVI-based split-window algorithm for precipitable water vapour retrieval from Landsat-8 TIRS data over land area. Remote Sensing Letters, 2015.
 
 ## Radiative transfer
 

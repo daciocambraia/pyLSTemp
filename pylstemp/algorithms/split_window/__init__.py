@@ -4,6 +4,7 @@ from ...registry import discover_algorithms
 from ..base_temperature import BaseTemperatureAlgorithm
 from .base import SplitWindowParentLST
 from .du_2015 import SplitWindowDu2015LST
+from .jimenez_munoz_2014 import SplitWindowJimenezMunoz2014LST
 from .kerr_1992 import SplitWindowKerr1992LST
 from .price_1984 import SplitWindowPrice1984LST
 from .sobrino_1993 import SplitWindowSobrino1993LST
@@ -15,6 +16,7 @@ __all__ = [
     "BaseTemperatureAlgorithm",
     "SplitWindowDu2015LST",
     "SplitWindowParentLST",
+    "SplitWindowJimenezMunoz2014LST",
     "SplitWindowKerr1992LST",
     "SplitWindowPrice1984LST",
     "SplitWindowSobrino1993LST",

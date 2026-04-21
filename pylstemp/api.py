@@ -12,7 +12,8 @@ from .algorithms.thermal import (
     brightness_band_10,
     brightness_band_11,
 )
-from .algorithms.vegetation import ndvi
+from .algorithms.spectral_indices import ndvi
+from .algorithms.water_vapor import water_vapor_registry
 from .exceptions import InputShapesNotEqual
 from .references import ORIGINAL_LIBRARY_CREDIT
 from .validation import (
@@ -98,7 +99,7 @@ def split_window(
     lst_method: str,
     emissivity_method: str = "gopinadh-2018",
     unit: str = "kelvin",
-    water_vapor: float | None = None,
+    water_vapor: float | np.ndarray | None = None,
 ) -> np.ndarray:
     """Compute land surface temperature using a split-window method."""
     normalized_unit = normalize_temperature_unit(unit)
@@ -141,6 +142,24 @@ def split_window(
         water_vapor=water_vapor,
     )
     return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
+
+
+def water_vapor_wang_2015(
+    brightness_band_10,
+    brightness_band_11,
+    ndvi_image,
+    window_size: int = 5,
+    group_count: int = 5,
+) -> np.ndarray:
+    """Estimate precipitable water vapor with Wang et al. (2015)."""
+
+    return water_vapor_registry.create("wang-2015")(
+        brightness_band_10=brightness_band_10,
+        brightness_band_11=brightness_band_11,
+        ndvi_image=ndvi_image,
+        window_size=window_size,
+        group_count=group_count,
+    )
 
 
 def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:

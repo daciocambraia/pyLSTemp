@@ -10,7 +10,7 @@ Example families:
 - `pylstemp/algorithms/single_channel/`
 - `pylstemp/algorithms/split_window/`
 - `pylstemp/algorithms/thermal/`
-- `pylstemp/algorithms/vegetation/`
+- `pylstemp/algorithms/spectral_indices/`
 - `pylstemp/algorithms/radiative_transfer/`
 
 ### Steps

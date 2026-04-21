@@ -16,7 +16,7 @@ pylstemp/
     single_channel/
     split_window/
     thermal/
-    vegetation/
+    spectral_indices/
     radiative_transfer/
 ```
 
@@ -53,7 +53,7 @@ The public functions in `pylstemp/api.py` orchestrate the workflow:
 - validate inputs
 - build masks
 - compute brightness temperature with sensor-specific constants when the user calls `brightness_band_10(...)` or `brightness_band_11(...)`
-- call vegetation and emissivity helpers for LST workflows
+- call spectral-index and emissivity helpers for LST workflows
 - pass precomputed brightness temperature arrays into `single_window(...)` or `split_window(...)`
 - select the requested algorithm from the proper family registry
 - return final arrays in the requested unit

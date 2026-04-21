@@ -9,6 +9,7 @@ from .api import (
     ndvi,
     single_window,
     split_window,
+    water_vapor_wang_2015,
 )
 from .references import ORIGINAL_LIBRARY_CREDIT
 
@@ -21,7 +22,8 @@ __all__ = [
     "ndvi",
     "single_window",
     "split_window",
+    "water_vapor_wang_2015",
     "ORIGINAL_LIBRARY_CREDIT",
 ]
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"

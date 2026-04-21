@@ -58,16 +58,32 @@ lst = split_window(
 The default split-window emissivity method is `gopinadh-2018`, because it provides band-specific emissivity for bands 10 and 11.
 `avdan-2016` is blocked in `split_window(...)` because it is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` instead.
 
-For `lst_method="du-2015"`, `water_vapor` represents atmospheric column water vapor in `g/cm2`.
-When `water_vapor=None`, the implementation uses Du et al.'s all-CWV coefficient set for `[0.0, 6.3] g/cm2`.
-When `water_vapor` is provided, the method selects the matching Du et al. CWV sub-range:
+For `lst_method="du-2015"` or `lst_method="jimenez-munoz-2014"`, `water_vapor` represents atmospheric column water vapor in `g/cm2`.
+For `du-2015`, use a single scene-level value. When `water_vapor=None`, the implementation uses Du et al.'s all-CWV coefficient set for `[0.0, 6.3] g/cm2`.
+When `water_vapor` is provided for `du-2015`, the method selects the matching Du et al. CWV sub-range:
 - `[0.0, 2.5]`
 - `[2.0, 3.5]`
 - `[3.0, 4.5]`
 - `[4.0, 5.5]`
 - `[5.0, 6.3]`
 
-Current non-Du split-window methods do not use `water_vapor`.
+`jimenez-munoz-2014` requires `water_vapor` and accepts either a single scene-level value or a raster with the same shape as the brightness temperature arrays. Use `water_vapor_wang_2015(...)` for pixel-by-pixel water vapor or provide an external estimate.
+Current non-Du/Jimenez split-window methods do not use `water_vapor`.
+
+### `water_vapor_wang_2015(brightness_band_10, brightness_band_11, ndvi_image, window_size=5, group_count=5)`
+
+Estimates precipitable water vapor (`PWV`) in `g/cm2` using the NDVI-based split-window covariance-variance ratio method from Wang et al. (2015).
+This method uses Landsat 8 TIRS brightness temperatures for bands 10 and 11 plus NDVI. It returns a water vapor array with the same shape as the input images.
+
+```python
+water_vapor = water_vapor_wang_2015(
+    brightness_band_10=brightness_10,
+    brightness_band_11=brightness_11,
+    ndvi_image=ndvi_image,
+)
+```
+
+The resulting `water_vapor` raster can be used directly in `split_window(..., lst_method="jimenez-munoz-2014", water_vapor=water_vapor)`. For `du-2015`, provide a single scene-level value such as the mean of a water vapor raster if you want to select a specific CWV coefficient sub-range.
 
 ### `list_algorithms()`
 
@@ -87,10 +103,15 @@ Returns a catalog of discovered families, algorithm metadata, and original-libra
 
 ### `split_window`
 
+- `jimenez-munoz-2014`
 - `du-2015`
 - `kerr-1992`
 - `price-1984`
 - `sobrino-1993`
+
+### `water_vapor`
+
+- `wang-2015`
 
 ### `thermal`
 
@@ -98,7 +119,7 @@ Returns a catalog of discovered families, algorithm metadata, and original-libra
 
 Sensor constants are stored under `pylstemp/sensors/`.
 
-### `vegetation`
+### `spectral_indices`
 
 - `ndvi`
 

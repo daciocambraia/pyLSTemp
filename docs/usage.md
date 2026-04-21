@@ -11,6 +11,7 @@ from pylstemp import (
     brightness_band_11,
     emissivity_band_10,
     emissivity_band_11,
+    water_vapor_wang_2015,
     single_window,
     split_window,
     list_algorithms,
@@ -108,7 +109,8 @@ lst_split = split_window(
 
 `split_window(...)` blocks `emissivity_method="avdan-2016"` because Avdan is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` for split-window workflows.
 
-Only `lst_method="du-2015"` uses `water_vapor`. It is optional; if omitted, the method uses the general Du et al. coefficient range `[0.0, 6.3] g/cm2`.
+`lst_method="du-2015"` can use a single scene-level `water_vapor` value, but it is optional; if omitted, the method uses the general Du et al. coefficient range `[0.0, 6.3] g/cm2`.
+`lst_method="jimenez-munoz-2014"` requires `water_vapor` and accepts either a single value or a raster with the same shape as the brightness temperature arrays.
 
 ```python
 lst_du = split_window(
@@ -124,7 +126,35 @@ lst_du = split_window(
 
 Use `water_vapor` in `g/cm2` when you have an atmospheric column water vapor estimate and want the method to select the corresponding Du et al. coefficient sub-range.
 
-## 6. Inspect available families and methods
+## 6. Estimate water vapor from Landsat 8 imagery
+
+```python
+from pylstemp import water_vapor_wang_2015
+
+water_vapor = water_vapor_wang_2015(
+    brightness_band_10=brightness_10,
+    brightness_band_11=brightness_11,
+    ndvi_image=ndvi_image,
+    window_size=5,
+    group_count=5,
+)
+```
+
+`wang-2015` estimates precipitable water vapor from Landsat 8 TIRS bands 10 and 11 using NDVI-based local grouping. The result is a raster and can be passed directly to `jimenez-munoz-2014` for pixel-by-pixel correction.
+
+```python
+lst_jimenez = split_window(
+    brightness_band_10=brightness_10,
+    brightness_band_11=brightness_11,
+    band_4_red=band_4_red,
+    band_5_nir=band_5_nir,
+    lst_method="jimenez-munoz-2014",
+    emissivity_method="gopinadh-2018",
+    water_vapor=water_vapor,
+)
+```
+
+## 7. Inspect available families and methods
 
 ```python
 from pylstemp import list_algorithms
@@ -132,6 +162,7 @@ from pylstemp import list_algorithms
 catalog = list_algorithms()
 print(catalog.keys())
 print(catalog["split_window"].keys())
+print(catalog["water_vapor"].keys())
 ```
 
 ## Notes on invalid pixels

@@ -5,11 +5,11 @@ from pylstemp.algorithms.thermal import (
     brightness_band_10,
     brightness_band_11,
 )
-from pylstemp.algorithms.vegetation import NDVIAlgorithm, ndvi
+from pylstemp.algorithms.spectral_indices import NDVIAlgorithm, ndvi
 
 
 class TestDomains(unittest.TestCase):
-    def test_vegetation_family_exports_ndvi(self):
+    def test_spectral_indices_family_exports_ndvi(self):
         self.assertTrue(callable(ndvi))
         self.assertTrue(callable(NDVIAlgorithm))
 
