@@ -3,15 +3,29 @@ import unittest
 import numpy as np
 
 from pylstemp import (
-    brightness_band_10,
-    brightness_band_11,
-    emissivity_band_10,
-    emissivity_band_11,
+    brightness,
+    emissivity,
     single_window,
     spectral_indices,
     split_window,
     water_vapor,
 )
+
+
+def brightness_band_10(thermal_band, **kwargs):
+    return brightness(thermal_band, band="band_10", **kwargs)
+
+
+def brightness_band_11(thermal_band, **kwargs):
+    return brightness(thermal_band, band="band_11", **kwargs)
+
+
+def emissivity_band_10(ndvi_image, **kwargs):
+    return emissivity(ndvi_image, band="band_10", **kwargs)
+
+
+def emissivity_band_11(ndvi_image, **kwargs):
+    return emissivity(ndvi_image, band="band_11", **kwargs)
 
 
 class TestPublicApi(unittest.TestCase):

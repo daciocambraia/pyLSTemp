@@ -28,10 +28,57 @@ CELSIUS_SCALER = 273.15
 SINGLE_CHANNEL_EMISSIVITY_METHODS = {"avdan-2016"}
 
 
+def _normalize_thermal_band(band) -> str:
+    """Normalize supported thermal band identifiers."""
+
+    aliases = {
+        10: "band_10",
+        "10": "band_10",
+        "band_10": "band_10",
+        "b10": "band_10",
+        11: "band_11",
+        "11": "band_11",
+        "band_11": "band_11",
+        "b11": "band_11",
+    }
+    try:
+        return aliases[band]
+    except KeyError as exc:
+        raise ValueError("band must be 'band_10' or 'band_11'.") from exc
+
+
 def spectral_indices(indice: str, **kwargs):
     """Compute a spectral index selected by name."""
 
     return spectral_indices_registry.create(indice)(**kwargs)
+
+
+def brightness(
+    thermal_band,
+    band: str,
+    sensor: str,
+    rad_gain: float | None = None,
+    rad_bias: float | None = None,
+    mask=None,
+) -> np.ndarray:
+    """Compute brightness temperature for the selected thermal band."""
+
+    normalized_band = _normalize_thermal_band(band)
+    if normalized_band == "band_10":
+        return brightness_band_10(
+            thermal_band,
+            sensor=sensor,
+            rad_gain=rad_gain,
+            rad_bias=rad_bias,
+            mask=mask,
+        )
+    return brightness_band_11(
+        thermal_band,
+        sensor=sensor,
+        rad_gain=rad_gain,
+        rad_bias=rad_bias,
+        mask=mask,
+    )
 
 
 def _emissivity_pair(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
@@ -64,6 +111,23 @@ def emissivity_band_11(ndvi_image, band_4_red=None, emissivity_method: str = "av
         emissivity_method=emissivity_method,
     )
     return emissivity_11
+
+
+def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = "avdan-2016"):
+    """Compute emissivity for the selected thermal band workflow."""
+
+    normalized_band = _normalize_thermal_band(band)
+    if normalized_band == "band_10":
+        return emissivity_band_10(
+            ndvi_image,
+            band_4_red=band_4_red,
+            emissivity_method=emissivity_method,
+        )
+    return emissivity_band_11(
+        ndvi_image,
+        band_4_red=band_4_red,
+        emissivity_method=emissivity_method,
+    )
 
 
 def single_window(

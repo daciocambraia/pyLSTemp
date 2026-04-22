@@ -9,8 +9,8 @@ Repository: <https://github.com/daciocambraia/pyLSTemp>
 
 ## Goals
 
-- preserve the public workflow: `spectral_indices`, `brightness_band_10`, `brightness_band_11`, `emissivity_band_10`, `emissivity_band_11`, `single_window`, `split_window`
-- make `brightness_band_10(...)` and `brightness_band_11(...)` the explicit radiometric conversion steps before LST workflows
+- preserve the public workflow: `spectral_indices`, `brightness`, `emissivity`, `water_vapor`, `single_window`, `split_window`
+- make `brightness(...)` the explicit radiometric conversion step before LST workflows
 - support Landsat 8 and Landsat 9 through a `sensor` argument plus sensor-specific constants
 - keep the published formulas and bibliographic references used by the original project
 - make new algorithms easy to add by dropping a new `.py` file into the correct family folder
@@ -44,10 +44,8 @@ pyLSTemp/
 ```python
 from pylstemp import (
     spectral_indices,
-    brightness_band_10,
-    brightness_band_11,
-    emissivity_band_10,
-    emissivity_band_11,
+    brightness,
+    emissivity,
     water_vapor,
     single_window,
     split_window,
@@ -58,11 +56,11 @@ from pylstemp import (
 The public functions stay small and stable while the implementations live in modular families under `pylstemp/algorithms/`.
 Sensor-specific thermal constants live under `pylstemp/sensors/`.
 
-`brightness_band_10(...)` and `brightness_band_11(...)` are the explicit radiometric conversion steps. `single_window(...)` and `split_window(...)` expect brightness temperature arrays that were computed beforehand.
+`brightness(...)` is the explicit radiometric conversion step. `single_window(...)` and `split_window(...)` expect brightness temperature arrays that were computed beforehand.
 
 Typical thermal workflow:
 
-1. compute `brightness_band_10(...)` and, when needed, `brightness_band_11(...)` using `sensor`, `rad_gain`, and `rad_bias`
+1. compute `brightness(..., band="band_10")` and, when needed, `brightness(..., band="band_11")` using `sensor`, `rad_gain`, and `rad_bias`
 2. optionally estimate water vapor with `water_vapor(method="wang-2015", ...)`
 3. pass the resulting brightness temperature arrays into `single_window(...)` or `split_window(...)`
 

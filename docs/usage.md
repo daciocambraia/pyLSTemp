@@ -7,10 +7,8 @@ This guide shows the main workflows exposed by the public API.
 ```python
 from pylstemp import (
     spectral_indices,
-    brightness_band_10,
-    brightness_band_11,
-    emissivity_band_10,
-    emissivity_band_11,
+    brightness,
+    emissivity,
     water_vapor,
     single_window,
     split_window,
@@ -38,19 +36,21 @@ ndvi_image = spectral_indices(
 
 ```python
 import numpy as np
-from pylstemp import brightness_band_10, brightness_band_11
+from pylstemp import brightness
 
 band_10 = np.full((3, 3), 1000.0)
 band_11 = np.full((3, 3), 900.0)
 sensor = "landsat_8"
 
-brightness_10 = brightness_band_10(
+brightness_10 = brightness(
     band_10,
+    band="band_10",
     sensor=sensor,
 )
 
-brightness_11 = brightness_band_11(
+brightness_11 = brightness(
     band_11,
+    band="band_11",
     sensor=sensor,
 )
 ```
@@ -60,16 +60,18 @@ To override the default sensor metadata values, pass `rad_gain=` and `rad_bias=`
 ## 3. Compute emissivity
 
 ```python
-from pylstemp import emissivity_band_10, emissivity_band_11
+from pylstemp import emissivity
 
-emissivity_10 = emissivity_band_10(
+emissivity_10 = emissivity(
     ndvi_image,
+    band="band_10",
     band_4_red=band_4_red,
     emissivity_method="avdan-2016",
 )
 
-emissivity_11 = emissivity_band_11(
+emissivity_11 = emissivity(
     ndvi_image,
+    band="band_11",
     band_4_red=band_4_red,
     emissivity_method="avdan-2016",
 )
@@ -174,7 +176,7 @@ print(catalog["water_vapor"].keys())
 
 - zero values are treated as invalid in the thermal workflow mask
 - `NaN` values are propagated through the calculations
-- manual masks passed to `spectral_indices(indice="ndvi", ...)`, `brightness_band_10()` or `brightness_band_11()` must be boolean
+- manual masks passed to `spectral_indices(indice="ndvi", ...)` or `brightness(...)` must be boolean
 - `sensor` must be `landsat_8` or `landsat_9`
 - `rad_gain` and `rad_bias` default to the sensor metadata values and can be overridden manually in the brightness temperature function call
 - these radiance values are different from the sensor constants `K1` and `K2`

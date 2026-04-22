@@ -1,10 +1,8 @@
 """Public package interface for pyLSTemp."""
 
 from .api import (
-    brightness_band_10,
-    brightness_band_11,
-    emissivity_band_10,
-    emissivity_band_11,
+    brightness,
+    emissivity,
     list_algorithms,
     spectral_indices,
     single_window,
@@ -14,10 +12,8 @@ from .api import (
 from .references import ORIGINAL_LIBRARY_CREDIT
 
 __all__ = [
-    "brightness_band_10",
-    "brightness_band_11",
-    "emissivity_band_10",
-    "emissivity_band_11",
+    "brightness",
+    "emissivity",
     "list_algorithms",
     "spectral_indices",
     "single_window",
@@ -26,4 +22,4 @@ __all__ = [
     "ORIGINAL_LIBRARY_CREDIT",
 ]
 
-__version__ = "1.5.0"
+__version__ = "1.6.0"
