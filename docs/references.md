@@ -30,8 +30,14 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 
 - `jimenez-munoz-2014`
   Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. IEEE Geoscience and Remote Sensing Letters, 2014.
+
 - `du-2015`
-  Du, C., Ren, H., Qin, Q., Meng, J., and Zhao, S. A practical split-window algorithm for estimating land surface temperature from Landsat 8 data. Remote Sensing, 2015.
+  - **Method:** `du-2015`
+  - **Reference:** Du et al. (2015)
+  - **Title:** A practical split-window algorithm for estimating land surface temperature from Landsat 8 data
+  - **Journal:** Remote Sensing. 2015, 7, 647-665
+  - **DOI:** 10.3390/rs70100647
+
 - `sobrino-1993`
   Sobrino, J. A., Caselles, V., and Coll, C. Theoretical split window algorithms for determining the actual surface temperature. Il Nuovo Cimento, 1993.
 - `kerr-1992`
