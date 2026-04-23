@@ -4,7 +4,7 @@ import numpy as np
 
 from pylstemp.api import brightness, emissivity, spectral_index
 from pylstemp.validation import build_mask_from, normalize_temperature_unit
-from pylstemp.exceptions import InvalidMaskError
+from pylstemp.exceptions import InvalidMaskError, InvalidTemperatureUnitError
 
 
 class TestValidation(unittest.TestCase):
@@ -35,5 +35,9 @@ class TestValidation(unittest.TestCase):
         self.assertTrue(mask[0, 1])
         self.assertTrue(mask[1, 0])
 
-    def test_temperature_unit_normalization_preserves_legacy_spelling(self):
-        self.assertEqual(normalize_temperature_unit("celcius"), "celsius")
+    def test_temperature_unit_normalization_accepts_celsius(self):
+        self.assertEqual(normalize_temperature_unit("celsius"), "celsius")
+
+    def test_temperature_unit_normalization_rejects_invalid_unit(self):
+        with self.assertRaises(InvalidTemperatureUnitError):
+            normalize_temperature_unit("fahrenheit")

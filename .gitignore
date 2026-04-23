@@ -1,4 +1,5 @@
 .pytest_cache/
+.ipynb_checkpoints/
 .coverage
 build/
 dist/
@@ -7,4 +8,5 @@ __pycache__/
 *.py[cod]
 venv/
 .venv/
-
+article/*.pdf
+exemples/data/*.tif

@@ -127,11 +127,6 @@ def normalize_temperature_unit(unit: str) -> str:
     str
         Normalized unit, either ``"kelvin"`` or ``"celsius"``.
 
-    Notes
-    -----
-    - The misspelling ``"celcius"`` is accepted for backward compatibility
-      and normalized to ``"celsius"``.
     """
     assert_temperature_unit(unit)
-    normalized = unit.lower()
-    return "celsius" if normalized == "celcius" else normalized
+    return unit.lower()

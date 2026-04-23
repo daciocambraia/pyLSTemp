@@ -356,9 +356,8 @@ def single_window(
         Single-channel LST method to use.
     emissivity_method : str, default="avdan-2016"
         Emissivity method used before LST computation.
-    unit : {"kelvin", "celsius", "celcius"}, default="kelvin"
-        Output temperature unit. The misspelling `"celcius"` is accepted
-        for backward compatibility and normalized to `"celsius"`.
+    unit : {"kelvin", "celsius"}, default="kelvin"
+        Output temperature unit.
 
     Returns
     -------
@@ -437,9 +436,8 @@ def split_window(
         `"price-1984"`.
     emissivity_method : str, default="gopinadh-2018"
         Emissivity method used before LST computation.
-    unit : {"kelvin", "celsius", "celcius"}, default="kelvin"
-        Output temperature unit. The misspelling `"celcius"` is accepted
-        for backward compatibility and normalized to `"celsius"`.
+    unit : {"kelvin", "celsius"}, default="kelvin"
+        Output temperature unit.
     water_vapor : float or array-like, optional
         Atmospheric column water vapor in g/cm2. Required by
         `"jimenez-munoz-2014"` and optional for `"du-2015"`.
