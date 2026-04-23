@@ -43,7 +43,8 @@ ALGORITHM_SPEC = AlgorithmSpec(
     name="Avdan 2016 emissivity",
     reference="Avdan and Jovanovska (2016)",
     citation=(
-        "Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land "
-        "surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016."
+        "Avdan, U., and Jovanovska, G."
+        "Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data."
+        "Journal of Sensors, 2016."
     ),
 )

@@ -9,7 +9,7 @@ Repository: <https://github.com/daciocambraia/pyLSTemp>
 
 ## Goals
 
-- preserve the public workflow: `spectral_indices`, `brightness`, `emissivity`, `water_vapor`, `single_window`, `split_window`
+- preserve the public workflow: `spectral_index`, `brightness`, `emissivity`, `water_vapor`, `single_window`, `split_window`
 - make `brightness(...)` the explicit radiometric conversion step before LST workflows
 - support Landsat 8 and Landsat 9 through a `sensor` argument plus sensor-specific constants
 - keep the published formulas and bibliographic references used by the original project
@@ -32,7 +32,7 @@ pyLSTemp/
       single_channel/
       split_window/
       thermal/
-      spectral_indices/
+      spectral_index/
       radiative_transfer/
   docs/
   tests/
@@ -43,7 +43,7 @@ pyLSTemp/
 
 ```python
 from pylstemp import (
-    spectral_indices,
+    spectral_index,
     brightness,
     emissivity,
     water_vapor,
@@ -60,9 +60,10 @@ Sensor-specific thermal constants live under `pylstemp/sensors/`.
 
 Typical thermal workflow:
 
-1. compute `brightness(..., band="band_10")` and, when needed, `brightness(..., band="band_11")` using `sensor`, `rad_gain`, and `rad_bias`
-2. optionally estimate water vapor with `water_vapor(method="wang-2015", ...)`
-3. pass the resulting brightness temperature arrays into `single_window(...)` or `split_window(...)`
+1. compute vegetation indices with `spectral_index(index="ndvi", ...)` or `spectral_index(index="evi", ...)`
+2. compute `brightness(..., band="band_10")` and, when needed, `brightness(..., band="band_11")` using `sensor`, `rad_gain`, and `rad_bias`
+3. optionally estimate water vapor with `water_vapor(method="wang-2015", ...)`
+4. pass the resulting brightness temperature arrays into `single_window(...)` or `split_window(...)`
 
 ## Modular architecture
 

@@ -6,7 +6,7 @@ This guide shows the main workflows exposed by the public API.
 
 ```python
 from pylstemp import (
-    spectral_indices,
+    spectral_index,
     brightness,
     emissivity,
     water_vapor,
@@ -20,16 +20,14 @@ from pylstemp import (
 
 ```python
 import numpy as np
-from pylstemp import spectral_indices
+from pylstemp import spectral_index
 
-band_4_red = np.array([[0.2, 0.3], [0.4, 0.5]])
-band_5_nir = np.array([[0.6, 0.7], [0.8, 0.9]])
+red = np.array([[0.2, 0.3], [0.4, 0.5]])
+nir = np.array([[0.6, 0.7], [0.8, 0.9]])
+blue = np.array([[0.1, 0.1], [0.2, 0.2]])
 
-ndvi_image = spectral_indices(
-    indice="ndvi",
-    band_5_nir=band_5_nir,
-    band_4_red=band_4_red,
-)
+ndvi_image = spectral_index(index="ndvi", nir=nir, red=red)
+evi_image = spectral_index(index="evi", nir=nir, red=red, blue=blue)
 ```
 
 ## 2. Compute brightness temperature
@@ -65,14 +63,14 @@ from pylstemp import emissivity
 emissivity_10 = emissivity(
     ndvi_image,
     band="band_10",
-    band_4_red=band_4_red,
+    band_4_red=red,
     emissivity_method="avdan-2016",
 )
 
 emissivity_11 = emissivity(
     ndvi_image,
     band="band_11",
-    band_4_red=band_4_red,
+    band_4_red=red,
     emissivity_method="avdan-2016",
 )
 ```
@@ -86,8 +84,8 @@ from pylstemp import single_window
 
 lst_single = single_window(
     brightness_band_10=brightness_10,
-    band_4_red=band_4_red,
-    band_5_nir=band_5_nir,
+    band_4_red=red,
+    band_5_nir=nir,
     lst_method="mono-window-2016",
     emissivity_method="avdan-2016",
     unit="kelvin",
@@ -105,8 +103,8 @@ from pylstemp import split_window
 lst_split = split_window(
     brightness_band_10=brightness_10,
     brightness_band_11=brightness_11,
-    band_4_red=band_4_red,
-    band_5_nir=band_5_nir,
+    band_4_red=red,
+    band_5_nir=nir,
     lst_method="du-2015",
     emissivity_method="gopinadh-2018",
     unit="celsius",
@@ -122,8 +120,8 @@ lst_split = split_window(
 lst_du = split_window(
     brightness_band_10=brightness_10,
     brightness_band_11=brightness_11,
-    band_4_red=band_4_red,
-    band_5_nir=band_5_nir,
+    band_4_red=red,
+    band_5_nir=nir,
     lst_method="du-2015",
     emissivity_method="gopinadh-2018",
     water_vapor=3.8,
@@ -153,8 +151,8 @@ water = water_vapor(
 lst_jimenez = split_window(
     brightness_band_10=brightness_10,
     brightness_band_11=brightness_11,
-    band_4_red=band_4_red,
-    band_5_nir=band_5_nir,
+    band_4_red=red,
+    band_5_nir=nir,
     lst_method="jimenez-munoz-2014",
     emissivity_method="gopinadh-2018",
     water_vapor=water,
@@ -176,7 +174,7 @@ print(catalog["water_vapor"].keys())
 
 - zero values are treated as invalid in the thermal workflow mask
 - `NaN` values are propagated through the calculations
-- manual masks passed to `spectral_indices(indice="ndvi", ...)` or `brightness(...)` must be boolean
+- manual masks passed to `spectral_index(index="ndvi", ...)` or `brightness(...)` must be boolean
 - `sensor` must be `landsat_8` or `landsat_9`
 - `rad_gain` and `rad_bias` default to the sensor metadata values and can be overridden manually in the brightness temperature function call
 - these radiance values are different from the sensor constants `K1` and `K2`

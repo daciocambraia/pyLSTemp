@@ -57,8 +57,8 @@ ALGORITHM_SPEC = AlgorithmSpec(
     name="Xiaolei 2014 emissivity",
     reference="Yu, Guo and Wu (2014)",
     citation=(
-        "Yu, X., Guo, X., and Wu, Z. Land surface temperature retrieval from "
-        "Landsat 8 TIRS - comparison between radiative transfer equation-based "
-        "method, split window algorithm and single channel method. Remote Sensing, 2014."
+        "Yu, X., Guo, X., and Wu, Z."
+        "Land surface temperature retrieval from Landsat 8 TIRS - comparison between radiative transfer equation-based method, split window algorithm and single channel method."
+        "Remote Sensing, 2014."
     ),
 )

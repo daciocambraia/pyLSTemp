@@ -11,6 +11,9 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 
 - `ndvi`
   Rouse, J. W., Haas, R. H., Schell, J. A., and Deering, D. W. Monitoring vegetation systems in the Great Plains with ERTS. NASA SP-351, 1974.
+- `evi`
+  Huete, A. R., Liu, H. Q., Batchily, K., and van Leeuwen, W. A comparison of vegetation indices over a global set of TM images for EOS-MODIS. Remote Sensing of Environment, 1997.
+  The article names this equation SARVI2; pyLSTemp exposes it as EVI because the implemented coefficients match the common enhanced vegetation index structure: `2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))`.
 
 ## Thermal
 

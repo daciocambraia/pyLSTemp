@@ -10,7 +10,7 @@ Example families:
 - `pylstemp/algorithms/single_channel/`
 - `pylstemp/algorithms/split_window/`
 - `pylstemp/algorithms/thermal/`
-- `pylstemp/algorithms/spectral_indices/`
+- `pylstemp/algorithms/spectral_index/`
 - `pylstemp/algorithms/radiative_transfer/`
 
 ### Steps
@@ -71,7 +71,7 @@ Because `pylstemp/algorithms/__init__.py` discovers families automatically, the 
 
 You only need to touch `pylstemp/api.py` if the new family needs a dedicated top-level public function such as:
 
-- `spectral_indices(...)`
+- `spectral_index(...)`
 - `brightness(...)`
 - `emissivity(...)`
 - `single_window(...)`

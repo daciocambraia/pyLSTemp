@@ -12,8 +12,8 @@ from .algorithms.thermal import (
     brightness_band_10,
     brightness_band_11,
 )
-from .algorithms.spectral_indices import ndvi as _ndvi
-from .algorithms.spectral_indices import spectral_indices_registry
+from .algorithms.spectral_index import ndvi as _ndvi
+from .algorithms.spectral_index import spectral_index_registry
 from .algorithms.water_vapor import water_vapor_registry
 from .exceptions import InputShapesNotEqual
 from .references import ORIGINAL_LIBRARY_CREDIT
@@ -47,10 +47,10 @@ def _normalize_thermal_band(band) -> str:
         raise ValueError("band must be 'band_10' or 'band_11'.") from exc
 
 
-def spectral_indices(indice: str, **kwargs):
+def spectral_index(index: str, **kwargs):
     """Compute a spectral index selected by name."""
 
-    return spectral_indices_registry.create(indice)(**kwargs)
+    return spectral_index_registry.create(index)(**kwargs)
 
 
 def brightness(
@@ -151,7 +151,7 @@ def single_window(
     )
 
     mask = build_mask_from(brightness_10)
-    ndvi_image = _ndvi(nir, red, mask=mask)
+    ndvi_image = _ndvi(nir=nir, red=red, mask=mask)
     emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 
     result = single_channel_registry.create(lst_method)(
@@ -193,7 +193,7 @@ def split_window(
     )
 
     mask = build_mask_from(brightness_10)
-    ndvi_image = _ndvi(nir, red, mask=mask)
+    ndvi_image = _ndvi(nir=nir, red=red, mask=mask)
     emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
     emissivity_11 = emissivity_band_11(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 

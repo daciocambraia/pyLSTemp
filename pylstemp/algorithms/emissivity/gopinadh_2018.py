@@ -30,8 +30,8 @@ ALGORITHM_SPEC = AlgorithmSpec(
     name="Gopinadh 2018 emissivity",
     reference="Rongali et al. (2018)",
     citation=(
-        "Rongali, G., et al. Split-window algorithm for retrieval of land surface "
-        "temperature using Landsat 8 thermal infrared data. Journal of "
-        "Geovisualization and Spatial Analysis, 2018."
+        "Rongali, G., et al."
+        "Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data."
+        "Journal of Geovisualization and Spatial Analysis, 2018."
     ),
 )

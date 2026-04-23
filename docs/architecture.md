@@ -16,7 +16,7 @@ pylstemp/
     single_channel/
     split_window/
     thermal/
-    spectral_indices/
+    spectral_index/
     radiative_transfer/
 ```
 

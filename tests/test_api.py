@@ -6,7 +6,7 @@ from pylstemp import (
     brightness,
     emissivity,
     single_window,
-    spectral_indices,
+    spectral_index,
     split_window,
     water_vapor,
 )
@@ -33,6 +33,7 @@ class TestPublicApi(unittest.TestCase):
         # Small deterministic inputs make the formulas easy to validate in tests.
         self.band_10 = np.full((4, 4), 1000.0)
         self.band_11 = np.full((4, 4), 900.0)
+        self.band_2 = np.full((4, 4), 0.1)
         self.band_4 = np.full((4, 4), 0.2)
         self.band_5 = np.full((4, 4), 0.6)
         self.rad_gain_band_10 = 0.0003342
@@ -43,12 +44,17 @@ class TestPublicApi(unittest.TestCase):
         self.sensor_9 = "landsat_9"
 
     def test_ndvi_returns_expected_shape(self):
-        output = spectral_indices(
-            indice="ndvi",
-            band_5_nir=self.band_5,
-            band_4_red=self.band_4,
+        output = spectral_index(index="ndvi", nir=self.band_5, red=self.band_4)
+        self.assertEqual(output.shape, self.band_5.shape)
+
+    def test_evi_returns_expected_shape_and_values(self):
+        output = spectral_index(index="evi", nir=self.band_5, red=self.band_4, blue=self.band_2)
+        expected = 2.5 * (
+            (self.band_5 - self.band_4)
+            / (self.band_5 + (6.0 * self.band_4) - (7.5 * self.band_2) + 1.0)
         )
         self.assertEqual(output.shape, self.band_5.shape)
+        np.testing.assert_allclose(output, expected)
 
     def test_individual_brightness_helpers_preserve_shape(self):
         brightness_10 = brightness_band_10(
@@ -127,11 +133,7 @@ class TestPublicApi(unittest.TestCase):
         self.assertFalse(np.allclose(default_output, custom_output))
 
     def test_individual_emissivity_helpers_preserve_shape(self):
-        ndvi_image = spectral_indices(
-            indice="ndvi",
-            band_5_nir=self.band_5,
-            band_4_red=self.band_4,
-        )
+        ndvi_image = spectral_index(index="ndvi", nir=self.band_5, red=self.band_4)
         output_10 = emissivity_band_10(
             ndvi_image,
             band_4_red=self.band_4,

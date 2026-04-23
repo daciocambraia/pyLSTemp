@@ -2,20 +2,28 @@
 
 ## Public functions
 
-### `spectral_indices(indice, **kwargs)`
+### `spectral_index(index, **kwargs)`
 
 Computes a spectral index selected by name.
 Currently supported:
 
-- `indice="ndvi"` with `band_5_nir`, `band_4_red`, and optional `mask`
+- `index="ndvi"` with `nir`, `red`, and optional `mask`
+- `index="evi"` with `nir`, `red`, `blue`, and optional `mask`
 
 Example:
 
 ```python
-ndvi_image = spectral_indices(
-    indice="ndvi",
-    band_5_nir=band_5_nir,
-    band_4_red=band_4_red,
+ndvi_image = spectral_index(
+    index="ndvi",
+    nir=nir,
+    red=red,
+)
+
+evi_image = spectral_index(
+    index="evi",
+    nir=nir,
+    red=red,
+    blue=blue,
 )
 ```
 
@@ -55,8 +63,8 @@ Example: use `lst_method="du-2015"` for the practical Du et al. split-window wor
 lst = split_window(
     brightness_band_10=brightness_10,
     brightness_band_11=brightness_11,
-    band_4_red=band_4_red,
-    band_5_nir=band_5_nir,
+    band_4_red=red,
+    band_5_nir=nir,
     lst_method="du-2015",
 )
 ```
@@ -130,9 +138,10 @@ Returns a catalog of discovered families, algorithm metadata, and original-libra
 
 Sensor constants are stored under `pylstemp/sensors/`.
 
-### `spectral_indices`
+### `spectral_index`
 
 - `ndvi`
+- `evi`
 
 ### `radiative_transfer`
 

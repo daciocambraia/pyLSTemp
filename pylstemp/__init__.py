@@ -4,7 +4,7 @@ from .api import (
     brightness,
     emissivity,
     list_algorithms,
-    spectral_indices,
+    spectral_index,
     single_window,
     split_window,
     water_vapor,
@@ -15,11 +15,11 @@ __all__ = [
     "brightness",
     "emissivity",
     "list_algorithms",
-    "spectral_indices",
+    "spectral_index",
     "single_window",
     "split_window",
     "water_vapor",
     "ORIGINAL_LIBRARY_CREDIT",
 ]
 
-__version__ = "1.6.0"
+__version__ = "1.7.0"
