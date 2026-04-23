@@ -26,7 +26,21 @@ class InvalidTemperatureUnitError(PyLandTempError):
 
 
 def assert_required_keywords_provided(keywords, **kwargs):
-    """Compatibility helper kept for algorithm classes."""
+    """
+    Validate that required keyword arguments are present.
+
+    Parameters
+    ----------
+    keywords : iterable of str
+        Required keyword names.
+    **kwargs
+        Keyword arguments provided by the caller.
+
+    Raises
+    ------
+    KeywordArgumentError
+        If any required keyword is missing or set to None.
+    """
     for keyword in keywords:
         if keyword not in kwargs or kwargs[keyword] is None:
             raise KeywordArgumentError(
@@ -35,7 +49,20 @@ def assert_required_keywords_provided(keywords, **kwargs):
 
 
 def assert_temperature_unit(unit: str) -> None:
-    """Compatibility helper that validates temperature units."""
+    """
+    Validate a requested temperature unit.
+
+    Parameters
+    ----------
+    unit : str
+        Requested output unit.
+
+    Raises
+    ------
+    InvalidTemperatureUnitError
+        If the unit is not kelvin, celsius, or the accepted legacy spelling
+        celcius.
+    """
     normalized = unit.lower()
     if normalized not in {"kelvin", "celsius", "celcius"}:
         raise InvalidTemperatureUnitError(

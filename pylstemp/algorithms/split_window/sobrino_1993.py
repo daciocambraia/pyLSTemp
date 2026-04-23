@@ -8,9 +8,42 @@ from .base import SplitWindowParentLST
 
 
 class SplitWindowSobrino1993LST(SplitWindowParentLST):
-    """Sobrino 1993 split-window LST."""
+    """
+    Compute theoretical split-window LST from Sobrino et al. (1993).
+
+    The method uses Band 10 and Band 11 brightness temperatures together with
+    separate emissivity estimates for both bands.
+
+    Notes
+    -----
+    - Brightness temperature and emissivity must be computed before calling
+      this method.
+    - The implementation follows the Sobrino split-window equation currently
+      documented by the package.
+    """
 
     def _compute_lst(self, **kwargs):
+        """
+        Compute raw Sobrino et al. split-window LST.
+
+        Parameters
+        ----------
+        brightness_temperature_10 : array-like
+            Band 10 brightness temperature in Kelvin.
+        brightness_temperature_11 : array-like
+            Band 11 brightness temperature in Kelvin.
+        emissivity_10 : array-like
+            Band 10 land-surface emissivity.
+        emissivity_11 : array-like
+            Band 11 land-surface emissivity.
+        mask : array-like of bool or None
+            Boolean mask where True values indicate invalid pixels.
+
+        Returns
+        -------
+        tuple
+            Raw LST image in Kelvin and validated mask.
+        """
         required_keywords = [
             "emissivity_10",
             "emissivity_11",

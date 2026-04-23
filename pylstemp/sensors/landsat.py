@@ -7,7 +7,30 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class LandsatThermalConstants:
-    """Thermal constants needed to convert Landsat radiance to brightness temperature."""
+    """
+    Thermal constants for Landsat brightness-temperature conversion.
+
+    Attributes
+    ----------
+    sensor : str
+        Sensor key.
+    radiance_mult_band_10 : float
+        Default ``RADIANCE_MULT_BAND_10`` value.
+    radiance_mult_band_11 : float
+        Default ``RADIANCE_MULT_BAND_11`` value.
+    radiance_add_band_10 : float
+        Default ``RADIANCE_ADD_BAND_10`` value.
+    radiance_add_band_11 : float
+        Default ``RADIANCE_ADD_BAND_11`` value.
+    k1_constant_10 : float
+        Band 10 thermal calibration constant K1.
+    k1_constant_11 : float
+        Band 11 thermal calibration constant K1.
+    k2_constant_10 : float
+        Band 10 thermal calibration constant K2.
+    k2_constant_11 : float
+        Band 11 thermal calibration constant K2.
+    """
 
     sensor: str
     radiance_mult_band_10: float
@@ -47,7 +70,24 @@ LANDSAT_THERMAL_CONSTANTS: dict[str, LandsatThermalConstants] = {
 
 
 def get_landsat_thermal_constants(sensor: str) -> LandsatThermalConstants:
-    """Return thermal constants for a supported Landsat sensor."""
+    """
+    Return thermal constants for a supported Landsat sensor.
+
+    Parameters
+    ----------
+    sensor : str
+        Sensor key, such as ``"landsat_8"`` or ``"landsat_9"``.
+
+    Returns
+    -------
+    LandsatThermalConstants
+        Sensor-specific radiance and thermal calibration constants.
+
+    Raises
+    ------
+    ValueError
+        If the sensor is not supported.
+    """
 
     normalized_sensor = sensor.strip().lower()
     if normalized_sensor not in LANDSAT_THERMAL_CONSTANTS:

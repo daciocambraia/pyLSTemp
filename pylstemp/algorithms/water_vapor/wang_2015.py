@@ -9,7 +9,19 @@ from ...validation import ensure_same_shape, to_float_array
 
 
 class WaterVaporWang2015:
-    """Retrieve precipitable water vapor from Landsat 8 TIRS brightness temperatures."""
+    """
+    Retrieve precipitable water vapor using Wang et al. (2015).
+
+    The method estimates atmospheric column water vapor from Band 10 and
+    Band 11 brightness temperatures using NDVI-based local windows.
+
+    Notes
+    -----
+    - Inputs must be spatially aligned and have the same shape.
+    - ``window_size`` controls the local moving window used around each pixel.
+    - ``group_count`` controls how each local NDVI window is divided into
+      vegetation groups before estimating water vapor.
+    """
 
     ndvi_soil = 0.2
     ndvi_vegetation = 0.5
@@ -24,6 +36,34 @@ class WaterVaporWang2015:
         window_size: int = 5,
         group_count: int = 5,
     ) -> np.ndarray:
+        """
+        Compute a pixel-wise precipitable water vapor image.
+
+        Parameters
+        ----------
+        brightness_band_10 : array-like
+            Band 10 brightness temperature in Kelvin.
+        brightness_band_11 : array-like
+            Band 11 brightness temperature in Kelvin.
+        ndvi_image : array-like
+            NDVI image used to group local pixels by vegetation condition.
+        window_size : int, default=5
+            Odd moving-window size in pixels. Must be greater than or equal
+            to 3.
+        group_count : int, default=5
+            Number of NDVI groups used inside each local window.
+
+        Returns
+        -------
+        ndarray
+            Pixel-wise precipitable water vapor in g/cm2.
+
+        Raises
+        ------
+        ValueError
+            If ``window_size`` is even or smaller than 3, or if
+            ``group_count`` is smaller than 1.
+        """
         bt_10 = to_float_array("brightness_band_10", brightness_band_10)
         bt_11 = to_float_array("brightness_band_11", brightness_band_11)
         ndvi = to_float_array("ndvi_image", ndvi_image)
@@ -53,6 +93,25 @@ class WaterVaporWang2015:
         return water_vapor
 
     def _window_water_vapor(self, bt_10, bt_11, ndvi, *, group_count: int) -> float:
+        """
+        Estimate water vapor for a local image window.
+
+        Parameters
+        ----------
+        bt_10 : ndarray
+            Local Band 10 brightness temperature window.
+        bt_11 : ndarray
+            Local Band 11 brightness temperature window.
+        ndvi : ndarray
+            Local NDVI window.
+        group_count : int
+            Number of NDVI groups used inside the local window.
+
+        Returns
+        -------
+        float
+            Weighted local water vapor estimate in g/cm2.
+        """
         valid = ~(np.isnan(bt_10) | np.isnan(bt_11) | np.isnan(ndvi))
         if np.count_nonzero(valid) < 2:
             return np.nan
@@ -88,6 +147,23 @@ class WaterVaporWang2015:
         return weighted_sum / pixel_count
 
     def _group_water_vapor(self, bt_10, bt_11, ndvi) -> tuple[float, int]:
+        """
+        Estimate water vapor for one NDVI group.
+
+        Parameters
+        ----------
+        bt_10 : ndarray
+            Band 10 brightness temperature values for the group.
+        bt_11 : ndarray
+            Band 11 brightness temperature values for the group.
+        ndvi : ndarray
+            NDVI values for the group.
+
+        Returns
+        -------
+        tuple
+            Water vapor estimate in g/cm2 and number of valid pixels used.
+        """
         if bt_10.size < 2:
             return np.nan, 0
 
@@ -125,6 +201,19 @@ class WaterVaporWang2015:
         return water_vapor, int(np.count_nonzero(valid))
 
     def _emissivity_ratio(self, ndvi: float) -> float:
+        """
+        Estimate the Band 11 to Band 10 emissivity ratio from NDVI.
+
+        Parameters
+        ----------
+        ndvi : float
+            Mean NDVI value for a local group.
+
+        Returns
+        -------
+        float
+            Estimated emissivity ratio.
+        """
         if ndvi < self.ndvi_soil:
             return 0.9939
         if ndvi > self.ndvi_vegetation:

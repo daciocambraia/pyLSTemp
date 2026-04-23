@@ -11,12 +11,19 @@ from ...validation import ensure_boolean_mask, ensure_same_shape, to_float_array
 
 
 class BrightnessTemperatureLandsat:
-    """Convert Landsat 8 or Landsat 9 thermal bands to brightness temperature.
+    """
+    Convert Landsat thermal bands to brightness temperature.
 
-    The ``sensor`` argument must be either ``"landsat_8"`` or ``"landsat_9"``.
-    Default radiance gain and bias values are loaded from the selected sensor metadata.
-    The user may override them in the function call if needed.
-    These radiance values are distinct from the sensor constants ``K1`` and ``K2``.
+    This class contains the band-specific conversion logic used by the
+    public ``brightness`` dispatcher.
+
+    Notes
+    -----
+    - Supported sensors are ``"landsat_8"`` and ``"landsat_9"``.
+    - Default radiance gain and bias values are loaded from sensor metadata.
+    - User-provided ``rad_gain`` and ``rad_bias`` override the defaults.
+    - Radiance gain/bias are different from the sensor constants ``K1`` and
+      ``K2``.
     """
 
     def compute_band_10(
@@ -27,6 +34,30 @@ class BrightnessTemperatureLandsat:
         rad_bias: float | None = None,
         mask=None,
     ) -> np.ndarray:
+        """
+        Compute brightness temperature for thermal Band 10.
+
+        Parameters
+        ----------
+        thermal_band : array-like
+            Thermal Band 10 image.
+        sensor : str
+            Landsat sensor name. Supported values are ``"landsat_8"`` and
+            ``"landsat_9"``.
+        rad_gain : float, optional
+            Radiance multiplicative factor, equivalent to
+            ``RADIANCE_MULT_BAND_10``. If omitted, the sensor default is used.
+        rad_bias : float, optional
+            Radiance additive factor, equivalent to ``RADIANCE_ADD_BAND_10``.
+            If omitted, the sensor default is used.
+        mask : array-like of bool, optional
+            Boolean mask where True values indicate invalid pixels.
+
+        Returns
+        -------
+        ndarray
+            Brightness temperature image in Kelvin.
+        """
         constants = get_landsat_thermal_constants(sensor)
         thermal_image = to_float_array("thermal_band", thermal_band)
 
@@ -54,6 +85,30 @@ class BrightnessTemperatureLandsat:
         rad_bias: float | None = None,
         mask=None,
     ) -> np.ndarray:
+        """
+        Compute brightness temperature for thermal Band 11.
+
+        Parameters
+        ----------
+        thermal_band : array-like
+            Thermal Band 11 image.
+        sensor : str
+            Landsat sensor name. Supported values are ``"landsat_8"`` and
+            ``"landsat_9"``.
+        rad_gain : float, optional
+            Radiance multiplicative factor, equivalent to
+            ``RADIANCE_MULT_BAND_11``. If omitted, the sensor default is used.
+        rad_bias : float, optional
+            Radiance additive factor, equivalent to ``RADIANCE_ADD_BAND_11``.
+            If omitted, the sensor default is used.
+        mask : array-like of bool, optional
+            Boolean mask where True values indicate invalid pixels.
+
+        Returns
+        -------
+        ndarray
+            Brightness temperature image in Kelvin.
+        """
         constants = get_landsat_thermal_constants(sensor)
         thermal_image = to_float_array("thermal_band", thermal_band)
 
@@ -80,13 +135,41 @@ def brightness_band_10(
     rad_bias: float | None = None,
     mask=None,
 ):
-    """Compute brightness temperature for Landsat thermal band 10.
+    """
+    Compute brightness temperature for Landsat thermal band 10.
 
-    Default values:
-    - ``landsat_8``: ``rad_gain=0.0003342``, ``rad_bias=0.1``
-    - ``landsat_9``: ``rad_gain=0.00038``, ``rad_bias=0.1``
+    Parameters
+    ----------
+    band_10 : array-like
+        Landsat thermal band 10 image.
+    sensor : str
+        Landsat sensor name. Supported values are `"landsat_8"` and
+        `"landsat_9"`.
+    rad_gain : float, optional
+        Radiance multiplicative rescaling factor
+        (`RADIANCE_MULT_BAND_10`). If omitted, the sensor default is used.
+    rad_bias : float, optional
+        Radiance additive rescaling factor (`RADIANCE_ADD_BAND_10`). If
+        omitted, the sensor default is used.
+    mask : array-like of bool, optional
+        Boolean mask where True values indicate invalid pixels.
 
-    Pass ``rad_gain`` and ``rad_bias`` explicitly to override the sensor defaults.
+    Returns
+    -------
+    numpy.ndarray
+        Brightness temperature image in Kelvin.
+
+    Notes
+    -----
+    - Default Landsat 8 values are `rad_gain=0.0003342` and `rad_bias=0.1`.
+    - Default Landsat 9 values are `rad_gain=0.00038` and `rad_bias=0.1`.
+    - Prefer the public `brightness(..., band="band_10")` dispatcher in
+      user-facing workflows.
+
+    Examples
+    --------
+    >>> from pylstemp import brightness
+    >>> brightness_10 = brightness(band_10, band="band_10", sensor="landsat_8")
     """
 
     return BrightnessTemperatureLandsat().compute_band_10(
@@ -105,13 +188,41 @@ def brightness_band_11(
     rad_bias: float | None = None,
     mask=None,
 ):
-    """Compute brightness temperature for Landsat thermal band 11.
+    """
+    Compute brightness temperature for Landsat thermal band 11.
 
-    Default values:
-    - ``landsat_8``: ``rad_gain=0.0003342``, ``rad_bias=0.1``
-    - ``landsat_9``: ``rad_gain=0.000349``, ``rad_bias=0.1``
+    Parameters
+    ----------
+    band_11 : array-like
+        Landsat thermal band 11 image.
+    sensor : str
+        Landsat sensor name. Supported values are `"landsat_8"` and
+        `"landsat_9"`.
+    rad_gain : float, optional
+        Radiance multiplicative rescaling factor
+        (`RADIANCE_MULT_BAND_11`). If omitted, the sensor default is used.
+    rad_bias : float, optional
+        Radiance additive rescaling factor (`RADIANCE_ADD_BAND_11`). If
+        omitted, the sensor default is used.
+    mask : array-like of bool, optional
+        Boolean mask where True values indicate invalid pixels.
 
-    Pass ``rad_gain`` and ``rad_bias`` explicitly to override the sensor defaults.
+    Returns
+    -------
+    numpy.ndarray
+        Brightness temperature image in Kelvin.
+
+    Notes
+    -----
+    - Default Landsat 8 values are `rad_gain=0.0003342` and `rad_bias=0.1`.
+    - Default Landsat 9 values are `rad_gain=0.000349` and `rad_bias=0.1`.
+    - Prefer the public `brightness(..., band="band_11")` dispatcher in
+      user-facing workflows.
+
+    Examples
+    --------
+    >>> from pylstemp import brightness
+    >>> brightness_11 = brightness(band_11, band="band_11", sensor="landsat_8")
     """
 
     return BrightnessTemperatureLandsat().compute_band_11(

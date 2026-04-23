@@ -8,10 +8,20 @@ from .base import SplitWindowParentLST
 
 
 class SplitWindowDu2015LST(SplitWindowParentLST):
-    """Practical split-window LST from Du et al. (2015).
+    """
+    Compute practical split-window LST from Du et al. (2015).
 
-    When water_vapor is not provided, this implementation uses the all-CWV
-    coefficient set reported by Du et al. for practical image-only retrieval.
+    The algorithm uses Band 10 and Band 11 brightness temperatures, separate
+    emissivities for both bands, and optional atmospheric column water vapor
+    to select the coefficient set.
+
+    Notes
+    -----
+    - If ``water_vapor`` is None, the all-CWV coefficient set reported by
+      Du et al. is used.
+    - If ``water_vapor`` is provided, it must be between 0.0 and 6.3 g/cm2.
+    - Brightness temperature and emissivity must be computed before calling
+      this method.
     """
 
     coefficient_ranges = (
@@ -25,7 +35,25 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
 
     @classmethod
     def _coefficients_for(cls, water_vapor):
-        """Return Du 2015 coefficients for atmospheric CWV in g/cm2."""
+        """
+        Select Du et al. (2015) coefficients from atmospheric CWV.
+
+        Parameters
+        ----------
+        water_vapor : float or None
+            Atmospheric column water vapor in g/cm2. If None, the all-CWV
+            coefficient set is returned.
+
+        Returns
+        -------
+        tuple of float
+            Eight split-window coefficients.
+
+        Raises
+        ------
+        ValueError
+            If ``water_vapor`` is outside the supported range.
+        """
         if water_vapor is None:
             return cls.default_coefficients
 
@@ -37,6 +65,29 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
         raise ValueError("water_vapor for 'du-2015' must be between 0.0 and 6.3 g/cm2.")
 
     def _compute_lst(self, **kwargs):
+        """
+        Compute raw Du et al. split-window LST.
+
+        Parameters
+        ----------
+        brightness_temperature_10 : array-like
+            Band 10 brightness temperature in Kelvin.
+        brightness_temperature_11 : array-like
+            Band 11 brightness temperature in Kelvin.
+        emissivity_10 : array-like
+            Band 10 land-surface emissivity.
+        emissivity_11 : array-like
+            Band 11 land-surface emissivity.
+        water_vapor : float, optional
+            Atmospheric column water vapor in g/cm2.
+        mask : array-like of bool or None
+            Boolean mask where True values indicate invalid pixels.
+
+        Returns
+        -------
+        tuple
+            Raw LST image in Kelvin and validated mask.
+        """
         required_keywords = [
             "emissivity_10",
             "emissivity_11",

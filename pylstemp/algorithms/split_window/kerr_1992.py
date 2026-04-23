@@ -10,12 +10,44 @@ from .base import SplitWindowParentLST
 
 
 class SplitWindowKerr1992LST(SplitWindowParentLST):
-    """Kerr 1992 split-window LST."""
+    """
+    Compute split-window LST following Kerr et al. (1992).
+
+    The method uses Band 10 and Band 11 brightness temperatures and a linear
+    NDVI-derived vegetation proportion to interpolate the coefficients
+    reported by the article.
+
+    Notes
+    -----
+    - This implementation follows the article's reported NDVI endmembers:
+      bare soil = 0.11 and vegetation = 0.72.
+    - The method does not require explicit emissivity inputs.
+    - It is retained as a Landsat Band 10/11 adaptation.
+    """
 
     ndvi_bare_soil = 0.11
     ndvi_vegetation = 0.72
 
     def _compute_lst(self, **kwargs):
+        """
+        Compute raw Kerr et al. split-window LST.
+
+        Parameters
+        ----------
+        brightness_temperature_10 : array-like
+            Band 10 brightness temperature in Kelvin.
+        brightness_temperature_11 : array-like
+            Band 11 brightness temperature in Kelvin.
+        ndvi : array-like
+            NDVI image used to estimate vegetation proportion.
+        mask : array-like of bool or None
+            Boolean mask where True values indicate invalid pixels.
+
+        Returns
+        -------
+        tuple
+            Raw LST image in Kelvin and validated mask.
+        """
         required_keywords = [
             "brightness_temperature_10",
             "brightness_temperature_11",

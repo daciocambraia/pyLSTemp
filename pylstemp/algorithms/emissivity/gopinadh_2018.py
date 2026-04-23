@@ -10,7 +10,18 @@ from .base import BaseEmissivityAlgorithm
 
 
 class ComputeEmissivityGopinadh2018(BaseEmissivityAlgorithm):
-    """Weighted emissivity blend from Rongali et al. (2018)."""
+    """
+    Estimate Band 10 and Band 11 emissivity using Rongali et al. (2018).
+
+    The method blends soil and vegetation emissivity coefficients according
+    to fractional vegetation cover derived from NDVI.
+
+    Notes
+    -----
+    - This method returns separate emissivity arrays for Band 10 and Band 11.
+    - It is suitable for split-window workflows that require both thermal
+      emissivity channels.
+    """
 
     emissivity_soil_10 = 0.971
     emissivity_veg_10 = 0.987
@@ -18,6 +29,21 @@ class ComputeEmissivityGopinadh2018(BaseEmissivityAlgorithm):
     emissivity_veg_11 = 0.989
 
     def _compute_emissivity(self, *, ndvi: np.ndarray, red_band: np.ndarray | None):
+        """
+        Compute Band 10 and Band 11 emissivity.
+
+        Parameters
+        ----------
+        ndvi : ndarray
+            NDVI image.
+        red_band : ndarray or None
+            Ignored by this method.
+
+        Returns
+        -------
+        tuple of ndarray
+            Emissivity arrays for Band 10 and Band 11.
+        """
         fvc = fractional_vegetation_cover(ndvi)
         emissivity_10 = (self.emissivity_soil_10 * (1 - fvc)) + (self.emissivity_veg_10 * fvc)
         emissivity_11 = (self.emissivity_soil_11 * (1 - fvc)) + (self.emissivity_veg_11 * fvc)
@@ -30,8 +56,8 @@ ALGORITHM_SPEC = AlgorithmSpec(
     name="Gopinadh 2018 emissivity",
     reference="Rongali et al. (2018)",
     citation=(
-        "Rongali, G., et al."
-        "Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data."
+        "Rongali, G., et al. "
+        "Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data. "
         "Journal of Geovisualization and Spatial Analysis, 2018."
     ),
 )

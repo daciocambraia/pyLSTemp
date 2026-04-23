@@ -9,6 +9,20 @@ FAMILY_REGISTRIES: dict[str, object] = {}
 
 
 def _load_family_registries() -> dict[str, object]:
+    """
+    Load algorithm registries exposed by each algorithm family package.
+
+    Returns
+    -------
+    dict
+        Mapping from family name to registry instance.
+
+    Notes
+    -----
+    - Only subpackages are inspected.
+    - A family package is included when it exposes a variable named
+      ``<family>_registry``.
+    """
     registries: dict[str, object] = {}
 
     for module_info in pkgutil.iter_modules(__path__):

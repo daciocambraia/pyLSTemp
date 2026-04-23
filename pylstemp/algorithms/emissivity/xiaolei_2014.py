@@ -10,7 +10,19 @@ from .base import BaseEmissivityAlgorithm
 
 
 class ComputeEmissivityXiaolei2014(BaseEmissivityAlgorithm):
-    """NBEM emissivity approach used by the original library."""
+    """
+    Estimate narrow-band emissivity following Yu, Guo and Wu (2014).
+
+    This method uses NDVI classes, fractional vegetation cover, red-band
+    reflectance, and a cavity-effect correction to estimate separate Band 10
+    and Band 11 emissivities.
+
+    Notes
+    -----
+    - ``red_band`` is required by this method.
+    - The output is appropriate for split-window workflows that require
+      emissivity for both thermal bands.
+    """
 
     emissivity_soil_10 = 0.9668
     emissivity_veg_10 = 0.9863
@@ -18,6 +30,26 @@ class ComputeEmissivityXiaolei2014(BaseEmissivityAlgorithm):
     emissivity_veg_11 = 0.9896
 
     def _compute_emissivity(self, *, ndvi: np.ndarray, red_band: np.ndarray | None):
+        """
+        Compute NBEM emissivity for Band 10 and Band 11.
+
+        Parameters
+        ----------
+        ndvi : ndarray
+            NDVI image.
+        red_band : ndarray
+            Red band image used to estimate bare-soil emissivity.
+
+        Returns
+        -------
+        tuple of ndarray
+            Emissivity arrays for Band 10 and Band 11.
+
+        Raises
+        ------
+        ValueError
+            If ``red_band`` is not provided.
+        """
         if red_band is None:
             raise ValueError("red_band must be provided for the 'xiaolei-2014' emissivity method.")
 
@@ -57,8 +89,9 @@ ALGORITHM_SPEC = AlgorithmSpec(
     name="Xiaolei 2014 emissivity",
     reference="Yu, Guo and Wu (2014)",
     citation=(
-        "Yu, X., Guo, X., and Wu, Z."
-        "Land surface temperature retrieval from Landsat 8 TIRS - comparison between radiative transfer equation-based method, split window algorithm and single channel method."
+        "Yu, X., Guo, X., and Wu, Z. "
+        "Land surface temperature retrieval from Landsat 8 TIRS - comparison between radiative transfer "
+        "equation-based method, split window algorithm and single channel method. "
         "Remote Sensing, 2014."
     ),
 )

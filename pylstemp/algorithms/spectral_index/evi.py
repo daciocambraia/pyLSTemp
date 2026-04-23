@@ -15,7 +15,40 @@ from ...validation import ensure_boolean_mask, ensure_same_shape, to_float_array
 
 
 def evi(nir, red, blue, mask=None) -> np.ndarray:
-    """Compute EVI from near-infrared, red, and blue reflectance bands."""
+    """
+    Compute the Enhanced Vegetation Index (EVI).
+
+    The source article names this formulation SARVI2. pyLSTemp exposes it as
+    EVI because the implemented coefficients match the common EVI structure.
+
+    Parameters
+    ----------
+    nir : array-like
+        Near-infrared band.
+    red : array-like
+        Red band.
+    blue : array-like
+        Blue band.
+    mask : array-like of bool, optional
+        Boolean mask where True values indicate invalid pixels.
+
+    Returns
+    -------
+    numpy.ndarray
+        EVI image computed as
+        `2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))`.
+
+    Notes
+    -----
+    - Input arrays must have the same shape and spatial alignment.
+    - Use reflectance-like optical bands for physically meaningful values.
+    - Masked pixels are returned as `NaN`.
+
+    Examples
+    --------
+    >>> from pylstemp import spectral_index
+    >>> evi_image = spectral_index(index="evi", nir=nir, red=red, blue=blue)
+    """
     nir_array = to_float_array("nir", nir)
     red_array = to_float_array("red", red)
     blue_array = to_float_array("blue", blue)
@@ -38,6 +71,25 @@ class EVIAlgorithm:
     """Object wrapper that lets EVI participate in shared family discovery."""
 
     def __call__(self, nir, red, blue, mask=None):
+        """
+        Compute EVI through the registry-compatible algorithm interface.
+
+        Parameters
+        ----------
+        nir : array-like
+            Near-infrared band.
+        red : array-like
+            Red band.
+        blue : array-like
+            Blue band.
+        mask : array-like of bool, optional
+            Boolean mask where True values indicate invalid pixels.
+
+        Returns
+        -------
+        ndarray
+            EVI image.
+        """
         return evi(nir=nir, red=red, blue=blue, mask=mask)
 
 
@@ -48,7 +100,7 @@ ALGORITHM_SPEC = AlgorithmSpec(
     reference="Huete et al. (1997)",
     citation=(
         "Huete, A. R., Liu, H. Q., Batchily, K., and van Leeuwen, W. "
-        "A comparison of vegetation indices over a global set of TM images for EOS-MODIS."
+        "A comparison of vegetation indices over a global set of TM images for EOS-MODIS. "
         "Remote Sensing of Environment, 1997."
     ),
 )
