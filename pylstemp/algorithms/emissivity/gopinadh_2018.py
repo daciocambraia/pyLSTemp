@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from ...metadata import AlgorithmSpec
-from ...utils import fractional_vegetation_cover
+from ...validation import to_float_array
 from .base import BaseEmissivityAlgorithm
 
 
@@ -27,6 +27,21 @@ class ComputeEmissivityGopinadh2018(BaseEmissivityAlgorithm):
     emissivity_veg_10 = 0.987
     emissivity_soil_11 = 0.977
     emissivity_veg_11 = 0.989
+    ndvi_soil = 0.15
+    ndvi_vegetation = 0.48
+
+    @classmethod
+    def fractional_vegetation_cover(cls, ndvi) -> np.ndarray:
+        """
+        Compute the linear FVC used by Rongali et al. (2018).
+
+        The study reports NDVIsoil = 0.15 and NDVIvegetation = 0.48 for the
+        evaluated Landsat 8 scene. Values outside this interval are clipped to
+        keep the linear mixture physically bounded.
+        """
+        ndvi_array = to_float_array("ndvi", ndvi)
+        fvc = (ndvi_array - cls.ndvi_soil) / (cls.ndvi_vegetation - cls.ndvi_soil)
+        return np.clip(fvc, 0, 1)
 
     def _compute_emissivity(self, *, ndvi: np.ndarray, red_band: np.ndarray | None):
         """
@@ -44,7 +59,7 @@ class ComputeEmissivityGopinadh2018(BaseEmissivityAlgorithm):
         tuple of ndarray
             Emissivity arrays for Band 10 and Band 11.
         """
-        fvc = fractional_vegetation_cover(ndvi)
+        fvc = self.fractional_vegetation_cover(ndvi)
         emissivity_10 = (self.emissivity_soil_10 * (1 - fvc)) + (self.emissivity_veg_10 * fvc)
         emissivity_11 = (self.emissivity_soil_11 * (1 - fvc)) + (self.emissivity_veg_11 * fvc)
         return emissivity_10, emissivity_11

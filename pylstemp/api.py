@@ -515,8 +515,8 @@ def water_vapor(
     brightness_band_11,
     ndvi_image,
     method: str = "wang-2015",
-    window_size: int = 5,
-    group_count: int = 5,
+    window_size: int = 21,
+    group_count: int = 3,
 ) -> np.ndarray:
     """
     Estimate precipitable water vapor using the selected method.
@@ -535,10 +535,12 @@ def water_vapor(
         NDVI image spatially aligned with the brightness temperature arrays.
     method : str, default="wang-2015"
         Water vapor retrieval method.
-    window_size : int, default=5
+    window_size : int, default=21
         Moving-window size in pixels. Must be an odd integer greater than or
-        equal to 3. For example, `5` means a 5 by 5 local window.
-    group_count : int, default=5
+        equal to 3. Wang et al. (2015) use a 20 by 20 pixel template; the
+        default `21` keeps a centered moving window while approximating the
+        article template.
+    group_count : int, default=3
         Number of NDVI-based local groups used by the Wang et al. method.
 
     Returns

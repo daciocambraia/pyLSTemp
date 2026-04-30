@@ -69,12 +69,12 @@ lst = split_window(
 )
 ```
 
-The default split-window emissivity method is `gopinadh-2018`, because it provides band-specific emissivity for bands 10 and 11.
+The default split-window emissivity method is `gopinadh-2018`, because it provides band-specific emissivity for bands 10 and 11 using Rongali et al.'s linear fractional vegetation cover with `NDVIsoil=0.15` and `NDVIvegetation=0.48`. The fractional vegetation cover is clipped to `0..1`; the final emissivity is still computed from the article's linear mixture.
 `avdan-2016` is blocked in `split_window(...)` because it is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` instead.
 
 For `lst_method="du-2015"` or `lst_method="jimenez-munoz-2014"`, `water_vapor` represents atmospheric column water vapor in `g/cm2`.
 For `du-2015`, use a single scene-level value. When `water_vapor=None`, the implementation uses Du et al.'s all-CWV coefficient set for `[0.0, 6.3] g/cm2`.
-When `water_vapor` is provided for `du-2015`, the method selects the matching Du et al. CWV sub-range:
+When `water_vapor` is provided for `du-2015`, the method selects the matching Du et al. CWV sub-range. If the value falls in an overlap between adjacent ranges, it computes both estimates and returns their mean, following Du et al.'s continuity strategy:
 - `[0.0, 2.5]`
 - `[2.0, 3.5]`
 - `[3.0, 4.5]`
@@ -84,14 +84,14 @@ When `water_vapor` is provided for `du-2015`, the method selects the matching Du
 `jimenez-munoz-2014` requires `water_vapor` and accepts either a single scene-level value or a raster with the same shape as the brightness temperature arrays. Use `water_vapor(method="wang-2015", ...)` for pixel-by-pixel water vapor or provide an external estimate.
 Current non-Du/Jimenez split-window methods do not use `water_vapor`.
 
-### `water_vapor(brightness_band_10, brightness_band_11, ndvi_image, method="wang-2015", window_size=5, group_count=5)`
+### `water_vapor(brightness_band_10, brightness_band_11, ndvi_image, method="wang-2015", window_size=21, group_count=3)`
 
 Estimates precipitable water vapor (`PWV`) in `g/cm2` using the selected method.
 Currently supported:
 
 - `method="wang-2015"`: NDVI-based split-window covariance-variance ratio method from Wang et al. (2015)
 
-This method uses Landsat 8 TIRS brightness temperatures for bands 10 and 11 plus NDVI. It returns a water vapor array with the same shape as the input images.
+This method uses Landsat 8 TIRS brightness temperatures for bands 10 and 11 plus NDVI. It returns a water vapor array with the same shape as the input images. The default Wang 2015 configuration uses a 21 by 21 moving template, the nearest centered-window equivalent to the article's 20 by 20 template, and 3 scene-level NDVI groups.
 
 ```python
 water = water_vapor(

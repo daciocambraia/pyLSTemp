@@ -19,8 +19,13 @@ class WaterVaporWang2015:
     -----
     - Inputs must be spatially aligned and have the same shape.
     - ``window_size`` controls the local moving window used around each pixel.
-    - ``group_count`` controls how each local NDVI window is divided into
-      vegetation groups before estimating water vapor.
+      The default 21 by 21 template is the nearest odd-sized equivalent to the
+      20 by 20 template used by Wang et al. (2015).
+    - ``group_count`` controls how each template is divided into NDVI groups.
+      The default follows the three NDVI groups used in the article.
+    - NDVI group boundaries are computed from the valid NDVI range of the full
+      scene, as described by Wang et al., rather than recalculated for each
+      moving template.
     """
 
     ndvi_soil = 0.2
@@ -33,8 +38,8 @@ class WaterVaporWang2015:
         brightness_band_10,
         brightness_band_11,
         ndvi_image,
-        window_size: int = 5,
-        group_count: int = 5,
+        window_size: int = 21,
+        group_count: int = 3,
     ) -> np.ndarray:
         """
         Compute a pixel-wise precipitable water vapor image.
@@ -47,10 +52,12 @@ class WaterVaporWang2015:
             Band 11 brightness temperature in Kelvin.
         ndvi_image : array-like
             NDVI image used to group local pixels by vegetation condition.
-        window_size : int, default=5
+        window_size : int, default=21
             Odd moving-window size in pixels. Must be greater than or equal
-            to 3.
-        group_count : int, default=5
+            to 3. The article uses a fixed 20 by 20 pixel template; 21 by 21
+            preserves a centered moving-window implementation while staying
+            close to the original template size.
+        group_count : int, default=3
             Number of NDVI groups used inside each local window.
 
         Returns
@@ -75,6 +82,15 @@ class WaterVaporWang2015:
             raise ValueError("group_count must be greater than or equal to 1.")
 
         water_vapor = np.full(bt_10.shape, np.nan, dtype=float)
+
+        finite_ndvi = ndvi[~np.isnan(ndvi)]
+        if finite_ndvi.size == 0:
+            return water_vapor
+
+        ndvi_min = float(np.nanmin(finite_ndvi))
+        ndvi_max = float(np.nanmax(finite_ndvi))
+        ndvi_edges = self._ndvi_group_edges(ndvi_min, ndvi_max, group_count)
+
         radius = window_size // 2
 
         for row in range(bt_10.shape[0]):
@@ -87,12 +103,12 @@ class WaterVaporWang2015:
                     bt_10[row_start:row_end, col_start:col_end],
                     bt_11[row_start:row_end, col_start:col_end],
                     ndvi[row_start:row_end, col_start:col_end],
-                    group_count=group_count,
+                    ndvi_edges=ndvi_edges,
                 )
 
         return water_vapor
 
-    def _window_water_vapor(self, bt_10, bt_11, ndvi, *, group_count: int) -> float:
+    def _window_water_vapor(self, bt_10, bt_11, ndvi, *, ndvi_edges) -> float:
         """
         Estimate water vapor for a local image window.
 
@@ -104,8 +120,8 @@ class WaterVaporWang2015:
             Local Band 11 brightness temperature window.
         ndvi : ndarray
             Local NDVI window.
-        group_count : int
-            Number of NDVI groups used inside the local window.
+        ndvi_edges : ndarray or None
+            Scene-level NDVI group edges used to classify template pixels.
 
         Returns
         -------
@@ -116,18 +132,14 @@ class WaterVaporWang2015:
         if np.count_nonzero(valid) < 2:
             return np.nan
 
-        ndvi_valid = ndvi[valid]
-        ndvi_min = float(np.nanmin(ndvi_valid))
-        ndvi_max = float(np.nanmax(ndvi_valid))
-        if np.isclose(ndvi_min, ndvi_max):
+        if ndvi_edges is None:
             groups = [valid]
         else:
-            edges = np.linspace(ndvi_min, ndvi_max, group_count + 1)
             groups = []
-            for index in range(group_count):
-                lower = edges[index]
-                upper = edges[index + 1]
-                if index == group_count - 1:
+            for index in range(len(ndvi_edges) - 1):
+                lower = ndvi_edges[index]
+                upper = ndvi_edges[index + 1]
+                if index == len(ndvi_edges) - 2:
                     group = valid & (ndvi >= lower) & (ndvi <= upper)
                 else:
                     group = valid & (ndvi >= lower) & (ndvi < upper)
@@ -145,6 +157,12 @@ class WaterVaporWang2015:
         if pixel_count == 0:
             return np.nan
         return weighted_sum / pixel_count
+
+    def _ndvi_group_edges(self, ndvi_min: float, ndvi_max: float, group_count: int):
+        """Build scene-level NDVI group edges following Wang et al. (2015)."""
+        if np.isclose(ndvi_min, ndvi_max):
+            return None
+        return np.linspace(ndvi_min, ndvi_max, group_count + 1)
 
     def _group_water_vapor(self, bt_10, bt_11, ndvi) -> tuple[float, int]:
         """

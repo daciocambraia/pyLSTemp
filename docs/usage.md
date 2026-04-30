@@ -111,9 +111,10 @@ lst_split = split_window(
 )
 ```
 
-`split_window(...)` blocks `emissivity_method="avdan-2016"` because Avdan is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` for split-window workflows.
+`split_window(...)` blocks `emissivity_method="avdan-2016"` because Avdan is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` for split-window workflows. `gopinadh-2018` uses Rongali et al.'s linear fractional vegetation cover with `NDVIsoil=0.15` and `NDVIvegetation=0.48`; the FVC is clipped to `0..1` before the linear emissivity mixture.
 
 `lst_method="du-2015"` can use a single scene-level `water_vapor` value, but it is optional; if omitted, the method uses the general Du et al. coefficient range `[0.0, 6.3] g/cm2`.
+When the supplied value falls inside one of Du et al.'s overlapping CWV ranges, the method computes both adjacent estimates and returns their mean.
 `lst_method="jimenez-munoz-2014"` requires `water_vapor` and accepts either a single value or a raster with the same shape as the brightness temperature arrays.
 
 ```python
@@ -140,8 +141,8 @@ water = water_vapor(
     brightness_band_11=brightness_11,
     ndvi_image=ndvi_image,
     method="wang-2015",
-    window_size=5,
-    group_count=5,
+    window_size=21,
+    group_count=3,
 )
 ```
 

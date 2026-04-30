@@ -29,35 +29,17 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 ## Split-window temperature algorithms
 
 - `jimenez-munoz-2014`
-  - **Reference:** Jimenez-Munoz et al. (2014)
-  - **Title:** Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data
-  - **Journal:** IEEE Geoscience and Remote Sensing Letters, 2015, vol.11, n.10, 1840-1843
-  - **DOI:** [10.1109/LGRS.2014.2312032](https://doi.org/10.1109/LGRS.2014.2312032)
-
+  Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. IEEE Geoscience and Remote Sensing Letters, 2014.
 - `du-2015`
-  - **Reference:** Du et al. (2015)
-  - **Title:** A practical split-window algorithm for estimating land surface temperature from Landsat 8 data
-  - **Journal:** Remote Sensing, vol.7, n.1, 2015, 647-665
-  - **DOI:** [10.3390/rs70100647](https://doi.org/10.3390/rs70100647)
-
+  Du, C., Ren, H., Qin, Q., Meng, J., and Zhao, S. A practical split-window algorithm for estimating land surface temperature from Landsat 8 data. Remote Sensing, 2015.
 - `sobrino-1993`
-  - **Reference:** Sobrino, J.A., Caselles, V., Coll, C.
-  - **Title:** Theoretical split-window algorithms for determining the actual surface temperature
-  - **Journal:** Il Nuovo Cimento, vol.C16, n.3, 1993, 219-236
-  - **DOI:** [10.1007/BF02524225](https://doi.org/10.1007/BF02524225)
-
+  Sobrino, J. A., Caselles, V., and Coll, C. Theoretical split window algorithms for determining the actual surface temperature. Il Nuovo Cimento, 1993.
 - `kerr-1992`
-  - **Reference:** Kerr, Y.H., Lagouarde, J.P., Imbernon, J.
-  - **Title:** Accurate land surface temperature retrieval from AVHRR data with use of an improved split window algorithm
-  - **Journal:** Remote Sensing of Environment, v.41, n.2-3, 1992, 197-209
-  - **DOI:** [10.1016/0034-4257(92)90078-X](https://doi.org/10.1016/0034-4257(92)90078-X)
-  - **Observation:** The implementation interpolates the paper's bare-soil and vegetation coefficients using the linear NDVI cover from the article, with `NDVIbs=0.11` and `NDVIv=0.72` cited from Begue (1991).
-
+  Kerr, Y. H., Lagouarde, J. P., Nerry, F., and Ottle, C. A semiempirical approach to the retrieval of land surface temperature from AVHRR data. Remote Sensing of Environment, 1992.
+  The implementation interpolates the paper's bare-soil and vegetation coefficients using the linear NDVI cover from the article, with `NDVIbs=0.11` and `NDVIv=0.72` cited from Begue (1991).
 - `price-1984`
-  - **Reference:** Price, J.C.
-  - **Title:** Land surface temperature measurements from the split window channels of the NOAA advanced very high-resolution radiometer
-  - **Journal:** Journal of Geophysical Research, 1984
-  - **DOI:** [10.1029/JD089iD05p07231](https://doi.org/10.1029/JD089iD05p07231)
+  Price, J. C. Land surface temperature measurements from the split window channels of the NOAA advanced very high-resolution radiometer. Journal of Geophysical Research, 1984.
+  This is an adaptation of the AVHRR split-window structure to Landsat Band 10/11 brightness temperatures and band-specific emissivity.
 
 ## Emissivity algorithms
 

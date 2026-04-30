@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from pylstemp.algorithms.emissivity import ComputeEmissivityAvdan2016
+from pylstemp.algorithms.emissivity import ComputeEmissivityAvdan2016, ComputeEmissivityGopinadh2018
 from pylstemp.algorithms.single_channel import BaseTemperatureAlgorithm, MonoWindow2016LST
 from pylstemp.algorithms.split_window import (
     SplitWindowDu2015LST,
@@ -38,6 +38,16 @@ class TestAlgorithms(unittest.TestCase):
 
         self.assertTrue(np.allclose(emissivity_10, expected))
         self.assertTrue(np.allclose(emissivity_11, expected))
+
+    def test_gopinadh_2018_uses_article_linear_fvc(self):
+        ndvi = np.array([[0.15, 0.315, 0.48]])
+        emissivity_10, emissivity_11 = ComputeEmissivityGopinadh2018()(ndvi=ndvi)
+        fvc = np.array([[0.0, 0.5, 1.0]])
+        expected_10 = (0.971 * (1 - fvc)) + (0.987 * fvc)
+        expected_11 = (0.977 * (1 - fvc)) + (0.989 * fvc)
+
+        self.assertTrue(np.allclose(emissivity_10, expected_10))
+        self.assertTrue(np.allclose(emissivity_11, expected_11))
 
     def test_split_window_algorithms_shape(self):
         emissivity = np.full((3, 3), 0.98)
@@ -117,6 +127,26 @@ class TestAlgorithms(unittest.TestCase):
             water_vapor=3.8,
         )
         self.assertFalse(np.allclose(default_output, cwv_output))
+
+    def test_du_2015_averages_overlapping_water_vapor_ranges(self):
+        algorithm = SplitWindowDu2015LST()
+        emissivity_10 = np.full((3, 3), 0.98)
+        emissivity_11 = np.full((3, 3), 0.98)
+        output = algorithm(
+            emissivity_10=emissivity_10,
+            emissivity_11=emissivity_11,
+            brightness_temperature_10=self.base,
+            brightness_temperature_11=self.base - 2,
+            mask=self.mask,
+            water_vapor=2.1,
+        )
+        first, second = algorithm._coefficients_for(2.1)
+        expected = (
+            algorithm._estimate_with_coefficients(first, self.base, self.base - 2, emissivity_10, emissivity_11)
+            + algorithm._estimate_with_coefficients(second, self.base, self.base - 2, emissivity_10, emissivity_11)
+        ) / 2
+
+        self.assertTrue(np.allclose(output, expected))
 
     def test_du_2015_rejects_water_vapor_outside_article_range(self):
         with self.assertRaises(ValueError):

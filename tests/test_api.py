@@ -275,6 +275,22 @@ class TestPublicApi(unittest.TestCase):
         self.assertEqual(output.shape, brightness_10.shape)
         self.assertTrue(np.isfinite(output[2, 2]))
 
+    def test_water_vapor_default_wang_uses_article_scale_template(self):
+        rows, cols = np.indices((21, 21))
+        brightness_10 = 300.0 + rows + cols
+        brightness_11 = 0.8 * brightness_10
+        ndvi_image = np.linspace(0.1, 0.7, 21 * 21).reshape(21, 21)
+
+        output = water_vapor(
+            brightness_10,
+            brightness_11,
+            ndvi_image,
+            method="wang-2015",
+        )
+
+        self.assertEqual(output.shape, brightness_10.shape)
+        self.assertTrue(np.isfinite(output[10, 10]))
+
     def test_split_window_jimenez_munoz_accepts_water_vapor(self):
         brightness_10 = brightness_band_10(self.band_10, sensor=self.sensor_8)
         brightness_11 = brightness_band_11(self.band_11, sensor=self.sensor_8)

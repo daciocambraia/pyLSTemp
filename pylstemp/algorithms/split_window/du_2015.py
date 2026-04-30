@@ -47,7 +47,9 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
         Returns
         -------
         tuple of float
-            Eight split-window coefficients.
+            Tuple with one or more coefficient sets. When ``water_vapor`` falls
+            inside an overlap between adjacent CWV ranges, Du et al. recommend
+            computing LST with both sets and averaging the estimates.
 
         Raises
         ------
@@ -55,14 +57,52 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
             If ``water_vapor`` is outside the supported range.
         """
         if water_vapor is None:
-            return cls.default_coefficients
+            return (cls.default_coefficients,)
 
         cwv = float(water_vapor)
+        matches = []
         for (lower, upper), coefficients in cls.coefficient_ranges:
             if lower <= cwv <= upper:
-                return coefficients
+                matches.append(coefficients)
+
+        if matches:
+            return tuple(matches)
 
         raise ValueError("water_vapor for 'du-2015' must be between 0.0 and 6.3 g/cm2.")
+
+    @staticmethod
+    def _estimate_with_coefficients(
+        coefficients,
+        tb_10,
+        tb_11,
+        emissivity_10,
+        emissivity_11,
+    ):
+        b0, b1, b2, b3, b4, b5, b6, b7 = coefficients
+
+        mean_tb = (tb_10 + tb_11) / 2
+        diff_tb = (tb_10 - tb_11) / 2
+        mean_e = (emissivity_10 + emissivity_11) / 2
+        diff_e = emissivity_10 - emissivity_11
+        emissivity_term = (1 - mean_e) / mean_e
+        emissivity_diff_term = diff_e / (mean_e**2)
+
+        return (
+            b0
+            + (
+                b1
+                + (b2 * emissivity_term)
+                + (b3 * emissivity_diff_term)
+            )
+            * mean_tb
+            + (
+                b4
+                + (b5 * emissivity_term)
+                + (b6 * emissivity_diff_term)
+            )
+            * diff_tb
+            + (b7 * ((tb_10 - tb_11) ** 2))
+        )
 
     def _compute_lst(self, **kwargs):
         """
@@ -101,8 +141,7 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
         tb_11 = kwargs["brightness_temperature_11"]
         emissivity_10 = kwargs["emissivity_10"]
         emissivity_11 = kwargs["emissivity_11"]
-        coefficients = self._coefficients_for(kwargs.get("water_vapor"))
-        b0, b1, b2, b3, b4, b5, b6, b7 = coefficients
+        coefficient_sets = self._coefficients_for(kwargs.get("water_vapor"))
         mask = self._validate_inputs(
             mask=kwargs["mask"],
             brightness_temperature_10=tb_10,
@@ -111,29 +150,17 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
             emissivity_11=emissivity_11,
         )
 
-        mean_tb = (tb_10 + tb_11) / 2
-        diff_tb = (tb_10 - tb_11) / 2
-        mean_e = (emissivity_10 + emissivity_11) / 2
-        diff_e = emissivity_10 - emissivity_11
-        emissivity_term = (1 - mean_e) / mean_e
-        emissivity_diff_term = diff_e / (mean_e**2)
-
-        result = (
-            b0
-            + (
-                b1
-                + (b2 * emissivity_term)
-                + (b3 * emissivity_diff_term)
+        estimates = (
+            self._estimate_with_coefficients(
+                coefficients,
+                tb_10,
+                tb_11,
+                emissivity_10,
+                emissivity_11,
             )
-            * mean_tb
-            + (
-                b4
-                + (b5 * emissivity_term)
-                + (b6 * emissivity_diff_term)
-            )
-            * diff_tb
-            + (b7 * ((tb_10 - tb_11) ** 2))
+            for coefficients in coefficient_sets
         )
+        result = sum(estimates) / len(coefficient_sets)
         return result, mask
 
 
