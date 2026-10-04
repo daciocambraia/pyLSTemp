@@ -100,6 +100,7 @@ That means `list_algorithms()` grows with the codebase instead of depending on a
 - [References](docs/references.md)
 - [Scientific methods and migration](docs/scientific-methods.md)
 - [Validation report v1.11](docs/VALIDACAO_v1.11.md)
+- [All-model test report](docs/TESTES_TODOS_MODELOS_v1.11.md)
 
 ## Development
 
