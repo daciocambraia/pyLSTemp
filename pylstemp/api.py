@@ -20,6 +20,7 @@ from .references import ORIGINAL_LIBRARY_CREDIT
 from .validation import (
     build_mask_from,
     ensure_same_shape,
+    ensure_boolean_mask,
     normalize_temperature_unit,
     to_float_array,
 )
@@ -89,7 +90,7 @@ def spectral_index(index: str, **kwargs):
     Notes
     -----
     - Input arrays must have the same shape and spatial alignment.
-    - Use reflectance-like optical bands for physically meaningful results.
+    - Use calibrated physical optical reflectance bands for physically meaningful results.
     - A boolean `mask` can be passed to mark invalid pixels as `NaN`.
 
     Examples
@@ -287,7 +288,7 @@ def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = 
         `"band_11"`. Short aliases such as `"10"`, `"11"`, `"b10"` and
         `"b11"` are also accepted.
     band_4_red : array-like, optional
-        Red band image. Required by methods that estimate soil emissivity
+        Physical red surface reflectance in [0,1] for Xiaolei. Required by methods that estimate soil emissivity
         from the red band, such as `"xiaolei-2014"`.
     emissivity_method : str, default="avdan-2016"
         Name of the emissivity method to use.
@@ -337,6 +338,7 @@ def single_window(
     lst_method: str = "mono-window-2016",
     emissivity_method: str = "avdan-2016",
     unit: str = "kelvin",
+    *, mask=None,
 ) -> np.ndarray:
     """
     Compute land surface temperature using a single-channel method.
@@ -392,7 +394,10 @@ def single_window(
         band_5_nir=nir,
     )
 
-    mask = build_mask_from(brightness_10)
+    user_mask = mask
+    mask = build_mask_from(brightness_10) | ~np.isfinite(red) | ~np.isfinite(nir)
+    if user_mask is not None:
+        mask |= ensure_boolean_mask(user_mask, shape=brightness_10.shape)
     ndvi_image = _ndvi(nir=nir, red=red, mask=mask)
     emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 
@@ -413,6 +418,7 @@ def split_window(
     emissivity_method: str = "gopinadh-2018",
     unit: str = "kelvin",
     water_vapor: float | np.ndarray | None = None,
+    *, mask=None,
 ) -> np.ndarray:
     """
     Compute land surface temperature using a split-window method.
@@ -469,7 +475,7 @@ def split_window(
     ... )
     """
     normalized_unit = normalize_temperature_unit(unit)
-    if emissivity_method in SINGLE_CHANNEL_EMISSIVITY_METHODS:
+    if emissivity_registry.resolve_key(emissivity_method) in SINGLE_CHANNEL_EMISSIVITY_METHODS:
         raise ValueError(
             f"'{emissivity_method}' is a single-channel emissivity method and should not be used "
             "with split_window(). Use a band-specific emissivity method such as "
@@ -487,7 +493,10 @@ def split_window(
         band_5_nir=nir,
     )
 
-    mask = build_mask_from(brightness_10)
+    user_mask = mask
+    mask = build_mask_from(brightness_10, brightness_11) | ~np.isfinite(red) | ~np.isfinite(nir)
+    if user_mask is not None:
+        mask |= ensure_boolean_mask(user_mask, shape=brightness_10.shape)
     ndvi_image = _ndvi(nir=nir, red=red, mask=mask)
     emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
     emissivity_11 = emissivity_band_11(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
@@ -517,6 +526,7 @@ def water_vapor(
     method: str = "wang-2015",
     window_size: int = 21,
     group_count: int = 3,
+    *, mask=None, ndvi_range=None, chunk_rows=8,
 ) -> np.ndarray:
     """
     Estimate precipitable water vapor using the selected method.
@@ -573,6 +583,7 @@ def water_vapor(
         ndvi_image=ndvi_image,
         window_size=window_size,
         group_count=group_count,
+        mask=mask, ndvi_range=ndvi_range, chunk_rows=chunk_rows,
     )
 
 
@@ -601,6 +612,13 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
                 "name": metadata.name,
                 "reference": metadata.reference,
                 "citation": metadata.citation,
+                "scientific_status": (
+                    "Legacy AVHRR coefficients; unvalidated Landsat adaptation"
+                    if key in {"price-1984", "kerr-1992", "sobrino-1993"} else
+                    "Landsat-8 formulation; Landsat-9 transfer experimental; no ground-truth validation"
+                    if family_name in {"single_channel", "split_window", "water_vapor", "emissivity"} else
+                    "See docs/scientific-methods.md for calibration and input contracts"
+                ),
             }
             for key, metadata in registry.describe().items()
         }

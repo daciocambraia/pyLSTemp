@@ -89,13 +89,16 @@ class SplitWindowJimenezMunoz2014LST(SplitWindowParentLST):
                 brightness_temperature_10=tb_10,
             )
 
+        if cwv.ndim == 0 and (not np.isfinite(cwv) or cwv < 0):
+            raise ValueError("water_vapor must be finite and nonnegative, in g/cm2.")
+        mask |= ~np.isfinite(cwv) | (cwv < 0)
         mean_e = (emissivity_10 + emissivity_11) / 2
         diff_e = emissivity_10 - emissivity_11
         diff_tb = tb_10 - tb_11
 
         result = (
             tb_10
-            + (1.387 * diff_tb)
+            + (1.378 * diff_tb)
             + (0.183 * (diff_tb**2))
             - 0.268
             + ((54.3 - (2.238 * cwv)) * (1 - mean_e))

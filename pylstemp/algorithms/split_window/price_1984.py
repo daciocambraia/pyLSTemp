@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 from ...exceptions import assert_required_keywords_provided
 from ...metadata import AlgorithmSpec
 from .base import SplitWindowParentLST
@@ -18,7 +20,9 @@ class SplitWindowPrice1984LST(SplitWindowParentLST):
     Notes
     -----
     - This method requires separate emissivity inputs for Band 10 and Band 11.
-    - The adaptation should be documented when used in scientific workflows.
+    - The factor (5.5-e)/4.5 is an inverse-emissivity first-order approximation.
+    - It is retained explicitly rather than claiming literal reproduction of
+      the conflicting printed factor in Price. See scientific-methods.md.
     """
 
     def _compute_lst(self, **kwargs):
@@ -43,6 +47,7 @@ class SplitWindowPrice1984LST(SplitWindowParentLST):
         tuple
             Raw LST image in Kelvin and validated mask.
         """
+        warnings.warn("price-1984 is an unvalidated AVHRR-to-Landsat adaptation; see docs/scientific-methods.md.", RuntimeWarning, stacklevel=2)
         required_keywords = [
             "emissivity_10",
             "emissivity_11",

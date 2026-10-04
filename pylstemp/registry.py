@@ -54,6 +54,9 @@ class AlgorithmRegistry(Generic[T]):
             Algorithm factory, key, aliases, and citation metadata.
         """
         canonical_key = spec.key.lower()
+        keys = [canonical_key] + [alias.lower() for alias in spec.aliases]
+        if len(set(keys)) != len(keys) or any(key in self._factories or key in self._aliases for key in keys):
+            raise ValueError(f"Algorithm key or alias collision: {keys}")
         self._factories[canonical_key] = spec.factory
         self._metadata[canonical_key] = AlgorithmMetadata(
             key=canonical_key,

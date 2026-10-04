@@ -36,8 +36,8 @@ evi_image = spectral_index(index="evi", nir=nir, red=red, blue=blue)
 import numpy as np
 from pylstemp import brightness
 
-band_10 = np.full((3, 3), 1000.0)
-band_11 = np.full((3, 3), 900.0)
+band_10 = np.full((2, 2), 1000.0)
+band_11 = np.full((2, 2), 900.0)
 sensor = "landsat_8"
 
 brightness_10 = brightness(
@@ -179,3 +179,13 @@ print(catalog["water_vapor"].keys())
 - `sensor` must be `landsat_8` or `landsat_9`
 - `rad_gain` and `rad_bias` default to the sensor metadata values and can be overridden manually in the brightness temperature function call
 - these radiance values are different from the sensor constants `K1` and `K2`
+
+## Scientific contracts and real scenes
+
+Optical inputs must be physical reflectance. Xiaolei specifically requires surface reflectance.
+Use pylstemp.calibration.read_mtl, toa_reflectance and brightness_from_mtl for Level-1 calibration.
+The LandsatScene reader applies per-pixel SZA and C2 QA.
+Both LST workflows and water_vapor accept keyword-only mask=.
+Wang supports ndvi_range=(scene_min,scene_max) and chunk_rows=. External tiles require halo pixels.
+Nonfinite/negative PWV pixels are masked, scalar negative PWV is rejected.
+See [scientific-methods.md](scientific-methods.md) for source decisions and limits.

@@ -7,6 +7,18 @@
 
 Repository: <https://github.com/daciocambraia/pyLSTemp>
 
+## Scientific status (v1.11.0)
+
+Use [scientific-methods.md](docs/scientific-methods.md) for decisions, limitations and migration.
+Landsat 8/9 Level-1 radiometric calibration is metadata-driven. Retrieval coefficient
+transfer to Landsat 9 is experimental. No ground-truth LST accuracy is claimed.
+Xiaolei requires surface reflectance; TOA reflectance is not interchangeable with it.
+
+Install examples with `pip install -e ".[examples]"`. Process scenes with:
+`python scripts/validate_scenes.py --input Imagens --output Verificacao/v1.11.0`.
+Outputs include calibrated TOA GeoTIFFs, LST, PWV ROIs, maps and reports.
+Choose a new output folder for each run.
+
 ## Goals
 
 - preserve the public workflow: `spectral_index`, `brightness`, `emissivity`, `water_vapor`, `single_window`, `split_window`
@@ -36,7 +48,8 @@ pyLSTemp/
       radiative_transfer/
   docs/
   tests/
-  tutorial/
+  exemples/
+  scripts/
 ```
 
 ## Public API
@@ -85,6 +98,8 @@ That means `list_algorithms()` grows with the codebase instead of depending on a
 - [Architecture](docs/architecture.md)
 - [Extending the Library](docs/extending.md)
 - [References](docs/references.md)
+- [Scientific methods and migration](docs/scientific-methods.md)
+- [Validation report v1.11](docs/VALIDACAO_v1.11.md)
 
 ## Development
 

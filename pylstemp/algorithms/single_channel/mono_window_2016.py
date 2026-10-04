@@ -25,7 +25,7 @@ class MonoWindow2016LST(BaseTemperatureAlgorithm):
     """
 
     wavelength_band_10 = 10.895e-6
-    rho = 14380
+    rho = 1.438e-2  # m K; wavelength is in metres (Avdan Eq. 8).
 
     def __call__(self, **kwargs) -> np.ndarray:
         """

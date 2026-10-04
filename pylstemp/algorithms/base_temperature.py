@@ -17,12 +17,12 @@ class BaseTemperatureAlgorithm:
     Notes
     -----
     - All image inputs must have the same shape and spatial alignment.
-    - Pixels above the configured maximum Earth surface temperature are set
-      to NaN as a conservative quality-control step.
+    - Nonfinite and nonpositive absolute temperatures are invalid.
+    - No arbitrary upper surface-temperature cutoff is applied.
     - User masks are applied after the temperature calculation.
     """
 
-    max_earth_temp = 273.15 + 56.7
+    # No global air-temperature cutoff is applicable to surface temperature.
 
     def _validate_inputs(self, *, mask, **images) -> np.ndarray:
         """
@@ -41,7 +41,15 @@ class BaseTemperatureAlgorithm:
             Boolean mask with the same shape as the input images.
         """
         ensure_same_shape(mask=mask, **images)
-        return ensure_boolean_mask(mask, shape=next(iter(images.values())).shape)
+        shape = next(iter(images.values())).shape
+        invalid = np.zeros(shape, dtype=bool) if mask is None else ensure_boolean_mask(mask, shape=shape).copy()
+        for name, image in images.items():
+            invalid |= ~np.isfinite(image)
+            if name.startswith("brightness_temperature"):
+                invalid |= image <= 0
+            if name.startswith("emissivity"):
+                invalid |= (image <= 0) | (image > 1)
+        return invalid
 
     def _finalize(self, result, *, mask: np.ndarray) -> np.ndarray:
         """
@@ -60,6 +68,6 @@ class BaseTemperatureAlgorithm:
             Final LST image with invalid pixels set to NaN.
         """
         output = np.asarray(result, dtype=float).copy()
-        output[output > self.max_earth_temp] = np.nan
+        output[~np.isfinite(output) | (output <= 0)] = np.nan
         output[mask] = np.nan
         return output

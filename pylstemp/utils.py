@@ -22,7 +22,7 @@ def generate_mask(image) -> np.ndarray:
         Mask where True indicates NaN or zero-valued pixels.
     """
     array = to_float_array("image", image)
-    return np.isnan(array) | (array == 0)
+    return ~np.isfinite(array) | (array == 0)
 
 
 def apply_mask(image, mask: np.ndarray | None) -> np.ndarray:
@@ -109,10 +109,17 @@ def compute_brightness_temperature(
         Brightness temperature in Kelvin.
     """
     image_array = to_float_array("image", image)
+    coefficients = np.asarray([mult_factor, add_factor, k1, k2], dtype=float)
+    if not np.all(np.isfinite(coefficients)) or mult_factor <= 0 or k1 <= 0 or k2 <= 0:
+        raise ValueError("Radiance gain, K1 and K2 must be positive and all coefficients finite.")
+    invalid = ~np.isfinite(image_array) | (image_array <= 0)
     toa_radiance = (mult_factor * image_array) + add_factor
+    invalid |= toa_radiance <= 0
+    if mask is not None:
+        invalid |= ensure_boolean_mask(mask, shape=image_array.shape)
     with np.errstate(divide="ignore", invalid="ignore"):
         brightness_temp = k2 / np.log((k1 / toa_radiance) + 1)
-    return apply_mask(brightness_temp, mask)
+    return apply_mask(brightness_temp, invalid | ~np.isfinite(brightness_temp))
 
 
 def fractional_vegetation_cover(ndvi) -> np.ndarray:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from ...metadata import AlgorithmSpec
-from ...utils import cavity_effect, fractional_vegetation_cover, rescale_band
+from ...utils import cavity_effect, fractional_vegetation_cover
 from .base import BaseEmissivityAlgorithm
 
 
@@ -19,7 +19,7 @@ class ComputeEmissivityXiaolei2014(BaseEmissivityAlgorithm):
 
     Notes
     -----
-    - ``red_band`` is required by this method.
+    - ``red_band`` must be physical surface reflectance in [0, 1].
     - The output is appropriate for split-window workflows that require
       emissivity for both thermal bands.
     """
@@ -54,7 +54,11 @@ class ComputeEmissivityXiaolei2014(BaseEmissivityAlgorithm):
             raise ValueError("red_band must be provided for the 'xiaolei-2014' emissivity method.")
 
         masks = self._landcover_masks(ndvi)
-        red_band_rescaled = rescale_band(red_band)
+        # Yu et al. require surface reflectance, not DN or TOA reflectance.
+        finite = red_band[np.isfinite(red_band)]
+        if np.any((finite < 0) | (finite > 1)):
+            raise ValueError("xiaolei-2014 requires red surface reflectance in [0, 1], not raw DN.")
+        red_band_rescaled = red_band
         fvc = fractional_vegetation_cover(ndvi)
 
         emissivity_10 = np.full(ndvi.shape, np.nan, dtype=float)

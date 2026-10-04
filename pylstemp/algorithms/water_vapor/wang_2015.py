@@ -32,81 +32,98 @@ class WaterVaporWang2015:
     ndvi_vegetation = 0.5
     correlation_threshold = 0.97
 
-    def __call__(
-        self,
-        *,
-        brightness_band_10,
-        brightness_band_11,
-        ndvi_image,
-        window_size: int = 21,
-        group_count: int = 3,
-    ) -> np.ndarray:
+    def __call__(self, *, brightness_band_10, brightness_band_11, ndvi_image,
+                 window_size=21, group_count=3, mask=None, ndvi_range=None,
+                 chunk_rows=8):
+        """Retrieve PWV in g/cm2, using bounded-memory vectorized windows.
+
+        Invalid central pixels remain NaN. ndvi_range, if supplied, is the
+        valid full-scene NDVI (minimum, maximum), required for tiled/ROI use.
+        chunk_rows changes memory usage, not the numerical method.
         """
-        Compute a pixel-wise precipitable water vapor image.
-
-        Parameters
-        ----------
-        brightness_band_10 : array-like
-            Band 10 brightness temperature in Kelvin.
-        brightness_band_11 : array-like
-            Band 11 brightness temperature in Kelvin.
-        ndvi_image : array-like
-            NDVI image used to group local pixels by vegetation condition.
-        window_size : int, default=21
-            Odd moving-window size in pixels. Must be greater than or equal
-            to 3. The article uses a fixed 20 by 20 pixel template; 21 by 21
-            preserves a centered moving-window implementation while staying
-            close to the original template size.
-        group_count : int, default=3
-            Number of NDVI groups used inside each local window.
-
-        Returns
-        -------
-        ndarray
-            Pixel-wise precipitable water vapor in g/cm2.
-
-        Raises
-        ------
-        ValueError
-            If ``window_size`` is even or smaller than 3, or if
-            ``group_count`` is smaller than 1.
-        """
-        bt_10 = to_float_array("brightness_band_10", brightness_band_10)
-        bt_11 = to_float_array("brightness_band_11", brightness_band_11)
+        bt10 = to_float_array("brightness_band_10", brightness_band_10)
+        bt11 = to_float_array("brightness_band_11", brightness_band_11)
         ndvi = to_float_array("ndvi_image", ndvi_image)
-        ensure_same_shape(brightness_band_10=bt_10, brightness_band_11=bt_11, ndvi_image=ndvi)
-
-        if window_size < 3 or window_size % 2 == 0:
-            raise ValueError("window_size must be an odd integer greater than or equal to 3.")
-        if group_count < 1:
-            raise ValueError("group_count must be greater than or equal to 1.")
-
-        water_vapor = np.full(bt_10.shape, np.nan, dtype=float)
-
-        finite_ndvi = ndvi[~np.isnan(ndvi)]
-        if finite_ndvi.size == 0:
-            return water_vapor
-
-        ndvi_min = float(np.nanmin(finite_ndvi))
-        ndvi_max = float(np.nanmax(finite_ndvi))
-        ndvi_edges = self._ndvi_group_edges(ndvi_min, ndvi_max, group_count)
-
+        ensure_same_shape(brightness_band_10=bt10, brightness_band_11=bt11, ndvi_image=ndvi)
+        if bt10.ndim != 2:
+            raise ValueError("Wang inputs must be two-dimensional.")
+        for name, value, minimum in (("window_size", window_size, 3),
+                                      ("group_count", group_count, 1),
+                                      ("chunk_rows", chunk_rows, 1)):
+            if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)) or value < minimum:
+                raise ValueError(f"{name} must be an integer >= {minimum}.")
+        if window_size % 2 == 0:
+            raise ValueError("window_size must be odd.")
+        valid = np.isfinite(bt10) & np.isfinite(bt11) & np.isfinite(ndvi)
+        valid &= (bt10 > 0) & (bt11 > 0) & (np.abs(ndvi) <= 1)
+        if mask is not None:
+            from ...validation import ensure_boolean_mask
+            valid &= ~ensure_boolean_mask(mask, shape=bt10.shape)
+        result = np.full(bt10.shape, np.nan)
+        if not valid.any():
+            return result
+        if ndvi_range is None:
+            ndvi_min, ndvi_max = ndvi[valid].min(), ndvi[valid].max()
+        else:
+            bounds = np.asarray(ndvi_range, dtype=float)
+            if bounds.shape != (2,) or not np.isfinite(bounds).all() or not -1 <= bounds[0] <= bounds[1] <= 1:
+                raise ValueError("ndvi_range must be ordered finite bounds within [-1, 1].")
+            ndvi_min, ndvi_max = bounds
+            if np.any((ndvi[valid] < ndvi_min) | (ndvi[valid] > ndvi_max)):
+                raise ValueError("ndvi_range must contain all valid input NDVI values.")
+        edges = self._ndvi_group_edges(float(ndvi_min), float(ndvi_max), group_count)
         radius = window_size // 2
+        # Padding happens only for this input; external tiles need halo pixels.
+        padded = [np.pad(np.where(valid, a, np.nan), radius,
+                         constant_values=np.nan) for a in (bt10, bt11, ndvi)]
+        height, width = result.shape
+        for row in range(0, height, chunk_rows):
+            r1 = min(height, row + chunk_rows)
+            for col in range(0, width, 128):
+                c1 = min(width, col + 128)
+                windows = [np.lib.stride_tricks.sliding_window_view(
+                    a[row:r1+2*radius, col:c1+2*radius], (window_size, window_size)
+                ) for a in padded]
+                result[row:r1, col:c1] = self._vectorized_windows(*windows, ndvi_edges=edges)
+        result[~valid | ~np.isfinite(result) | (result < 0)] = np.nan
+        return result
 
-        for row in range(bt_10.shape[0]):
-            row_start = max(0, row - radius)
-            row_end = min(bt_10.shape[0], row + radius + 1)
-            for col in range(bt_10.shape[1]):
-                col_start = max(0, col - radius)
-                col_end = min(bt_10.shape[1], col + radius + 1)
-                water_vapor[row, col] = self._window_water_vapor(
-                    bt_10[row_start:row_end, col_start:col_end],
-                    bt_11[row_start:row_end, col_start:col_end],
-                    ndvi[row_start:row_end, col_start:col_end],
-                    ndvi_edges=ndvi_edges,
-                )
-
-        return water_vapor
+    def _vectorized_windows(self, x, y, ndvi, *, ndvi_edges):
+        """Same grouped regression as the scalar oracle; windows are views."""
+        axes = (-2, -1)
+        valid = np.isfinite(x) & np.isfinite(y) & np.isfinite(ndvi)
+        weighted = np.zeros(x.shape[:2])
+        counts = np.zeros(x.shape[:2])
+        ranges = [(None, None)] if ndvi_edges is None else list(zip(ndvi_edges[:-1], ndvi_edges[1:]))
+        for index, (lower, upper) in enumerate(ranges):
+            group = valid.copy()
+            if lower is not None:
+                group &= (ndvi >= lower) & ((ndvi <= upper) if index == len(ranges)-1 else (ndvi < upper))
+            n = group.sum(axis=axes)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                mx = np.where(group, x, 0).sum(axis=axes) / n
+                my = np.where(group, y, 0).sum(axis=axes) / n
+                dx, dy = x - mx[..., None, None], y - my[..., None, None]
+                keep = group & (np.abs(dx) > np.abs(dy)) & (dx * dy >= 0)
+                count = keep.sum(axis=axes)
+                xx = np.where(keep, dx, 0)
+                yy = np.where(keep, dy, 0)
+                vx, vy = (xx**2).sum(axis=axes), (yy**2).sum(axis=axes)
+                cov = (xx * yy).sum(axis=axes)
+                forward, reverse = cov / vx, cov / vy
+                mean_ndvi = np.where(keep, ndvi, 0).sum(axis=axes) / count
+                pv = ((mean_ndvi - 0.2) / 0.3)**2
+                ratio_e = np.where(mean_ndvi < 0.2, 0.9939,
+                    np.where(mean_ndvi > 0.5, 0.9966,
+                             (0.0195*pv+0.9688)/(0.0149*pv+0.9747)))
+                ratio = ratio_e * (forward + 1/reverse) / 2
+                water = np.where(ratio > 0.9, -18.973*ratio+19.13, -13.412*ratio+14.158)
+                ok = (count >= 2) & ~np.isclose(vx, 0) & ~np.isclose(vy, 0)
+                ok &= (forward*reverse >= self.correlation_threshold) & np.isfinite(water) & (water >= 0)
+            weighted += np.where(ok, water*count, 0)
+            counts += np.where(ok, count, 0)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            return np.where(counts > 0, weighted/counts, np.nan)
 
     def _window_water_vapor(self, bt_10, bt_11, ndvi, *, ndvi_edges) -> float:
         """
@@ -128,7 +145,7 @@ class WaterVaporWang2015:
         float
             Weighted local water vapor estimate in g/cm2.
         """
-        valid = ~(np.isnan(bt_10) | np.isnan(bt_11) | np.isnan(ndvi))
+        valid = np.isfinite(bt_10) & np.isfinite(bt_11) & np.isfinite(ndvi)
         if np.count_nonzero(valid) < 2:
             return np.nan
 
@@ -210,12 +227,14 @@ class WaterVaporWang2015:
             return np.nan, 0
 
         emissivity_ratio = self._emissivity_ratio(float(np.nanmean(ndvi_valid)))
-        transmittance_ratio = emissivity_ratio * r_11_10
+        transmittance_ratio = emissivity_ratio * (r_11_10 + 1 / r_10_11) / 2
         if transmittance_ratio > 0.9:
             water_vapor = (-18.973 * transmittance_ratio) + 19.13
         else:
             water_vapor = (-13.412 * transmittance_ratio) + 14.158
 
+        if not np.isfinite(water_vapor) or water_vapor < 0:
+            return np.nan, 0
         return water_vapor, int(np.count_nonzero(valid))
 
     def _emissivity_ratio(self, ndvi: float) -> float:

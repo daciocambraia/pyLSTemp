@@ -92,7 +92,7 @@ def ensure_boolean_mask(mask, *, shape: tuple[int, ...]) -> np.ndarray:
 
 def build_mask_from(*arrays: np.ndarray) -> np.ndarray:
     """
-    Build a mask that marks zeros and NaNs as invalid pixels.
+    Build a mask that marks zeros and nonfinite values as invalid pixels.
 
     Parameters
     ----------
@@ -109,7 +109,7 @@ def build_mask_from(*arrays: np.ndarray) -> np.ndarray:
     for array in arrays:
         if array is None:
             continue
-        mask |= np.isnan(array) | (array == 0)
+        mask |= ~np.isfinite(array) | (array == 0)
     return mask
 
 

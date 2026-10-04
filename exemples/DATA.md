@@ -1,16 +1,7 @@
-# Example Data
+# Scene inputs
 
-The example notebooks expect small GeoTIFF files in this folder.
-
-Large `.tif` files are intentionally not included in the Git repository to keep
-installation and cloning lightweight. Place your example bands here before
-running the notebooks, or adapt the notebook paths to your own data directory.
-
-Expected filenames used by the notebooks:
-
-- `LC82210712016107LGN01_B2.tif`
-- `LC82210712016107LGN01_B4.tif`
-- `LC82210712016107LGN01_B5.tif`
-- `LC82210712016107LGN01_B10.tif`
-- `LC82210712016107LGN01_B11.tif`
-
+Set PYLSTEMP_SCENE to one Landsat 8/9 Collection 2 Level-1 folder.
+Required: B2, B4, B5, B10, B11, MTL.txt, QA_PIXEL and QA_RADSAT. Keep original product filenames.
+SZA is used when available (hundredths of degrees). All rasters must be aligned.
+No large scene data is committed. Notebooks use a calibrated 256x256 ROI.
+For full-scene validation, run scripts/validate_scenes.py from the project root.

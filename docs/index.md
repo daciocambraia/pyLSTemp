@@ -19,3 +19,5 @@ This folder contains the user-facing documentation for the current modular `pyLS
 - the real implementations live in `pylstemp/algorithms/`
 - new algorithms are discovered automatically from their family folder
 - new families can also be discovered automatically when they expose a family registry
+
+- [Scientific methods, migration and validation limits](scientific-methods.md)

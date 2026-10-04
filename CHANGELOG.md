@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.11.0 - 2026-10-04
+
+- Correct SI units in mono-window; remove invalid upper LST cutoff.
+- Correct Jimenez coefficient and Wang symmetric regression.
+- Resolve Avdan soil constant using Table 2; document remaining source ambiguities.
+- Require physical surface reflectance for Xiaolei; no automatic fixed DN scaling.
+- Add MTL-driven TOA/BT calibration, per-pixel solar angles and C2 QA.
+- Propagate nonfinite values, central NoData and explicit workflow masks.
+- Vectorize Wang in bounded-memory chunks; test against scalar windows.
+- Add independent regressions, calibrated notebooks and scene validation reports.
+- Restore repository-root packaging/CI; use SPDX license metadata.
+
+Migration: Xiaolei now expects surface reflectance in [0,1]. Numerical outputs change.
+See docs/scientific-methods.md.
+
+
 All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.

@@ -10,3 +10,15 @@ venv/
 .venv/
 article/*.pdf
 exemples/data/*.tif
+
+# Local research data and preserved history
+/Antigo/
+/Articles/
+/Imagens/
+/Verificacao/
+/v1.10/
+*.TIF
+*.tif
+*.tar
+*.npz
+/exemples/data/
