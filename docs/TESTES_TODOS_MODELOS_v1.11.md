@@ -94,7 +94,7 @@ Os arquivos das imagens e da v1.10 historica foram preservados. Nao houve push o
 
 python -m unittest discover -s tests -v
 
-python scripts/validate_all_models.py --input Imagens --output Verificacao/nova_rodada_todos_modelos
+python scripts/validate_all_models.py --input ../Imagens --output Verificacao/nova_rodada_todos_modelos
 
 O executor requer as dependencias de exemplos. A pasta de saida deve ser nova.
 O backend Pillow foi usado nesta maquina, pois o Controle de Aplicativos bloqueou a DLL do rasterio.

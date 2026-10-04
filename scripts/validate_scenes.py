@@ -1,7 +1,7 @@
 """Reproducible scene validation: full-scene TOA/BT/LST and Wang ROIs.
 
 Usage:
-  python scripts/validate_scenes.py --input Imagens --output Verificacao/v1.11.0
+  python scripts/validate_scenes.py --input ../Imagens --output Verificacao/v1.11.0
   python scripts/validate_scenes.py --input <one scene> --output <new folder>
 The Level-1 runs are operational checks; no ground-truth RMSE is claimed.
 """

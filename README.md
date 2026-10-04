@@ -15,7 +15,7 @@ transfer to Landsat 9 is experimental. No ground-truth LST accuracy is claimed.
 Xiaolei requires surface reflectance; TOA reflectance is not interchangeable with it.
 
 Install examples with `pip install -e ".[examples]"`. Process scenes with:
-`python scripts/validate_scenes.py --input Imagens --output Verificacao/v1.11.0`.
+`python scripts/validate_scenes.py --input ../Imagens --output Verificacao/v1.11.0`.
 Outputs include calibrated TOA GeoTIFFs, LST, PWV ROIs, maps and reports.
 Choose a new output folder for each run.
 

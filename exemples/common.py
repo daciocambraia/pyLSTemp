@@ -15,7 +15,11 @@ def example_inputs():
     if configured:
         folder = Path(configured).expanduser().resolve()
     else:
-        folders = sorted(p for p in (PROJECT_ROOT/"Imagens").glob("*") if p.is_dir() and list(p.glob("*_MTL.txt")))
+        folders = []
+        for data_root in (PROJECT_ROOT/"Imagens", PROJECT_ROOT.parent/"Imagens"):
+            folders = sorted(p for p in data_root.glob("*") if p.is_dir() and list(p.glob("*_MTL.txt")))
+            if folders:
+                break
         if not folders:
             raise FileNotFoundError("Set PYLSTEMP_SCENE to a Landsat 8/9 Level-1 scene folder with MTL, bands and QA.")
         folder = folders[0]
