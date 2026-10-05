@@ -1,6 +1,5 @@
 """Exercise every available model on supplied Level-1 scenes.
 
-Xiaolei remains synthetic-only without surface reflectance.
 Legacy AVHRR adaptations and Landsat-9 transfers are operational comparisons.
 """
 from pathlib import Path
@@ -152,7 +151,6 @@ def run_scene(folder,out,tile_rows):
             backend=scene.backend,full_scene_seconds=full_seconds,total_seconds=time.perf_counter()-start,
             metrics={key:stat.result() for key,stat in metrics.items()},rois=rois,warnings=warnings_log,
             ndvi_land_range=[global_min,global_max],
-            xiaolei="synthetic tests only: physical surface reflectance unavailable",
             legacy_models="Price/Kerr/Sobrino are unvalidated AVHRR-to-Landsat adaptations",
             landsat9="experimental coefficient transfer; radiometric calibration uses sensor MTL",
             scientific_accuracy="no independent ground truth; no RMSE claim",

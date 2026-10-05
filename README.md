@@ -12,7 +12,10 @@ Repository: <https://github.com/daciocambraia/pyLSTemp>
 Use [scientific-methods.md](docs/scientific-methods.md) for decisions, limitations and migration.
 Landsat 8/9 Level-1 radiometric calibration is metadata-driven. Retrieval coefficient
 transfer to Landsat 9 is experimental. No ground-truth LST accuracy is claimed.
-Xiaolei requires surface reflectance; TOA reflectance is not interchangeable with it.
+Available emissivity methods are Avdan and Gopinadh. Xiaolei has been removed
+from this release; no available retrieval method requires an additional SR product.
+NDVI accepts calibrated radiance or reflectance; EVI uses physical reflectance.
+The scene reader uses MTL-driven TOA reflectance for the Level-1 optical bands.
 
 Install examples with `pip install -e ".[examples]"`. Process scenes with:
 `python scripts/validate_scenes.py --input ../Imagens --output Verificacao/v1.11.0`.
@@ -105,6 +108,7 @@ That means `list_algorithms()` grows with the codebase instead of depending on a
 - [Deep module and combination validation](docs/AVALIACAO_MODULOS_v1.11.md)
 - [Improvements identified after validation](docs/MELHORIAS_MODULOS_v1.11.md)
 - [Index corrections, reflectance conversion and method messages](docs/CORRECOES_INDICES_REFLECTANCIA_v1.11.md)
+- [Current scope: Xiaolei removal and retained-method verification](docs/ESCOPO_LEVEL1_v1.11.md)
 
 ## Development
 

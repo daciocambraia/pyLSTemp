@@ -75,7 +75,7 @@ emissivity_11 = emissivity(
 )
 ```
 
-`avdan-2016` follows the NDVI conditional emissivity rules from Avdan and Jovanovska: water, soil, mixed pixels using fractional vegetation cover plus `C=0.005`, and vegetation. Because this source method is single-channel, it returns the same emissivity for band 10 and band 11 workflows. For split-window methods, consider `gopinadh-2018` or `xiaolei-2014` when you want band-specific emissivity.
+`avdan-2016` follows the NDVI conditional emissivity rules from Avdan and Jovanovska: water, soil, mixed pixels using fractional vegetation cover plus `C=0.005`, and vegetation. Because this source method is single-channel, it returns the same emissivity for band 10 and band 11 workflows. For split-window methods, consider `gopinadh-2018` when you want band-specific emissivity.
 
 ## 4. Compute single-channel LST
 
@@ -111,7 +111,7 @@ lst_split = split_window(
 )
 ```
 
-`split_window(...)` blocks `emissivity_method="avdan-2016"` because Avdan is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` for split-window workflows. `gopinadh-2018` uses Rongali et al.'s linear fractional vegetation cover with `NDVIsoil=0.15` and `NDVIvegetation=0.48`; the FVC is clipped to `0..1` before the linear emissivity mixture.
+`split_window(...)` blocks `emissivity_method="avdan-2016"` because Avdan is a single-channel emissivity method. Use `gopinadh-2018` for split-window workflows. `gopinadh-2018` uses Rongali et al.'s linear fractional vegetation cover with `NDVIsoil=0.15` and `NDVIvegetation=0.48`; the FVC is clipped to `0..1` before the linear emissivity mixture.
 
 `lst_method="du-2015"` can use a single scene-level `water_vapor` value, but it is optional; if omitted, the method uses the general Du et al. coefficient range `[0.0, 6.3] g/cm2`.
 When the supplied value falls inside one of Du et al.'s overlapping CWV ranges, the method computes both adjacent estimates and returns their mean.
@@ -182,7 +182,11 @@ print(catalog["water_vapor"].keys())
 
 ## Scientific contracts and real scenes
 
-Optical inputs must be physical reflectance. Xiaolei specifically requires surface reflectance.
+NDVI accepts calibrated radiance or reflectance; preserve the input quantity
+and check that emissivity/land-cover thresholds match its intended use.
+EVI requires physical reflectance. The supplied scene examples use Level-1 TOA
+reflectance. Xiaolei is not available in this release; emissivity methods are
+avdan-2016 and gopinadh-2018.
 Use pylstemp.calibration.read_mtl, toa_reflectance and brightness_from_mtl for Level-1 calibration.
 The LandsatScene reader applies per-pixel SZA and C2 QA.
 Both LST workflows and water_vapor accept keyword-only mask=.

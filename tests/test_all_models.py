@@ -12,7 +12,7 @@ from pylstemp.algorithms.split_window import split_window_registry
 from pylstemp.algorithms.spectral_indices import spectral_indices_registry as legacy_registry
 
 SPLIT = ("du-2015", "jimenez-munoz-2014", "kerr-1992", "price-1984", "sobrino-1993")
-EMISSIVITY = ("avdan-2016", "gopinadh-2018", "xiaolei-2014")
+EMISSIVITY = ("avdan-2016", "gopinadh-2018")
 
 
 class AllModelTests(unittest.TestCase):
@@ -75,18 +75,7 @@ class AllModelTests(unittest.TestCase):
                 expected=300.218575 if key=="du-2015" else 299.732 if key=="jimenez-munoz-2014" else 300.9360655737705 if key=="kerr-1992" else 300.
                 np.testing.assert_allclose(result,expected,rtol=0,atol=1e-10)
 
-    def test_xiaolei_all_landcover_classes_both_bands(self):
-        ndvi=np.array([[.1,.35,.5,.6]])
-        expected={10:[[.9636,.9851823785,.9863,.9863]],
-                  11:[[.9788,.988752713,.9896,.9896]]}
-        for band in (10,11):
-            result=emissivity(ndvi,band=f"band_{band}",band_4_red=np.full(ndvi.shape,.2),emissivity_method="xiaolei-2014")
-            np.testing.assert_allclose(result,expected[band],rtol=0,atol=1e-10)
 
-    def test_xiaolei_rejects_raw_dn_and_invalid_reflectance(self):
-        for value in (10000., -.1, 1.1):
-            with self.subTest(value=value), self.assertRaises(ValueError):
-                emissivity(self.a*0+.1,band="band_10",band_4_red=self.a*0+value,emissivity_method="xiaolei-2014")
 
     def test_avdan_class_boundaries_are_explicit(self):
         ndvi=np.array([[-.01,0,.19999,.2,.35,.5,.50001]])
@@ -117,7 +106,7 @@ class AllModelTests(unittest.TestCase):
 
     def test_all_supported_split_emissivity_combinations(self):
         for key in SPLIT:
-            for method in ("gopinadh-2018","xiaolei-2014"):
+            for method in ("gopinadh-2018",):
                 with self.subTest(lst=key,emissivity=method),warnings.catch_warnings():
                     warnings.simplefilter("ignore",RuntimeWarning)
                     result=split_window(self.a,self.a-2,self.red,self.nir,lst_method=key,

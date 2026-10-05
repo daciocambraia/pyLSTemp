@@ -199,7 +199,6 @@ def validate(folder, output, tile_rows):
             wang_scope="three 256x256 ROIs with 10-pixel halo and full-scene NDVI bounds",
             temperature_validation="operational consistency only; no ground-truth RMSE",
             landsat9_coefficients="experimental transfer of Landsat-8 retrieval coefficients" if scene.sensor=="landsat_9" else "original target sensor",
-            xiaolei_status="not run on Level-1 TOA; requires surface reflectance",
             metrics={name:stat.result() for name,stat in metrics.items()},rois=roi_results,
             input_sha256={token:digest(path) for token,path in dict(scene.paths,MTL=scene.mtl_path).items()},
             calibration_metadata={k:v for k,v in scene.metadata.items() if any(x in k for x in

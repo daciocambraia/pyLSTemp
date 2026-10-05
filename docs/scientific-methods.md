@@ -10,13 +10,16 @@ Near-surface air temperature is not a ground-truth substitute for skin temperatu
 ## Input contracts
 
 - Thermal workflows use brightness temperature in kelvin, not DN or Level-2 ST_B10.
-- NDVI/EVI use physical optical reflectance. Preserve the product type and calibration.
+- NDVI accepts calibrated optical radiance or reflectance. Preserve the quantity, product type and calibration.
+- Rouse et al. (1974) used radiance; common multiplicative scaling cancels in NDVI, band-specific gains and offsets generally do not.
+- NDVI thresholds used by downstream methods require a compatible radiometric convention.
+- EVI requires physical optical reflectance; its additive constant does not cancel a change of input units.
 - Level-1 TOA reflectance: (MTL gain * DN + MTL offset) / sin(solar elevation).
 - Per-pixel SZA, when present, is stored in hundredths of degrees. Elevation = 90 - SZA/100.
 - Level-1 BT: K2 / log(1 + K1 / (radiance gain * DN + radiance offset)).
 - All four thermal coefficients come from the scene MTL in the scene reader.
 - C2 Level-2 SR_B* scaling is 0.0000275 * DN - 0.2. This scaling does not atmospherically correct Level-1.
-- Xiaolei requires red surface reflectance in [0,1]. Atmospheric correction cannot be inferred from array values.
+- Current emissivity methods are Avdan and Gopinadh; Xiaolei was removed because its additional SR requirement is outside the selected release scope.
 - QA excludes fill, dilated cloud, high-confidence cirrus/cloud/shadow/snow, selected optical saturation and terrain occlusion.
 - Wang operates over land; exclude QA water. Cloud masking is an initial quality screen, not complete atmospheric correction.
 
@@ -74,14 +77,16 @@ LST and PWV results here are experimental coefficient transfers.
 The two supplied scenes have different acquisition dates and grids; differences between
 them are not a cross-sensor accuracy measurement.
 The Level-1 scene runs use TOA-derived NDVI and empirical emissivity as operational
-demonstrations. Xiaolei is not applied to these TOA inputs. Its array formula is tested
-independently with physical surface reflectance.
+demonstrations. Current NDVI-derived emissivity uses Avdan or Gopinadh.
+Xiaolei and its associated synthetic-SR combinations have been removed.
 No RMSE, bias against ground truth or scientific accuracy certification is claimed.
 
 ## Migration from v1.10
 
 Numerical results change after unit/coefficient/reflectance corrections.
-Xiaolei no longer rescales raw DN: supply surface reflectance and preserve provenance.
+Xiaolei is not available in this release. Existing calls selecting it raise
+InvalidMethodRequested; Avdan is available for single-channel and Gopinadh for
+single-channel and split-window workflows.
 Temperature above 56.7 C is no longer discarded. Nonfinite/nonpositive absolute
 temperature and invalid emissivity are NaN. Workflow masks are explicit keyword arguments.
 Legacy spectral_indices remains available for compatibility; spectral_index is preferred.
@@ -110,5 +115,15 @@ change a piecewise emissivity class at an exact NDVI boundary.
 The catalog now contains one NDVI. Legacy imports remain aliases to that
 implementation. `reflectance(..., kind="surface")` accepts matching Collection 2
 Level-2 SR data, while Level-1 can be converted to TOA. Scaling is not atmospheric
-correction; the two local Level-1 scenes do not provide real SR for Xiaolei.
+correction. The helper remains optional; current retrieval methods do not
+require an additional SR product.
 See [correction report](CORRECOES_INDICES_REFLECTANCIA_v1.11.md).
+
+## Current release scope (2026-10-05)
+
+Xiaolei was removed from discovery, implementation, imports and active examples.
+The catalog has 12 algorithms and one NDVI. Numerical equations and default
+calibration of retained methods are unchanged. NDVI radiance support is checked
+without changing the TOA-based real-scene workflow.
+Rouse reference: [NASA original record](https://ntrs.nasa.gov/citations/19740022614).
+See [current verification report](ESCOPO_LEVEL1_v1.11.md).

@@ -109,16 +109,12 @@ def run_roi(scene,dest,index,core,bounds):
     for method in emi_methods:
         for band in (10,11):
             identity=dict(module="emissivity",method=method,band=band)
-            if method=="xiaolei-2014":
-                cases.append(dict(identity,status="blocked_missing_surface_reflectance"));continue
             expected=ref.emissivity(method,n,red)[band-10]
             record(cases,identity,lambda m=method,b=band:emissivity(n,b,emissivity_method=m),expected)
     for lst in FAMILY_REGISTRIES["single_channel"].available_keys():
         for emi in emi_methods:
             for unit in ("kelvin","celsius"):
                 identity=dict(module="single_channel",lst=lst,emissivity=emi,unit=unit)
-                if emi=="xiaolei-2014":
-                    cases.append(dict(identity,status="blocked_missing_surface_reflectance"));continue
                 e10,e11=ref.emissivity(emi,n,red)
                 expected=ref.temperature(lst,t10,t11,n,e10,e11,mask=mask)
                 if unit=="celsius":expected-=273.15
@@ -136,8 +132,6 @@ def run_roi(scene,dest,index,core,bounds):
                         pwv_used_by_algorithm=lst in ("du-2015","jimenez-munoz-2014"))
                     reject=None
                     if emi=="avdan-2016":reject=ValueError
-                    elif emi=="xiaolei-2014":
-                        cases.append(dict(identity,status="blocked_missing_surface_reflectance"));continue
                     elif lst=="jimenez-munoz-2014" and pwv is None:reject=ValueError
                     elif lst=="du-2015" and mode=="wang_raster":reject=ValueError
                     elif lst=="du-2015" and pwv is not None and not 0<=pwv<=6.3:reject=ValueError
@@ -214,7 +208,6 @@ def main():
                 print(scene.sensor,"deep matrix ROI",i,"passed",flush=True)
             result=dict(scene=scene.product_id,sensor=scene.sensor,rois=rois,
                 input_sha256=full["input_sha256"],optical_level="Level-1 TOA",
-                xiaolei="blocked on real scenes; tested with synthetic SR",
                 coefficient_transfer="Landsat 9 and legacy AVHRR coefficients are not accuracy-validated")
             (dest/"results.json").write_text(json.dumps(result,indent=2,allow_nan=False),encoding="utf-8")
             scenes.append(result)

@@ -1,5 +1,7 @@
 # Melhorias identificadas apos a execucao dos modulos
 
+Atualizacao de escopo em 05/10/2026: Xiaolei foi removido da versao atual. Este documento preserva os resultados da rodada anterior, que incluia o metodo. Os 204 casos sem SR nao fazem parte do catalogo atual. Consulte docs/ESCOPO_LEVEL1_v1.11.md e Verificacao/v1.11.0/escopo_level1_sem_xiaolei_2026-10-05/RELATORIO_ESCOPO.md.
+
 Atualizacao em 05/10/2026: os defeitos NDVI 0/0 e EVI com BLUE infinito foram corrigidos e revalidados. A duplicacao de NDVI no catalogo foi removida; reflectance e mensagens foram ampliadas. Consulte docs/CORRECOES_INDICES_REFLECTANCIA_v1.11.md e Verificacao/v1.11.0/correcoes_indices_mensagens_2026-10-05/RELATORIO_CORRECOES.md. A avaliacao original abaixo foi preservada.
 
 Data: 05/10/2026. Avaliacao baseada na rodada de matriz profunda.

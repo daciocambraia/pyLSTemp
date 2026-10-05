@@ -35,12 +35,6 @@ class IndependentRequirements(unittest.TestCase):
         )
         self.assertEqual(float(result[0, 0]), 340)
 
-    def test_xiaolei_accepts_physical_red_reflectance(self):
-        result = emissivity(
-            image(0.1), band="band_10", band_4_red=image(0.2),
-            emissivity_method="xiaolei-2014",
-        )
-        self.assertAlmostEqual(float(result[0, 0]), 0.973 - 0.047 * 0.2, places=10)
 
     def test_avdan_emissivity_does_not_exceed_one(self):
         result = emissivity(image(0.2), band="band_10", emissivity_method="avdan-2016")

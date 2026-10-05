@@ -17,13 +17,6 @@ class TestValidation(unittest.TestCase):
                 mask=np.ones((2, 2), dtype=int),
             )
 
-    def test_xiaolei_requires_red_band(self):
-        with self.assertRaises(ValueError):
-            emissivity(
-                np.ones((2, 2)),
-                band="band_10",
-                emissivity_method="xiaolei-2014",
-            )
 
     def test_brightness_rejects_unknown_band(self):
         with self.assertRaisesRegex(ValueError, "band must be"):

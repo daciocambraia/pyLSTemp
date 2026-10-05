@@ -23,3 +23,5 @@ This folder contains the user-facing documentation for the current modular `pyLS
 - [Scientific methods, migration and validation limits](scientific-methods.md)
 
 - [Index corrections, one NDVI, reflectance and actionable errors](CORRECOES_INDICES_REFLECTANCIA_v1.11.md)
+
+- [Current Level-1 scope and Xiaolei removal](ESCOPO_LEVEL1_v1.11.md)

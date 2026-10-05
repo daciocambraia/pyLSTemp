@@ -1,11 +1,11 @@
 """Actionable input descriptions shared by API errors and the catalog."""
 
 INPUT_HELP = {
-    "spectral_index": "Provide aligned calibrated nir/red arrays; EVI also requires blue. Boolean mask=True marks invalid pixels.",
+    "spectral_index": "Provide aligned nir/red arrays. NDVI accepts calibrated radiance or reflectance; EVI requires physical reflectance and blue. Boolean mask=True marks invalid pixels.",
     "brightness": "Provide raw Level-1 thermal DN, band 10 or 11 and landsat_8 or landsat_9; use radiance gain/bias from MTL. Output is Kelvin.",
-    "emissivity": "Provide NDVI in [-1,1] and band 10/11. Xiaolei requires physical red surface reflectance in [0,1], not DN or TOA.",
-    "single_window": "Provide aligned band-10 brightness in Kelvin and red/nir reflectance. Select a registered LST and emissivity method.",
-    "split_window": "Provide aligned band-10/11 brightness in Kelvin and red/nir reflectance. Avdan is single-channel only. PWV is in g/cm2.",
+    "emissivity": "Provide NDVI in [-1,1] and band 10/11. Available methods are avdan-2016 and gopinadh-2018; neither requires red surface reflectance.",
+    "single_window": "Provide aligned band-10 brightness in Kelvin and red/nir calibrated radiance or reflectance for NDVI. Select a registered LST and emissivity method.",
+    "split_window": "Provide aligned band-10/11 brightness in Kelvin and red/nir calibrated radiance or reflectance for NDVI. Avdan is single-channel only. PWV is in g/cm2.",
     "water_vapor": "Provide aligned 2D band-10/11 brightness in Kelvin and NDVI. Use odd window_size>=3, group_count>=1, chunk_rows>=1 and a boolean mask.",
     "reflectance": "Use kind='toa' with Level-1 MTL/DN, or kind='surface' with Collection 2 Level-2 SR_B* DN and matching MTL. Scaling is not atmospheric correction.",
     "toa_reflectance": "Provide Level-1 MTL, optical DN/band 1..9 and a solar elevation in degrees within (0,90].",
@@ -28,9 +28,7 @@ def describe_inputs(family, key):
     workflow={"thermal":"brightness","single_channel":"single_window"}.get(family,family)
     text=INPUT_HELP.get(workflow, "See docs/scientific-methods.md.")
     if family=="emissivity":
-        if key=="xiaolei-2014":
-            text="Aligned NDVI and physical red surface reflectance in [0,1]. TOA/DN cannot substitute for surface reflectance."
-        elif key=="avdan-2016":
+        if key=="avdan-2016":
             text="NDVI in [-1,1]; same emissivity returned for bands 10/11. Intended for single-channel LST."
         else:
             text="NDVI in [-1,1]; band-specific emissivity, fixed soil/vegetation NDVI endmembers 0.15/0.48."

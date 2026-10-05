@@ -75,7 +75,7 @@ class CanonicalAndMessages(unittest.TestCase):
         cases=[
           (lambda:spectral_index("ndvi",nir=self.nir,red=self.red[:1]),InputShapesNotEqual,"spectral_index"),
           (lambda:brightness(self.t,12,"landsat_8"),ValueError,"band must be"),
-          (lambda:emissivity(self.red,10,emissivity_method="xiaolei-2014"),ValueError,"surface reflectance"),
+          (lambda:emissivity(self.red,12,emissivity_method="gopinadh-2018"),ValueError,"band must be"),
           (lambda:single_window(self.t,self.red,self.nir,mask=np.zeros(self.t.shape,int)),InvalidMaskError,"single_window"),
           (lambda:split_window(self.t,self.t-2,self.red,self.nir,lst_method="du-2015",water_vapor=np.full(self.t.shape,2.)),ValueError,"scalar"),
           (lambda:water_vapor(self.t,self.t-2,self.red,window_size=20),ValueError,"water_vapor")]

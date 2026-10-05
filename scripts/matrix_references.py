@@ -60,13 +60,7 @@ def emissivity(method,index,red):
         fraction=np.clip((n-.15)/.33,0,1)
         pair=(.971+.016*fraction,.977+.012*fraction)
     else:
-        red=np.asarray(red,dtype=float)
-        values=[]
-        for soil,veg,a,b in ((.9668,.9863,.973,.047),(.9747,.9896,.984,.026)):
-            cavity=.55*(1-soil)*veg*(1-pv)
-            values.append(np.select([n<.2,n<=.5,n<=1],
-                [a-b*red,soil+(veg-soil)*pv+cavity,veg+cavity],default=np.nan))
-        pair=tuple(values)
+        raise ValueError(f"No independent emissivity reference for {method!r}")
     invalid=~np.isfinite(n)|(np.abs(n)>1)
     return tuple(np.where(invalid|~np.isfinite(v)|(v<=0)|(v>1),np.nan,v) for v in pair)
 

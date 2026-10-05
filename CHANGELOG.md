@@ -2,10 +2,13 @@
 
 ## 1.11.0 - 2026-10-04 (updated 2026-10-05)
 
+- Verify retained scope: 619 tests, 106 subtests, 486 real cases and 102 unchanged GeoTIFFs; see docs/ESCOPO_LEVEL1_v1.11.md.
+- Remove Xiaolei implementation and catalog entry; retained emissivity methods are Avdan and Gopinadh. Old Xiaolei calls now raise InvalidMethodRequested.
+- Clarify NDVI radiance/reflectance inputs; retain TOA-based scene calibration and optional SR scaling.
 - Fix undefined NDVI ratios and nonfinite EVI inputs; keep one canonical NDVI catalog entry with legacy import aliases.
 - Add explicit Level-1 TOA / Collection 2 Level-2 SR reflectance conversion with product-level guards.
 - Add actionable public workflow errors, method input metadata and warnings for unused PWV; validate Du scalar PWV.
-- Revalidate both supplied scenes: 813 tests, 106 subtests and 120 GeoTIFFs; see docs/CORRECOES_INDICES_REFLECTANCIA_v1.11.md.
+- Earlier index-correction stage: revalidate both supplied scenes with 813 tests, 106 subtests and 120 GeoTIFFs; see docs/CORRECOES_INDICES_REFLECTANCIA_v1.11.md.
 - Correct SI units in mono-window; remove invalid upper LST cutoff.
 - Correct Jimenez coefficient and Wang symmetric regression.
 - Resolve Avdan soil constant using Table 2; document remaining source ambiguities.
@@ -16,7 +19,9 @@
 - Add independent regressions, calibrated notebooks and scene validation reports.
 - Restore repository-root packaging/CI; use SPDX license metadata.
 
-Migration: Xiaolei now expects surface reflectance in [0,1]. Numerical outputs change.
+Migration: Xiaolei has been removed from the selected release scope.
+Use Avdan for single-channel or Gopinadh for single-channel/split-window.
+Earlier numerical corrections still change outputs relative to v1.10.
 See docs/scientific-methods.md.
 
 

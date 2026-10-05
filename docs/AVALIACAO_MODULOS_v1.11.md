@@ -1,5 +1,7 @@
 # Avaliacao profunda dos modulos - pyLSTemp v1.11.0
 
+Atualizacao de escopo em 05/10/2026: Xiaolei foi removido da versao atual. Este documento preserva os resultados da rodada anterior, que incluia o metodo. Os 204 casos sem SR nao fazem parte do catalogo atual. Consulte docs/ESCOPO_LEVEL1_v1.11.md e Verificacao/v1.11.0/escopo_level1_sem_xiaolei_2026-10-05/RELATORIO_ESCOPO.md.
+
 Data: 05/10/2026. Rodada nova; resultados anteriores preservados.
 
 Foram reprocessadas as duas cenas completas e executada a matriz de combinacoes

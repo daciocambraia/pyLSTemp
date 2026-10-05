@@ -35,8 +35,8 @@ class BaseEmissivityAlgorithm:
         ndvi : array-like
             NDVI image used to estimate land-cover fraction.
         red_band : array-like, optional
-            Red band image. Required only by methods that explicitly use
-            reflectance information, such as ``xiaolei-2014``.
+            Optional red band array retained for API compatibility. The current
+            Avdan and Gopinadh methods derive emissivity from NDVI only.
 
         Returns
         -------

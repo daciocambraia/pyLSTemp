@@ -97,7 +97,8 @@ def spectral_index(index: str, **kwargs):
     Notes
     -----
     - Input arrays must have the same shape and spatial alignment.
-    - Use calibrated physical optical reflectance bands for physically meaningful results.
+    - NDVI accepts calibrated radiance or reflectance; record the input quantity.
+    - EVI requires physical reflectance for its additive constant to be meaningful.
     - A boolean `mask` can be passed to mark invalid pixels as `NaN`.
 
     Examples
@@ -299,8 +300,8 @@ def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = 
         `"band_11"`. Short aliases such as `"10"`, `"11"`, `"b10"` and
         `"b11"` are also accepted.
     band_4_red : array-like, optional
-        Physical red surface reflectance in [0,1] for Xiaolei. Required by methods that estimate soil emissivity
-        from the red band, such as `"xiaolei-2014"`.
+        Optional red band array retained for API compatibility. The currently
+        available emissivity methods use NDVI only; this argument is not required.
     emissivity_method : str, default="avdan-2016"
         Name of the emissivity method to use.
 
@@ -314,7 +315,7 @@ def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = 
     - `avdan-2016` is intended for the single-channel workflow and returns
       the same emissivity for band 10 and band 11.
     - For split-window workflows, prefer band-specific methods such as
-      `"gopinadh-2018"` or `"xiaolei-2014"`.
+      `"gopinadh-2018"`.
     - Input arrays must have the same shape and spatial alignment.
 
     Examples
@@ -492,7 +493,7 @@ def split_window(
         raise ValueError(
             f"'{emissivity_method}' is a single-channel emissivity method and should not be used "
             "with split_window(). Use a band-specific emissivity method such as "
-            "'gopinadh-2018' or 'xiaolei-2014'."
+            "'gopinadh-2018'."
         )
 
     brightness_10 = to_float_array("brightness_band_10", brightness_band_10)

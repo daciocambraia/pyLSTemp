@@ -46,8 +46,6 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 - `avdan-2016`
   Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016.
   Emissivity follows the article's NDVI conditional rules, including `C=0.005` for mixed pixels.
-- `xiaolei-2014`
-  Yu, X., Guo, X., and Wu, Z. Land surface temperature retrieval from Landsat 8 TIRS - comparison between radiative transfer equation-based method, split window algorithm and single channel method. Remote Sensing, 2014.
 - `gopinadh-2018`
   Rongali, G., et al. Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data. Journal of Geovisualization and Spatial Analysis, 2018.
 
@@ -59,3 +57,11 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 ## Radiative transfer
 
 This family is currently reserved for future methods.
+
+## Historical method removed from the current release
+
+Xiaolei (xiaolei-2014) is no longer registered or shipped because the selected
+release scope does not include its additional surface-reflectance input.
+Yu, X., Guo, X., and Wu, Z. Land surface temperature retrieval from Landsat 8 TIRS -
+comparison between radiative transfer equation-based method, split window
+algorithm and single channel method. Remote Sensing, 2014.

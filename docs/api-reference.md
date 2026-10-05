@@ -4,7 +4,10 @@
 
 ### `spectral_index(index, **kwargs)`
 
-Computes a spectral index selected by name. Undefined ratios and any nonfinite input
+Computes a spectral index selected by name. NDVI accepts calibrated radiance or
+reflectance; record the input quantity because band-specific conversions can
+change the ratio. EVI requires physical reflectance. Raw DN is not generally
+equivalent to calibrated radiance/reflectance. Undefined ratios and any nonfinite input
 become NaN. NDVI uses the exact ratio for valid denominators; `eps=1e-15` is a
 denominator tolerance, not an additive bias. The existing `abs(EVI)>1` mask remains.
 Only `spectral_index` is listed in the catalog; legacy `spectral_indices` imports
@@ -50,7 +53,7 @@ You can override these values in the function call.
 Computes emissivity for the selected thermal band workflow.
 Use `band="band_10"` or `band="band_11"`.
 The default `avdan-2016` method follows Avdan and Jovanovska's NDVI rules: water (`NDVI < 0`), soil (`0 <= NDVI < 0.2`), mixed pixels (`0.2 <= NDVI <= 0.5`) using fractional vegetation cover and `C=0.005`, and vegetation (`NDVI > 0.5`).
-`avdan-2016` returns the same emissivity for both thermal workflows because the source method is a single-channel Band 10 workflow. For split-window methods that need band-specific emissivity, prefer `gopinadh-2018` or `xiaolei-2014`.
+`avdan-2016` returns the same emissivity for both thermal workflows because the source method is a single-channel Band 10 workflow. For split-window methods that need band-specific emissivity, prefer `gopinadh-2018`.
 
 ### `single_window(brightness_band_10, band_4_red, band_5_nir, lst_method="mono-window-2016", emissivity_method="avdan-2016", unit="kelvin")`
 
@@ -74,7 +77,7 @@ lst = split_window(
 ```
 
 The default split-window emissivity method is `gopinadh-2018`, because it provides band-specific emissivity for bands 10 and 11 using Rongali et al.'s linear fractional vegetation cover with `NDVIsoil=0.15` and `NDVIvegetation=0.48`. The fractional vegetation cover is clipped to `0..1`; the final emissivity is still computed from the article's linear mixture.
-`avdan-2016` is blocked in `split_window(...)` because it is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` instead.
+`avdan-2016` is blocked in `split_window(...)` because it is a single-channel emissivity method. Use `gopinadh-2018` instead.
 
 For `lst_method="du-2015"` or `lst_method="jimenez-munoz-2014"`, `water_vapor` represents atmospheric column water vapor in `g/cm2`.
 For `du-2015`, use a single scene-level value. When `water_vapor=None`, the implementation uses Du et al.'s all-CWV coefficient set for `[0.0, 6.3] g/cm2`.
@@ -114,7 +117,7 @@ The resulting water vapor raster can be used directly in `split_window(..., lst_
 
 Returns a catalog of discovered families, algorithm metadata, and original-library credit.
 Each method includes `input_requirements` and `water_vapor_support`.
-There are 13 algorithm entries, including exactly one NDVI.
+There are 12 algorithm entries, including exactly one NDVI.
 
 ### `reflectance(dn, *, metadata, band, kind="toa", mask=None, sun_elevation=None)`
 
@@ -130,7 +133,8 @@ Public import: `from pylstemp import reflectance`. Parse matching MTL with
 Nonpositive DN, nonfinite values and boolean masks become NaN. Physical
 reflectance outside [0,1] is preserved for explicit quality decisions.
 This function does not perform atmospheric correction of Level-1/TOA data.
-Xiaolei still requires surface reflectance, not TOA.
+SR scaling remains an optional calibration utility. Available emissivity methods
+use NDVI and do not require an additional SR product.
 
 ~~~python
 from pylstemp import reflectance
@@ -154,7 +158,6 @@ See [verified examples and scene results](CORRECOES_INDICES_REFLECTANCIA_v1.11.m
 
 - `avdan-2016`
 - `gopinadh-2018`
-- `xiaolei-2014`
 
 ### `single_channel`
 
