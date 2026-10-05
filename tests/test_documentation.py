@@ -32,7 +32,7 @@ class DocumentationTests(unittest.TestCase):
                     tree = ast.fix_missing_locations(ConfigurePaths().visit(ast.parse(block)))
                     exec(compile(tree, str(path), "exec"), namespace)
             outputs = list(destination.glob("*.tif"))
-            self.assertEqual(len(outputs), 8)
+            self.assertEqual(len(outputs), 11)
             for output in outputs:
                 with scene_fixture.Image.open(output) as image:
                     self.assertEqual(image.size, (14, 12))

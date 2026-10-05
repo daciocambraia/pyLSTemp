@@ -31,3 +31,6 @@ Os exemplos leem arquivos de imagem e nao criam matrizes artificiais. O recorte
 central de ate 256 x 256 pixels e tratado como uma imagem de demonstracao.
 Em um mosaico, Wang precisa de halo e grupos globais de NDVI. Confira limites
 cientificos em [scientific-methods.md](../docs/scientific-methods.md).
+
+O notebook single_window compara Avdan e Jimenez-Munoz SC. O SC usa radiancia10
+e PWV, com restricao operacional 0..3 g/cm2.

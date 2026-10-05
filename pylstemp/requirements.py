@@ -16,6 +16,7 @@ INPUT_HELP = {
 }
 
 PWV_SUPPORT = {
+    "jimenez-munoz-sc-2014": "Required scalar or aligned raster [0,3] g/cm2. Invalid/out-of-range raster pixels become NaN; scalar out of range is rejected.",
     "du-2015": "Optional finite scalar in [0,6.3] g/cm2; raster unsupported. None uses all-CWV coefficients.",
     "jimenez-munoz-2014": "Required finite nonnegative scalar or aligned raster in g/cm2; invalid raster pixels become NaN.",
     "price-1984": "Not used; supplying water_vapor emits a RuntimeWarning.",
@@ -32,6 +33,8 @@ def describe_inputs(family, key):
             text="NDVI in [-1,1]; same emissivity returned for bands 10/11. Intended for single-channel LST."
         else:
             text="NDVI in [-1,1]; band-specific emissivity, fixed soil/vegetation NDVI endmembers 0.15/0.48."
+    if family=="single_channel" and key=="jimenez-munoz-sc-2014":
+        text+=" Also supply radiance_band_10 [W m-2 sr-1 um-1] matching BT10 and "+PWV_SUPPORT[key]
     if family=="split_window":
         text+=" "+PWV_SUPPORT.get(key,"Check the method's PWV requirements.")
         if key=="kerr-1992":text+=" The equation uses NDVI, not emissivity values."

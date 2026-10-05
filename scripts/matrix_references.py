@@ -61,16 +61,22 @@ def emissivity(method,index,red):
     invalid=~np.isfinite(n)|(np.abs(n)>1)
     return tuple(np.where(invalid|~np.isfinite(v)|(v<=0)|(v>1),np.nan,v) for v in pair)
 
-def temperature(method,t10,t11,n,e10,e11,pwv=None,mask=None):
+def temperature(method,t10,t11,n,e10,e11,pwv=None,mask=None,radiance=None):
     t10,t11,e10,e11=(np.asarray(a,dtype=float) for a in (t10,t11,e10,e11))
     invalid=~np.isfinite(t10)|(t10<=0)|~np.isfinite(e10)|(e10<=0)|(e10>1)
     if mask is not None: invalid|=mask
-    if method!="mono-window-2016":
+    if method not in {"mono-window-2016", "jimenez-munoz-sc-2014"}:
         invalid|=~np.isfinite(t11)|(t11<=0)|~np.isfinite(e11)|(e11<=0)|(e11>1)
     with np.errstate(all="ignore"):
         delta=t10-t11
         if method=="mono-window-2016":
             value=1/(1/t10+(10.895e-6/.01438)*np.log(e10))
+        elif method=="jimenez-munoz-sc-2014":
+            w=np.asarray(pwv,dtype=float);L=np.asarray(radiance,dtype=float)
+            invalid|=~np.isfinite(w)|(w<0)|(w>3)|~np.isfinite(L)|(L<=0)
+            # Expanded atmospheric-function equation, independent of production class.
+            p=(.04019*w**2+.02916*w+1.01523)*L-.38333*w**2-1.50294*w+.20324
+            value=t10+(t10**2/1324)*(p/(L*e10)+(.00918*w**2+1.36072*w-.27514)/L-1)
         elif method=="price-1984":
             value=(4.33*t10-3.33*t11)*(1+(1-e10)/4.5)+.75*t11*(e10-e11)
         elif method=="sobrino-1993":

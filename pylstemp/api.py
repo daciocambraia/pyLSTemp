@@ -217,7 +217,7 @@ def single_window(
     lst_method: str = "mono-window-2016",
     emissivity_method: str = "avdan-2016",
     unit: str = "kelvin",
-    *, mask=None,
+    *, mask=None, radiance_band_10=None, water_vapor=None,
 ) -> np.ndarray:
     """
     Compute land surface temperature using a single-channel method.
@@ -240,6 +240,13 @@ def single_window(
     unit : {"kelvin", "celsius"}, default="kelvin"
         Output temperature unit.
 
+    radiance_band_10 : array-like, optional
+        Band-10 TOA radiance [W m-2 sr-1 um-1], required for jimenez-munoz-sc-2014.
+        Must correspond to the same band, pixels and calibration as brightness_band_10.
+    water_vapor : float or array-like, optional
+        Required for jimenez-munoz-sc-2014, in g/cm2. Scalar range [0,3];
+        raster pixels outside [0,3] or nonfinite become NaN.
+
     Returns
     -------
     numpy.ndarray
@@ -249,7 +256,9 @@ def single_window(
     -----
     - Input arrays must have the same shape and spatial alignment.
     - Zero and `NaN` values in the brightness image are masked internally.
-    - The default mono-window method is a band 10 workflow.
+    - Both methods are Band-10 workflows.
+    - The polynomial Jimenez SC is screened at PWV <= 3 g/cm2 per the paper.
+    - mono-window-2016 does not accept radiance_band_10 or water_vapor.
 
     Examples
     --------
@@ -280,10 +289,18 @@ def single_window(
     ndvi_image = _ndvi(nir=nir, red=red, mask=mask)
     emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 
-    result = single_channel_registry.create(lst_method)(
+    key = single_channel_registry.resolve_key(lst_method)
+    extra = {}
+    if key == "jimenez-munoz-sc-2014":
+        extra = dict(radiance_band_10=radiance_band_10, water_vapor=water_vapor)
+    elif radiance_band_10 is not None or water_vapor is not None:
+        raise ValueError(f"single_window(lst_method={key!r}): radiance_band_10 and "
+                         "water_vapor are only used by jimenez-munoz-sc-2014.")
+    result = single_channel_registry.create(key)(
         emissivity_10=emissivity_10,
         brightness_temperature_10=brightness_10,
         mask=mask,
+        **extra,
     )
     return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
 

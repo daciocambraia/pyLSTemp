@@ -32,7 +32,7 @@ class AllModelTests(unittest.TestCase):
 
     def test_inventory_is_exhaustive(self):
         expected = {
-            "emissivity": set(EMISSIVITY), "single_channel": {"mono-window-2016"},
+            "emissivity": set(EMISSIVITY), "single_channel": {"mono-window-2016", "jimenez-munoz-sc-2014"},
             "spectral_index": {"ndvi"},
             "split_window": set(SPLIT), "thermal": {"brightness"},
             "water_vapor": {"wang-2015"}, "radiative_transfer": set(),

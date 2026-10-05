@@ -1,5 +1,12 @@
 # Changelog
 
+## Jimenez single-channel and documentation (2026-10-05)
+
+- Added jimenez-munoz-sc-2014 with explicit Band-10 TOA radiance/PWV and operational PWV screen [0,3].
+- Restored function-by-function image examples and v1.10-style README organization, with links for every algorithm.
+- Added SC to the full workflow and single-channel notebook; corrected Kerr bibliographic attribution.
+
+
 ## Image examples and workspace cleanup (2026-10-05)
 
 - Replace synthetic-array usage examples with direct Landsat image reading and connected algorithms.

@@ -122,7 +122,7 @@ See [correction report](validation.md).
 ## Current release scope (2026-10-05)
 
 Xiaolei was removed from discovery, implementation, imports and active examples.
-The catalog now has 11 algorithms, with NDVI as its sole spectral index.
+The catalog now has 12 algorithms, with NDVI as its sole spectral index.
 TOA radiance is the default scene workflow. TOA reflectance remains an explicit
 alternative. Public brightness is implemented in calibration and exported at
 the root and API. Its default input is radiance; the legacy thermal family
@@ -134,3 +134,27 @@ of these thresholds before scientific application. See the new verification
 report for measured changes on both supplied scenes.
 Rouse reference: [NASA original record](https://ntrs.nasa.gov/citations/19740022614).
 See [current verification report](validation.md).
+
+## Jimenez-Munoz single-channel addition (2026-10-05)
+
+`jimenez-munoz-sc-2014` uses Eqs. (1), (2), (4), (6) of the 2014 paper.
+For Band 10, b_gamma=1324 K. The rows of C multiply [w^2,w,1]:
+(0.04019,0.02916,1.01523), (-0.38333,-1.50294,0.20324),
+(0.00918,1.36072,-0.27514). They are distinct from SW Table I.
+TOA radiance and BT must come from the same band and calibration.
+
+The paper reports poor performance of polynomial atmospheric functions for
+w>3 g/cm2. We therefore apply an explicit operational screen [0,3]:
+invalid scalar PWV raises ValueError; invalid/out-of-range raster pixels
+become NaN. We do not clip PWV into the range or imply ground-truth accuracy.
+Three is an operational boundary; the paper describes better performance
+below three, not a guarantee at that boundary. For humid atmospheres,
+consider SW or independently estimated atmospheric functions; direct
+atmospheric-function and RTE retrievals are not implemented by this addition.
+
+The coefficient matrix is published for Landsat 8 Band 10 only. Landsat 9
+results are experimental transfer. Radiometric calibration itself uses the
+matching sensor MTL. Wang PWV requires both thermal bands even when LST SC
+uses Band 10 only. The radiance NDVI convention and emissivity thresholds
+retain their previously documented limitations.
+[Original article](https://doi.org/10.1109/LGRS.2014.2312032).

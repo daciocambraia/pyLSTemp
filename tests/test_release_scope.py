@@ -7,11 +7,11 @@ from pylstemp.exceptions import InvalidMethodRequested
 
 
 class ReleaseScope(unittest.TestCase):
-    def test_catalog_contains_only_retained_emissivity_and_eleven_algorithms(self):
+    def test_catalog_contains_only_retained_emissivity_and_twelve_algorithms(self):
         catalog = list_algorithms()
         self.assertEqual(set(catalog["emissivity"]), {"avdan-2016", "gopinadh-2018"})
         self.assertEqual(sum(len(methods) for family, methods in catalog.items()
-                             if family != "credit"), 11)
+                             if family != "credit"), 12)
         self.assertIsNone(importlib.util.find_spec(
             "pylstemp.algorithms.emissivity.xiaolei_2014"))
 

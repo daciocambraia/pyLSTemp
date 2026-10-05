@@ -66,11 +66,21 @@ Use `band="band_10"` or `band="band_11"`.
 The default `avdan-2016` method follows Avdan and Jovanovska's NDVI rules: water (`NDVI < 0`), soil (`0 <= NDVI < 0.2`), mixed pixels (`0.2 <= NDVI <= 0.5`) using fractional vegetation cover and `C=0.005`, and vegetation (`NDVI > 0.5`).
 `avdan-2016` returns the same emissivity for both thermal workflows because the source method is a single-channel Band 10 workflow. For split-window methods that need band-specific emissivity, prefer `gopinadh-2018`.
 
-### `single_window(brightness_band_10, band_4_red, band_5_nir, lst_method="mono-window-2016", emissivity_method="avdan-2016", unit="kelvin")`
+### `single_window(brightness_band_10, band_4_red, band_5_nir, lst_method="mono-window-2016", emissivity_method="avdan-2016", unit="kelvin", *, mask=None, radiance_band_10=None, water_vapor=None)`
 
 Computes land surface temperature using a single-channel method. `brightness_band_10` must be computed beforehand with `brightness(..., band="band_10")`.
 `mono-window-2016` is a Band 10 single-channel workflow; do not pass Band 11 brightness temperature to this method.
 The default `mono-window-2016` implementation uses `lambda=10.895e-6 m`, the midpoint of the Landsat 8/9 TIRS Band 10 range (`10.6-11.19 um`) used in the Avdan and Jovanovska workflow.
+
+`jimenez-munoz-sc-2014` implements the Band-10 single-channel formulation,
+separate from the split-window key `jimenez-munoz-2014`. Supply matching
+`radiance_band_10` in W m-2 sr-1 um-1 and `water_vapor` in g/cm2.
+The operational polynomial PWV range is [0,3]: invalid scalars are rejected;
+nonfinite, negative or >3 raster pixels become NaN. This is a scientific
+screen motivated by the paper, not a claim that accuracy is guaranteed in range.
+No atmospheric function or radiance is silently reconstructed from default sensor constants.
+Both Avdan and Gopinadh emissivity methods are accepted. Avdan LST does not
+accept the new atmospheric keywords because it does not use them.
 
 ### `split_window(brightness_band_10, brightness_band_11, band_4_red, band_5_nir, lst_method, emissivity_method="gopinadh-2018", unit="kelvin", water_vapor=None)`
 
@@ -128,7 +138,7 @@ The resulting water vapor raster can be used directly in `split_window(..., lst_
 
 Returns a catalog of discovered families, algorithm metadata, and original-library credit.
 Each method includes `input_requirements` and `water_vapor_support`.
-There are 11 algorithm entries, including exactly one NDVI.
+There are 12 algorithm entries, including exactly one NDVI.
 
 ### Migration: explicit TOA reflectance
 
@@ -157,6 +167,7 @@ See [verified examples and scene results](validation.md).
 ### `single_channel`
 
 - `mono-window-2016`
+- `jimenez-munoz-sc-2014`
 
 ### `split_window`
 

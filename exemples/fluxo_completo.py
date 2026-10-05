@@ -6,7 +6,7 @@ Uso na raiz do projeto:
 from pathlib import Path
 import argparse
 from pylstemp.scene import LandsatScene
-from pylstemp import spectral_index, emissivity, single_window, split_window, water_vapor
+from pylstemp import spectral_index, emissivity, single_window, split_window, water_vapor, toa_radiance
 
 
 def executar(pasta, saida):
@@ -30,6 +30,13 @@ def executar(pasta, saida):
         lst_du = split_window(bt10, bt11, vermelho, infravermelho,
                               lst_method="du-2015", unit="celsius", mask=mascara)
         pwv = water_vapor(bt10, bt11, ndvi, mask=mascara)
+        radiancia10 = toa_radiance(cena.read("B10", janela), metadata=cena.metadata,
+                                   band=10, mask=mascara)
+        lst_jimenez_sc = single_window(
+            bt10, vermelho, infravermelho, lst_method="jimenez-munoz-sc-2014",
+            emissivity_method="gopinadh-2018", radiance_band_10=radiancia10,
+            water_vapor=pwv, unit="celsius", mask=mascara,
+        )
         mascara_pwv = mascara | (pwv < 0.066) | (pwv > 7.833)
         lst_jimenez = split_window(bt10, bt11, vermelho, infravermelho,
                                    lst_method="jimenez-munoz-2014", water_vapor=pwv,
@@ -44,6 +51,7 @@ def executar(pasta, saida):
             "lst_single": (lst_single, "celsius"),
             "lst_du": (lst_du, "celsius"),
             "pwv": (pwv, "g/cm2"),
+            "lst_jimenez_sc": (lst_jimenez_sc, "celsius"),
             "lst_jimenez": (lst_jimenez, "celsius"),
         }
         for nome, (imagem, unidade) in produtos.items():

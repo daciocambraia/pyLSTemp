@@ -52,11 +52,22 @@ def temperature_case(kind,lst,emi,unit,pwv_mode,mask_mode,dtype):
                     with self.assertRaisesRegex(ValueError, 'scalar'):call()
                     return
             else:
-                call=lambda:single_window(t10,red,nir,**kw)
+                radiance=774.8853/np.expm1(1321.0789/t10)
+                if lst=="jimenez-munoz-sc-2014":
+                    call=lambda:single_window(t10,red,nir,radiance_band_10=radiance,water_vapor=pwv,**kw)
+                    if pwv is None:
+                        with self.assertRaisesRegex(ValueError,"requires radiance_band_10"):call()
+                        return
+                    if pwv_mode=="scalar" and float(pwv)>3:
+                        with self.assertRaisesRegex(ValueError,"within"):call()
+                        return
+                else:
+                    call=lambda:single_window(t10,red,nir,**kw)
             copies=[x.copy() for x in (t10,t11,red,nir,mask)]
             actual=call()
             e10,e11=ref.emissivity(emi,n,red)
-            expected=ref.temperature(lst,t10,t11,n,e10,e11,pwv,mask)
+            expected=ref.temperature(lst,t10,t11,n,e10,e11,pwv,mask,
+                radiance=radiance if kind=="single" else None)
             if unit=="celsius":expected=expected-273.15
             ref.check(actual,expected,atol=2e-10)
             for old,new in zip(copies,(t10,t11,red,nir,mask)):np.testing.assert_array_equal(old,new)
@@ -66,7 +77,7 @@ for kind,methods in (("single",SINGLE),("split",SPLIT)):
     for lst in methods:
         for emi in EMI:
             for unit in ("kelvin","celsius"):
-                for mode in (("none",) if kind=="single" else ("none","scalar","raster")):
+                for mode in (("none",) if kind=="single" and lst=="mono-window-2016" else ("none","scalar","raster")):
                     for mask in ("none","one","all"):
                         for dtype in (np.float32,np.float64):
                             name="_".join(("test",kind,lst,emi,unit,mode,mask,np.dtype(dtype).name)).replace("-","_")
