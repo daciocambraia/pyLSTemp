@@ -101,6 +101,8 @@ That means `list_algorithms()` grows with the codebase instead of depending on a
 - [Scientific methods and migration](docs/scientific-methods.md)
 - [Validation report v1.11](docs/VALIDACAO_v1.11.md)
 - [All-model test report](docs/TESTES_TODOS_MODELOS_v1.11.md)
+- [Deep module and combination validation](docs/AVALIACAO_MODULOS_v1.11.md)
+- [Improvements identified after validation](docs/MELHORIAS_MODULOS_v1.11.md)
 
 ## Development
 
