@@ -9,7 +9,7 @@ import numpy as np
 from pylstemp import brightness, emissivity, single_window, split_window, spectral_index, water_vapor, list_algorithms
 from pylstemp.algorithms import FAMILY_REGISTRIES
 from pylstemp.algorithms.split_window import split_window_registry
-legacy_registry = FAMILY_REGISTRIES['spectral_indices']
+from pylstemp.algorithms.spectral_indices import spectral_indices_registry as legacy_registry
 
 SPLIT = ("du-2015", "jimenez-munoz-2014", "kerr-1992", "price-1984", "sobrino-1993")
 EMISSIVITY = ("avdan-2016", "gopinadh-2018", "xiaolei-2014")
@@ -33,7 +33,7 @@ class AllModelTests(unittest.TestCase):
     def test_inventory_is_exhaustive(self):
         expected = {
             "emissivity": set(EMISSIVITY), "single_channel": {"mono-window-2016"},
-            "spectral_index": {"ndvi", "evi"}, "spectral_indices": {"ndvi"},
+            "spectral_index": {"ndvi", "evi"},
             "split_window": set(SPLIT), "thermal": {"brightness"},
             "water_vapor": {"wang-2015"}, "radiative_transfer": set(),
         }

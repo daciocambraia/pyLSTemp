@@ -1,5 +1,7 @@
 # Melhorias identificadas apos a execucao dos modulos
 
+Atualizacao em 05/10/2026: os defeitos NDVI 0/0 e EVI com BLUE infinito foram corrigidos e revalidados. A duplicacao de NDVI no catalogo foi removida; reflectance e mensagens foram ampliadas. Consulte docs/CORRECOES_INDICES_REFLECTANCIA_v1.11.md e Verificacao/v1.11.0/correcoes_indices_mensagens_2026-10-05/RELATORIO_CORRECOES.md. A avaliacao original abaixo foi preservada.
+
 Data: 05/10/2026. Avaliacao baseada na rodada de matriz profunda.
 
 A suite numerica teve 793 testes aprovados e 66 subtestes.

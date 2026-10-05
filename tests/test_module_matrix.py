@@ -4,6 +4,7 @@ import warnings
 import numpy as np
 from pylstemp import spectral_index, brightness, emissivity, single_window, split_window, water_vapor
 from pylstemp.algorithms import FAMILY_REGISTRIES
+from pylstemp.algorithms.spectral_indices import spectral_indices_registry
 from pylstemp.exceptions import InputShapesNotEqual, InvalidMaskError, InvalidMethodRequested, InvalidTemperatureUnitError
 from scripts import matrix_references as ref
 
@@ -48,7 +49,7 @@ def temperature_case(kind,lst,emi,unit,pwv_mode,mask_mode,dtype):
                     with self.assertRaisesRegex(ValueError,"requires water_vapor"):call()
                     return
                 if lst=="du-2015" and pwv_mode=="raster":
-                    with self.assertRaises(TypeError):call()
+                    with self.assertRaisesRegex(ValueError, 'scalar'):call()
                     return
             else:
                 call=lambda:single_window(t10,red,nir,**kw)
@@ -80,7 +81,7 @@ def index_case(index,dtype,mask_mode):
         actual=spectral_index(index,**kw)
         ref.check(actual,ref.spectral(index,nir,red,blue,mask),atol=1e-13)
         if index=="ndvi":
-            legacy=FAMILY_REGISTRIES["spectral_indices"].create("ndvi")
+            legacy=spectral_indices_registry.create("ndvi")
             ref.check(legacy(band_5_nir=nir,band_4_red=red,mask=mask),actual,atol=0)
     return test
 

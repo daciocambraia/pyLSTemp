@@ -16,6 +16,7 @@ sys.path.insert(0,str(ROOT))
 sys.path.insert(0,str(ROOT/"scripts"))
 from pylstemp import brightness, emissivity, single_window, split_window, spectral_index, water_vapor, list_algorithms
 from pylstemp.algorithms import FAMILY_REGISTRIES
+from pylstemp.algorithms.spectral_indices import spectral_indices_registry
 from pylstemp.calibration import quality_mask
 from pylstemp.scene import LandsatScene
 from validate_scenes import Stats, digest
@@ -78,7 +79,7 @@ def run_scene(folder,out,tile_rows):
                 ndvi=spectral_index("ndvi",nir=optical[5],red=optical[4],mask=mask)
                 values["ndvi"]=ndvi
                 values["evi"]=spectral_index("evi",nir=optical[5],red=optical[4],blue=optical[2],mask=mask)
-                values["legacy_ndvi"]=FAMILY_REGISTRIES["spectral_indices"].create("ndvi")(
+                values["legacy_ndvi"]=spectral_indices_registry.create("ndvi")(
                     band_5_nir=optical[5],band_4_red=optical[4],mask=mask)
                 np.testing.assert_allclose(values["legacy_ndvi"],ndvi,rtol=0,atol=1e-14,equal_nan=True)
                 for method,prefix in (("avdan-2016","avdan"),("gopinadh-2018","gopinadh")):

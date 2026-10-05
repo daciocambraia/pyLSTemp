@@ -6,11 +6,14 @@ Reference: USGS Using the Landsat Level-1 Data Product and C2 QA tables.
 from pathlib import Path
 import re
 import numpy as np
+from collections.abc import Mapping
+from .messages import contextual_errors
 
 from .utils import apply_mask, compute_brightness_temperature
 from .validation import to_float_array, ensure_boolean_mask, ensure_same_shape
 
 
+@contextual_errors
 def read_mtl(path):
     """Read scalar MTL fields without assuming the scene's calibration values."""
     result = {}
@@ -44,10 +47,13 @@ def _number(metadata, key):
 
 
 def _level1(metadata):
+    if not isinstance(metadata, Mapping):
+        raise ValueError("metadata must be a mapping parsed from the matching Landsat MTL file.")
     if not str(metadata.get("PROCESSING_LEVEL", "")).startswith("L1"):
-        raise ValueError("Raw DN calibration requires Level-1 metadata.")
+        raise ValueError("Raw DN calibration requires Level-1 metadata (L1TP/L1GT/L1GS). Do not treat Level-2 SR/ST values as Level-1 DN.")
 
 
+@contextual_errors
 def toa_reflectance(dn, *, metadata, band, mask=None, sun_elevation=None):
     """Convert Level-1 optical DN to TOA reflectance (dimensionless).
 
@@ -56,7 +62,7 @@ def toa_reflectance(dn, *, metadata, band, mask=None, sun_elevation=None):
     [0, 1]: outliers remain available for quality assessment.
     """
     _level1(metadata)
-    if band not in range(1, 10):
+    if isinstance(band, (bool, np.bool_)) or not isinstance(band, (int, np.integer)) or band not in range(1, 10):
         raise ValueError("Optical band must be an integer from 1 to 9.")
     image = to_float_array("dn", dn)
     gain = _number(metadata, f"REFLECTANCE_MULT_BAND_{band}")
@@ -77,10 +83,11 @@ def toa_reflectance(dn, *, metadata, band, mask=None, sun_elevation=None):
     return apply_mask(reflectance, invalid | ~np.isfinite(reflectance))
 
 
+@contextual_errors
 def brightness_from_mtl(dn, *, metadata, band, mask=None):
     """Convert Level-1 thermal DN to kelvin using MTL gain, bias, K1 and K2."""
     _level1(metadata)
-    if band not in (10, 11):
+    if isinstance(band, (bool, np.bool_)) or not isinstance(band, (int, np.integer)) or band not in (10, 11):
         raise ValueError("Thermal band must be 10 or 11.")
     return compute_brightness_temperature(
         dn, _number(metadata, f"RADIANCE_MULT_BAND_{band}"),
@@ -90,6 +97,7 @@ def brightness_from_mtl(dn, *, metadata, band, mask=None):
     )
 
 
+@contextual_errors
 def surface_reflectance(dn, *, scale=0.0000275, offset=-0.2, mask=None):
     """Scale C2 Level-2 SR_B* DN to surface reflectance; no sun correction.
 
@@ -104,6 +112,7 @@ def surface_reflectance(dn, *, scale=0.0000275, offset=-0.2, mask=None):
     return apply_mask(image * scale + offset, invalid)
 
 
+@contextual_errors
 def quality_mask(qa_pixel, qa_radsat=None, *, exclude_water=False):
     """C2 Landsat 8/9 mask: fill, dilated cloud, cirrus, cloud, shadow, snow.
 
@@ -123,3 +132,36 @@ def quality_mask(qa_pixel, qa_radsat=None, *, exclude_water=False):
             raise ValueError("QA_RADSAT must contain unsigned 16-bit integer values.")
         invalid |= (sat.astype(np.uint16) & ((1 << 1) | (1 << 3) | (1 << 4) | (1 << 11))) != 0
     return invalid
+
+
+@contextual_errors
+def reflectance(dn, *, metadata, band, kind="toa", mask=None, sun_elevation=None):
+    """Convert Landsat optical DN with an explicit radiometric input level.
+
+    kind='toa': Level-1 DN + matching MTL + optional solar elevation (degrees).
+    kind='surface': Collection 2 Level-2 SR_B1..SR_B7 DN + matching MTL.
+    This dispatcher does not perform atmospheric correction on Level-1 data.
+    Negative/above-one reflectance is preserved for explicit quality masking.
+    """
+    if not isinstance(metadata, Mapping):
+        raise ValueError("metadata must be parsed from the matching Landsat MTL file.")
+    if not isinstance(kind, str) or kind.strip().lower() not in {"toa", "surface"}:
+        raise ValueError(f"kind must be 'toa' or 'surface'; received {kind!r}.")
+    kind = kind.strip().lower()
+    if kind == "toa":
+        return toa_reflectance(dn, metadata=metadata, band=band, mask=mask, sun_elevation=sun_elevation)
+    level = str(metadata.get("PROCESSING_LEVEL", ""))
+    if level not in {"L2SP", "L2SR"}:
+        raise ValueError(
+            "Surface reflectance requires Level-2 SR_B* DN and matching L2SP/L2SR MTL. "
+            "Level-1 DN can produce TOA reflectance; surface retrieval requires atmospheric "
+            "correction (e.g. LaSRC and auxiliary data) or the corresponding Level-2 product.")
+    if _number(metadata, "COLLECTION_NUMBER") != 2:
+        raise ValueError("Surface scaling is supported for Landsat Collection 2 only; check COLLECTION_NUMBER in MTL.")
+    if metadata.get("SPACECRAFT_ID") not in {"LANDSAT_8", "LANDSAT_9"}:
+        raise ValueError("Surface reflectance requires Landsat 8/9 Collection 2 metadata.")
+    if isinstance(band, (bool, np.bool_)) or not isinstance(band, (int, np.integer)) or band not in range(1,8):
+        raise ValueError("Surface reflectance band must be an integer from 1 to 7 (SR_B1..SR_B7).")
+    if sun_elevation is not None:
+        raise ValueError("Do not apply a second solar-angle correction to Level-2 surface reflectance; omit sun_elevation.")
+    return surface_reflectance(dn, mask=mask)

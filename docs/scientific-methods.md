@@ -99,3 +99,16 @@ and range-screened products. This screen does not establish ground-truth validit
 The supplied C2 SZA is for B4; using it for B2/B5 is an explicit common optical-angle approximation.
 See [USGS angle files](https://www.usgs.gov/landsat-missions/solar-illumination-and-sensor-viewing-angle-coefficient-files).
 Mono-window is an emissivity-only correction here; it does not explicitly retrieve atmospheric transmission or path radiance.
+
+## Index and calibration update (2026-10-05)
+
+NDVI no longer adds epsilon to a valid denominator. Undefined ratios and any
+nonfinite optical input produce NaN for NDVI/EVI. The tolerance is 1e-15 for
+NDVI; the existing EVI absolute-value mask remains. Removing the bias can
+change a piecewise emissivity class at an exact NDVI boundary.
+
+The catalog now contains one NDVI. Legacy imports remain aliases to that
+implementation. `reflectance(..., kind="surface")` accepts matching Collection 2
+Level-2 SR data, while Level-1 can be converted to TOA. Scaling is not atmospheric
+correction; the two local Level-1 scenes do not provide real SR for Xiaolei.
+See [correction report](CORRECOES_INDICES_REFLECTANCIA_v1.11.md).

@@ -51,13 +51,13 @@ class ComputeEmissivityXiaolei2014(BaseEmissivityAlgorithm):
             If ``red_band`` is not provided.
         """
         if red_band is None:
-            raise ValueError("red_band must be provided for the 'xiaolei-2014' emissivity method.")
+            raise ValueError("red_band must be provided for the 'xiaolei-2014' emissivity method: use calibrated Level-2 SR_B4 surface reflectance in [0,1], not Level-1 DN or TOA.")
 
         masks = self._landcover_masks(ndvi)
         # Yu et al. require surface reflectance, not DN or TOA reflectance.
         finite = red_band[np.isfinite(red_band)]
         if np.any((finite < 0) | (finite > 1)):
-            raise ValueError("xiaolei-2014 requires red surface reflectance in [0, 1], not raw DN.")
+            raise ValueError("xiaolei-2014 requires red surface reflectance in [0, 1], not raw DN or TOA. Apply Collection 2 Level-2 SR scaling and explicitly mask out-of-domain pixels before retrieval.")
         red_band_rescaled = red_band
         fvc = fractional_vegetation_cover(ndvi)
 

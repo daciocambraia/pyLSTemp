@@ -36,8 +36,10 @@ def _load_family_registries() -> dict[str, object]:
         if registry is None:
             continue
 
-        registries[family_name] = registry
         globals()[registry_name] = registry
+        if getattr(module, "CANONICAL_FAMILY", family_name) != family_name:
+            continue  # Compatibility namespace shares its canonical registry.
+        registries[family_name] = registry
 
     return registries
 

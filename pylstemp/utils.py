@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .validation import ensure_boolean_mask, to_float_array
+from .validation import ensure_boolean_mask, ensure_same_shape, to_float_array
 
 
 def generate_mask(image) -> np.ndarray:
@@ -59,7 +59,8 @@ def compute_ndvi(nir, red, eps: float = 1e-15, mask: np.ndarray | None = None) -
     red : array-like
         Red band.
     eps : float, default=1e-15
-        Small value used to avoid division by zero.
+        Nonnegative absolute denominator tolerance. Values <= eps are invalid;
+        eps is not added to valid denominators.
     mask : array-like of bool, optional
         Boolean mask where True values indicate invalid pixels.
 
@@ -70,10 +71,17 @@ def compute_ndvi(nir, red, eps: float = 1e-15, mask: np.ndarray | None = None) -
     """
     nir_array = to_float_array("nir", nir)
     red_array = to_float_array("red", red)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        ndvi = (nir_array - red_array) / (nir_array + red_array + eps)
-    ndvi[np.abs(ndvi) > 1] = np.nan
-    return apply_mask(ndvi, mask)
+    ensure_same_shape(nir=nir_array, red=red_array)
+    if not np.isscalar(eps) or not np.isfinite(eps) or eps < 0:
+        raise ValueError("compute_ndvi: eps must be a finite nonnegative denominator tolerance.")
+    with np.errstate(all="ignore"):
+        denominator = nir_array + red_array
+        valid = np.isfinite(nir_array) & np.isfinite(red_array)
+        valid &= np.isfinite(denominator) & (np.abs(denominator) > eps)
+        output = np.full(nir_array.shape, np.nan, dtype=float)
+        np.divide(nir_array - red_array, denominator, out=output, where=valid)
+    output = np.where(np.isfinite(output) & (np.abs(output) <= 1), output, np.nan)
+    return apply_mask(output, mask)
 
 
 def compute_brightness_temperature(

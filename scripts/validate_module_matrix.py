@@ -139,7 +139,7 @@ def run_roi(scene,dest,index,core,bounds):
                     elif emi=="xiaolei-2014":
                         cases.append(dict(identity,status="blocked_missing_surface_reflectance"));continue
                     elif lst=="jimenez-munoz-2014" and pwv is None:reject=ValueError
-                    elif lst=="du-2015" and mode=="wang_raster":reject=TypeError
+                    elif lst=="du-2015" and mode=="wang_raster":reject=ValueError
                     elif lst=="du-2015" and pwv is not None and not 0<=pwv<=6.3:reject=ValueError
                     expected=None
                     if reject is None:

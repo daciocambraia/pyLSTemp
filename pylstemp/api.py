@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import numpy as np
+import warnings
+
+from .messages import contextual_errors
+from .requirements import describe_inputs, PWV_SUPPORT
 
 from .algorithms import FAMILY_REGISTRIES
 from .algorithms.emissivity import emissivity_registry
@@ -59,12 +63,15 @@ def _normalize_thermal_band(band) -> str:
         "band_11": "band_11",
         "b11": "band_11",
     }
+    if isinstance(band, str):
+        band = band.strip().lower()
     try:
         return aliases[band]
-    except KeyError as exc:
-        raise ValueError("band must be 'band_10' or 'band_11'.") from exc
+    except (KeyError, TypeError) as exc:
+        raise ValueError(f"band must be 10 or 11 ('band_10', 'band_11', 'b10', 'b11'); received {band!r}.") from exc
 
 
+@contextual_errors
 def spectral_index(index: str, **kwargs):
     """
     Compute a spectral index selected by name.
@@ -103,6 +110,7 @@ def spectral_index(index: str, **kwargs):
     return spectral_index_registry.create(index)(**kwargs)
 
 
+@contextual_errors
 def brightness(
     thermal_band,
     band: str,
@@ -218,6 +226,7 @@ def _emissivity_pair(ndvi_image, band_4_red=None, emissivity_method: str = "avda
     return algorithm(ndvi=ndvi_array, red_band=validated_red_band)
 
 
+@contextual_errors
 def emissivity_band_10(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
     """
     Compute emissivity for the Band 10 thermal workflow.
@@ -245,6 +254,7 @@ def emissivity_band_10(ndvi_image, band_4_red=None, emissivity_method: str = "av
     return emissivity_10
 
 
+@contextual_errors
 def emissivity_band_11(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
     """
     Compute emissivity for the Band 11 thermal workflow.
@@ -272,6 +282,7 @@ def emissivity_band_11(ndvi_image, band_4_red=None, emissivity_method: str = "av
     return emissivity_11
 
 
+@contextual_errors
 def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = "avdan-2016"):
     """
     Compute land surface emissivity for a selected thermal band workflow.
@@ -331,6 +342,7 @@ def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = 
     )
 
 
+@contextual_errors
 def single_window(
     brightness_band_10,
     band_4_red,
@@ -409,6 +421,7 @@ def single_window(
     return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
 
 
+@contextual_errors
 def split_window(
     brightness_band_10,
     brightness_band_11,
@@ -507,7 +520,15 @@ def split_window(
             "and band 11 emissivity."
         )
 
-    result = split_window_registry.create(lst_method)(
+    algorithm = split_window_registry.create(lst_method)
+    method_key = split_window_registry.resolve_key(lst_method)
+    if water_vapor is not None and method_key in {"price-1984", "kerr-1992", "sobrino-1993"}:
+        warnings.warn(
+            f"split_window(lst_method='{method_key}'): water_vapor is not used by this equation; "
+            "the supplied value will be ignored. Use 'du-2015' (scalar) or "
+            "'jimenez-munoz-2014' (scalar/raster) to use PWV explicitly.",
+            RuntimeWarning, stacklevel=2)
+    result = algorithm(
         emissivity_10=emissivity_10,
         emissivity_11=emissivity_11,
         brightness_temperature_10=brightness_10,
@@ -519,6 +540,7 @@ def split_window(
     return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
 
 
+@contextual_errors
 def water_vapor(
     brightness_band_10,
     brightness_band_11,
@@ -612,6 +634,8 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
                 "name": metadata.name,
                 "reference": metadata.reference,
                 "citation": metadata.citation,
+                "input_requirements": describe_inputs(family_name, key),
+                "water_vapor_support": PWV_SUPPORT.get(key, "Not an atmospheric PWV-dependent LST method."),
                 "scientific_status": (
                     "Legacy AVHRR coefficients; unvalidated Landsat adaptation"
                     if key in {"price-1984", "kerr-1992", "sobrino-1993"} else

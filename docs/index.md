@@ -21,3 +21,5 @@ This folder contains the user-facing documentation for the current modular `pyLS
 - new families can also be discovered automatically when they expose a family registry
 
 - [Scientific methods, migration and validation limits](scientific-methods.md)
+
+- [Index corrections, one NDVI, reflectance and actionable errors](CORRECOES_INDICES_REFLECTANCIA_v1.11.md)

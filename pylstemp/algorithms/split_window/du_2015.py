@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from ...exceptions import assert_required_keywords_provided
 from ...metadata import AlgorithmSpec
 from .base import SplitWindowParentLST
@@ -59,7 +61,16 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
         if water_vapor is None:
             return (cls.default_coefficients,)
 
-        cwv = float(water_vapor)
+        cwv_array = np.asarray(water_vapor, dtype=float)
+        if cwv_array.ndim != 0:
+            raise ValueError(
+                "'du-2015': water_vapor must be a scalar in [0,6.3] g/cm2; "
+                f"received raster/array shape {cwv_array.shape}. Use 'jimenez-munoz-2014' "
+                "for pixelwise PWV, or explicitly supply an in-domain spatial mean.")
+        cwv = float(cwv_array)
+        if not np.isfinite(cwv) or not 0 <= cwv <= 6.3:
+            raise ValueError(
+                f"water_vapor for 'du-2015' must be between 0.0 and 6.3 g/cm2 and finite; received {cwv!r}.")
         matches = []
         for (lower, upper), coefficients in cls.coefficient_ranges:
             if lower <= cwv <= upper:

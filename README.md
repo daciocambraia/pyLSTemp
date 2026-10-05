@@ -63,6 +63,7 @@ from pylstemp import (
     single_window,
     split_window,
     list_algorithms,
+    reflectance,
 )
 ```
 
@@ -103,6 +104,7 @@ That means `list_algorithms()` grows with the codebase instead of depending on a
 - [All-model test report](docs/TESTES_TODOS_MODELOS_v1.11.md)
 - [Deep module and combination validation](docs/AVALIACAO_MODULOS_v1.11.md)
 - [Improvements identified after validation](docs/MELHORIAS_MODULOS_v1.11.md)
+- [Index corrections, reflectance conversion and method messages](docs/CORRECOES_INDICES_REFLECTANCIA_v1.11.md)
 
 ## Development
 

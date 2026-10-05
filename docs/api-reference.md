@@ -4,7 +4,11 @@
 
 ### `spectral_index(index, **kwargs)`
 
-Computes a spectral index selected by name.
+Computes a spectral index selected by name. Undefined ratios and any nonfinite input
+become NaN. NDVI uses the exact ratio for valid denominators; `eps=1e-15` is a
+denominator tolerance, not an additive bias. The existing `abs(EVI)>1` mask remains.
+Only `spectral_index` is listed in the catalog; legacy `spectral_indices` imports
+share the canonical NDVI implementation.
 Currently supported:
 
 - `index="ndvi"` with `nir`, `red`, and optional `mask`
@@ -82,7 +86,9 @@ When `water_vapor` is provided for `du-2015`, the method selects the matching Du
 - `[5.0, 6.3]`
 
 `jimenez-munoz-2014` requires `water_vapor` and accepts either a single scene-level value or a raster with the same shape as the brightness temperature arrays. Use `water_vapor(method="wang-2015", ...)` for pixel-by-pixel water vapor or provide an external estimate.
-Current non-Du/Jimenez split-window methods do not use `water_vapor`.
+Price, Kerr and Sobrino do not use `water_vapor`; supplying it emits a
+`RuntimeWarning` explaining that it is ignored. Du rejects raster PWV with an
+actionable `ValueError` and requires a finite scalar in `[0,6.3] g/cm2`.
 
 ### `water_vapor(brightness_band_10, brightness_band_11, ndvi_image, method="wang-2015", window_size=21, group_count=3)`
 
@@ -107,6 +113,40 @@ The resulting water vapor raster can be used directly in `split_window(..., lst_
 ### `list_algorithms()`
 
 Returns a catalog of discovered families, algorithm metadata, and original-library credit.
+Each method includes `input_requirements` and `water_vapor_support`.
+There are 13 algorithm entries, including exactly one NDVI.
+
+### `reflectance(dn, *, metadata, band, kind="toa", mask=None, sun_elevation=None)`
+
+Public import: `from pylstemp import reflectance`. Parse matching MTL with
+`from pylstemp.calibration import read_mtl`.
+
+- `kind="toa"`: Level-1 optical DN, integer band 1..9, MTL gain/offset and solar
+  elevation correction. Optional elevation is in degrees, scalar or aligned raster.
+- `kind="surface"`: existing Landsat 8/9 Collection 2 Level-2 SR_B1..SR_B7 DN
+  with L2SP/L2SR metadata; applies `DN * 0.0000275 - 0.2`.
+  Level-1 metadata and a second solar correction are rejected.
+
+Nonpositive DN, nonfinite values and boolean masks become NaN. Physical
+reflectance outside [0,1] is preserved for explicit quality decisions.
+This function does not perform atmospheric correction of Level-1/TOA data.
+Xiaolei still requires surface reflectance, not TOA.
+
+~~~python
+from pylstemp import reflectance
+from pylstemp.calibration import read_mtl
+red_toa = reflectance(red_dn, metadata=read_mtl("L1_MTL.txt"), band=4)
+red_sr = reflectance(sr_b4_dn, metadata=read_mtl("L2_MTL.txt"), band=4, kind="surface")
+~~~
+
+## Validation messages
+
+Public workflow errors identify function, method/band/sensor, input problem and
+next action. Existing exception classes remain catchable; original causes are
+chained. Shape errors include field names and actual shapes; boolean masks use
+`True` for invalid pixels. Temperature outputs accept kelvin/celsius; inputs
+remain Kelvin. Calibration errors explicitly distinguish Level-1 from Level-2.
+See [verified examples and scene results](CORRECOES_INDICES_REFLECTANCIA_v1.11.md).
 
 ## Current algorithm families
 

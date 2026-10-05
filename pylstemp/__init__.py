@@ -10,12 +10,14 @@ from .api import (
     water_vapor,
 )
 from .references import ORIGINAL_LIBRARY_CREDIT
+from .calibration import reflectance
 
 __all__ = [
     "brightness",
     "emissivity",
     "list_algorithms",
     "spectral_index",
+    "reflectance",
     "single_window",
     "split_window",
     "water_vapor",

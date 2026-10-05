@@ -28,7 +28,12 @@ def to_float_array(name: str, value) -> np.ndarray:
     ValueError
         If the input is empty.
     """
-    array = np.asarray(value, dtype=float)
+    if value is None:
+        raise ValueError(f"Input '{name}' must be provided as a numeric array; received None.")
+    try:
+        array = np.asarray(value, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Input '{name}' must contain numeric values convertible to float.") from exc
     if array.size == 0:
         raise ValueError(f"Input '{name}' cannot be empty.")
     return array
@@ -54,6 +59,7 @@ def ensure_same_shape(**named_arrays: np.ndarray) -> None:
         raise InputShapesNotEqual(
             "Input arrays must have the same shape. "
             + ", ".join(f"{name}={shape}" for name, shape in shapes.items())
+            + ". Align inputs to the same grid before computation; implicit broadcasting is not supported."
         )
 
 
@@ -82,7 +88,7 @@ def ensure_boolean_mask(mask, *, shape: tuple[int, ...]) -> np.ndarray:
     """
     mask_array = np.asarray(mask)
     if mask_array.dtype != bool:
-        raise InvalidMaskError("Mask must be a numpy array with boolean dtype.")
+        raise InvalidMaskError(f"Mask must have boolean dtype (True=invalid, False=valid); received dtype {mask_array.dtype}.")
     if mask_array.shape != shape:
         raise InputShapesNotEqual(
             f"Mask shape {mask_array.shape} does not match expected shape {shape}."
@@ -129,4 +135,4 @@ def normalize_temperature_unit(unit: str) -> str:
 
     """
     assert_temperature_unit(unit)
-    return unit.lower()
+    return unit.strip().lower()

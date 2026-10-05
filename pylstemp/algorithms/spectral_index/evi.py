@@ -58,12 +58,13 @@ def evi(nir, red, blue, mask=None) -> np.ndarray:
     if mask is not None:
         validated_mask = ensure_boolean_mask(mask, shape=nir_array.shape)
 
-    with np.errstate(divide="ignore", invalid="ignore"):
-        output = 2.5 * (
-            (nir_array - red_array)
-            / (nir_array + (6.0 * red_array) - (7.5 * blue_array) + 1.0)
-        )
-    output[np.abs(output) > 1] = np.nan
+    with np.errstate(all="ignore"):
+        denominator = nir_array + 6.0 * red_array - 7.5 * blue_array + 1.0
+        valid = np.isfinite(nir_array) & np.isfinite(red_array) & np.isfinite(blue_array)
+        valid &= np.isfinite(denominator) & (denominator != 0)
+        output = np.full(nir_array.shape, np.nan, dtype=float)
+        np.divide(2.5 * (nir_array - red_array), denominator, out=output, where=valid)
+    output = np.where(np.isfinite(output) & (np.abs(output) <= 1), output, np.nan)
     return apply_mask(output, validated_mask)
 
 
