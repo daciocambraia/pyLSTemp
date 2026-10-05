@@ -49,7 +49,7 @@ def export(scene,dest,name,a,core,units,artifacts):
         ref.check(np.array(image),a,atol=2e-5)
         assert image.tag_v2.get(42113)=="nan"
         if scene.backend=="pillow":
-            original=scene.sources["B2"].tag_v2
+            original=scene.sources["B4"].tag_v2
             assert tuple(image.tag_v2[34735])==tuple(original[34735])
             assert tuple(image.tag_v2[33550])==tuple(original[33550])
             expected=list(original[33922])
@@ -119,10 +119,16 @@ def run_roi(scene,dest,index,core,bounds):
             for unit in ("kelvin","celsius"):
                 identity=dict(module="single_channel",lst=lst,emissivity=emi,unit=unit)
                 e10,e11=ref.emissivity(emi,n,red)
-                expected=ref.temperature(lst,t10,t11,n,e10,e11,mask=mask)
+                extra={}
+                pwv=None;L=None
+                if lst=="jimenez-munoz-sc-2014":
+                    L=toa_radiance(scene.read("B10",halo),metadata=scene.metadata,band=10,mask=mask)
+                    pwv=raw
+                    extra=dict(radiance_band_10=L,water_vapor=pwv)
+                expected=ref.temperature(lst,t10,t11,n,e10,e11,pwv,mask=mask,radiance=L)
                 if unit=="celsius":expected-=273.15
-                result=record(cases,identity,lambda l=lst,e=emi,u=unit:single_window(
-                    t10,red,nir,lst_method=l,emissivity_method=e,unit=u,mask=mask),expected,mask=mask)
+                result=record(cases,identity,lambda l=lst,e=emi,u=unit,x=extra:single_window(
+                    t10,red,nir,lst_method=l,emissivity_method=e,unit=u,mask=mask,**x),expected,mask=mask)
                 if result is not None and unit=="kelvin":
                     export(scene,dest,f"roi{index}_{lst}_{emi}",result[select],core,"kelvin",artifacts)
 

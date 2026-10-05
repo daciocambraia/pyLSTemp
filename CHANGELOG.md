@@ -1,5 +1,13 @@
 # Changelog
 
+## Publication structure review (2026-10-05)
+
+- Documented the complete repository tree, all algorithms and calibration helpers.
+- Updated scene validation scripts to cover Jimenez SC and optional B2 inputs.
+- Added publication guidance and tests/tag/distribution checks to the publish workflow.
+- Added contribution and conduct documents to the sdist; no RTE implementation added.
+
+
 ## Jimenez single-channel and documentation (2026-10-05)
 
 - Added jimenez-munoz-sc-2014 with explicit Band-10 TOA radiance/PWV and operational PWV screen [0,3].

@@ -5,8 +5,8 @@ Thanks for considering a contribution to `pyLSTemp`.
 ## Development setup
 
 ```bash
-pip install -e .[dev]
-pytest
+python -m pip install -e ".[dev,examples]"
+python -m pytest
 ```
 
 ## Project principles

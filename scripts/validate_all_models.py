@@ -13,7 +13,7 @@ import numpy as np
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 sys.path.insert(0,str(ROOT/"scripts"))
-from pylstemp import brightness, emissivity, single_window, split_window, spectral_index, water_vapor, list_algorithms
+from pylstemp import brightness, emissivity, single_window, split_window, spectral_index, water_vapor, list_algorithms, toa_radiance
 from pylstemp.algorithms import FAMILY_REGISTRIES
 from pylstemp.algorithms.spectral_indices import spectral_indices_registry
 from pylstemp.calibration import quality_mask
@@ -122,11 +122,16 @@ def run_scene(folder,out,tile_rows):
             pwv=np.where(extrap,np.nan,pwv)
             select=np.s_[10:-10,10:-10]
             roi_metrics={};arrays={}
-            for method in ("mono-window-2016",)+SPLIT+("jimenez-munoz-2014",):
+            for method in ("mono-window-2016","jimenez-munoz-sc-2014")+SPLIT+("jimenez-munoz-2014",):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore",RuntimeWarning)
                     if method=="mono-window-2016":
                         result=single_window(thermal[10],optical[4],optical[5],mask=mask)
+                    elif method=="jimenez-munoz-sc-2014":
+                        L=toa_radiance(scene.read("B10",halo),metadata=scene.metadata,band=10,mask=mask)
+                        result=single_window(thermal[10],optical[4],optical[5],
+                            lst_method=method,emissivity_method="gopinadh-2018",
+                            radiance_band_10=L,water_vapor=pwv,mask=mask)
                     else:
                         result=split_window(thermal[10],thermal[11],optical[4],optical[5],
                             lst_method=method,water_vapor=pwv if method=="jimenez-munoz-2014" else None,mask=mask)

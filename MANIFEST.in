@@ -1,4 +1,4 @@
-include README.md CHANGELOG.md LICENSE CREDITS.md
+include README.md CHANGELOG.md LICENSE CREDITS.md CONTRIBUTING.md CODE_OF_CONDUCT.md
 recursive-include docs *.md *.png
 recursive-include exemples *.ipynb *.py *.md
 recursive-include scripts *.py

@@ -142,12 +142,14 @@ as funcoes por modulo; altere a pasta da cena na primeira celula.
 ```text
 pylstemp/
   api.py                 # funcoes publicas
-  calibration.py         # MTL, radiancia, reflectancia e BT
+  calibration.py         # read_mtl, toa_radiance, toa_reflectance, brightness
+                         # brightness_from_mtl, quality_mask, surface_reflectance
   scene.py               # leitura e exportacao de imagens
   registry.py            # descoberta dos algoritmos
   sensors/               # constantes dos sensores
   algorithms/
     spectral_index/
+    spectral_indices/    # compatibilidade: mesmo NDVI, sem entrada duplicada
     thermal/
     emissivity/
     single_channel/
@@ -160,6 +162,10 @@ Cada arquivo de algoritmo declara `ALGORITHM_SPEC`. A descoberta automatica
 por familia alimenta `list_algorithms()`; consulte [arquitetura](docs/architecture.md)
 e [como adicionar metodos](docs/extending.md).
 
+O [mapa completo da arquitetura](docs/architecture.md) lista todas as pastas,
+arquivos, algoritmos e helpers de calibration. `surface_reflectance` apenas
+escala SR Level-2 ja existente e fica fora do fluxo padrao Level-1.
+
 ## Documentacao
 
 - [Indice da documentacao](docs/index.md)
@@ -169,6 +175,7 @@ e [como adicionar metodos](docs/extending.md).
 - [Metodos cientificos e migracao](docs/scientific-methods.md)
 - [Validacao atual](docs/validation.md)
 - [Referencias bibliograficas](docs/references.md)
+- [Preparacao para publicacao](docs/publication.md)
 
 ## Validacao e limites cientificos
 

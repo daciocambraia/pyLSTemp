@@ -9,9 +9,10 @@ Example families:
 - `pylstemp/algorithms/emissivity/`
 - `pylstemp/algorithms/single_channel/`
 - `pylstemp/algorithms/split_window/`
-- `pylstemp/algorithms/thermal/`
+- `pylstemp/algorithms/thermal/` (compatibility; canonical BT is in calibration)
+- `pylstemp/algorithms/water_vapor/`
 - `pylstemp/algorithms/spectral_index/`
-- `pylstemp/algorithms/radiative_transfer/`
+- `pylstemp/algorithms/radiative_transfer/` (reserved; no RTE is implemented)
 
 ### Steps
 

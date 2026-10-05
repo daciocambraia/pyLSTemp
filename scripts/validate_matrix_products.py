@@ -12,13 +12,18 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input",type=Path,required=True)
     parser.add_argument("--results",type=Path,required=True)
+    parser.add_argument("--baseline",type=Path,
+        default=ROOT/"Verificacao/v1.11.0/todos_modelos/all_models_results.json",
+        help="Prior all_models_results.json used as comparison baseline; supply your own run outside the local audit workspace.")
     parser.add_argument("--allow-numerical-change",action="store_true",
         help="Record expected numerical changes after an algorithm correction; input hashes and GeoTIFF checks remain strict.")
     args=parser.parse_args()
+    if not args.baseline.is_file():
+        parser.error("Baseline not found. Supply --baseline PATH_TO_PRIOR_all_models_results.json.")
     changes=[]
     full=json.loads((args.results/"cenas_completas/all_models_results.json").read_text(encoding="utf-8-sig"))
     matrix=json.loads((args.results/"matriz_real/module_matrix_results.json").read_text(encoding="utf-8-sig"))
-    previous=json.loads((ROOT/"Verificacao/v1.11.0/todos_modelos/all_models_results.json").read_text(encoding="utf-8-sig"))
+    previous=json.loads(args.baseline.read_text(encoding="utf-8-sig"))
     old={s["scene"]:s for s in previous["scenes"]}
     checked=[]
     for info in full["scenes"]:

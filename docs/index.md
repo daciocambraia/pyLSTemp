@@ -9,6 +9,7 @@
 7. [Arquitetura](architecture.md)
 8. [Adicionar metodos](extending.md)
 9. [Referencias e creditos](references.md)
+10. [Preparacao para publicacao](publication.md)
 
 Exemplos executaveis: [exemples/DATA.md](../exemples/DATA.md).
 Relatorios de etapas anteriores e seus dados ficam no historico local
