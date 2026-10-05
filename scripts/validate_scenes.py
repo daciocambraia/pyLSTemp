@@ -60,15 +60,15 @@ def digest(path):
     return h.hexdigest()
 
 
-def checks(optical, thermal, mask, ndvi, evi, mono, du):
-    for band in (2,4,5):
+def checks(optical, thermal, mask, ndvi, mono, du):
+    for band in optical:
         assert not np.isinf(optical[band]).any()
         assert np.isnan(optical[band][mask]).all()
     for band in (10,11):
         assert not np.isinf(thermal[band]).any()
         assert np.isnan(thermal[band][mask]).all()
         assert np.all(thermal[band][np.isfinite(thermal[band])] > 0)
-    for array in (ndvi,evi,mono,du):
+    for array in (ndvi,mono,du):
         assert not np.isinf(array).any()
         assert np.isnan(array[mask]).all()
     assert np.all(np.abs(ndvi[np.isfinite(ndvi)]) <= 1)
@@ -103,10 +103,10 @@ def validate(folder, output, tile_rows):
         destination=output/scene.product_id
         destination.mkdir(parents=True,exist_ok=False)
         height,width=scene.shape
-        metrics={name:Stats() for name in ("toa_b2","toa_b4","toa_b5","bt10_k","bt11_k",
-                                         "ndvi_toa","evi_toa","mono_k","du_k","mono_minus_du_k")}
+        metrics={name:Stats() for name in ("radiance_b4","radiance_b5","bt10_k","bt11_k",
+                                         "ndvi_radiance","mono_k","du_k","mono_minus_du_k")}
         products={}
-        for name in ("toa_b2","toa_b4","toa_b5","mono_k","du_k"):
+        for name in ("radiance_b4","radiance_b5","mono_k","du_k"):
             products[name]=np.lib.format.open_memmap(destination/(name+".npy"),mode="w+",
                                                    dtype=np.float32,shape=scene.shape)
         global_min,global_max=np.inf,-np.inf
@@ -116,14 +116,13 @@ def validate(folder, output, tile_rows):
             win=(row,end,0,width)
             optical,thermal,mask=scene.calibrated(win)
             ndvi=spectral_index("ndvi",nir=optical[5],red=optical[4],mask=mask)
-            evi=spectral_index("evi",nir=optical[5],red=optical[4],blue=optical[2],mask=mask)
             mono=single_window(thermal[10],optical[4],optical[5],mask=mask)
             du=split_window(thermal[10],thermal[11],optical[4],optical[5],
                             lst_method="du-2015",mask=mask)
-            checks(optical,thermal,mask,ndvi,evi,mono,du)
-            values=dict(toa_b2=optical[2],toa_b4=optical[4],toa_b5=optical[5],
-                        bt10_k=thermal[10],bt11_k=thermal[11],ndvi_toa=ndvi,
-                        evi_toa=evi,mono_k=mono,du_k=du,mono_minus_du_k=mono-du)
+            checks(optical,thermal,mask,ndvi,mono,du)
+            values=dict(radiance_b4=optical[4],radiance_b5=optical[5],
+                        bt10_k=thermal[10],bt11_k=thermal[11],ndvi_radiance=ndvi,
+                        mono_k=mono,du_k=du,mono_minus_du_k=mono-du)
             for name,array in values.items():
                 metrics[name].add(array)
                 if name in products:
@@ -139,7 +138,7 @@ def validate(folder, output, tile_rows):
         full_seconds=time.perf_counter()-started
         for name,array in products.items():
             array.flush()
-            scene.write_geotiff(destination/(name+".tif"),array,units="kelvin" if name.endswith("_k") else "TOA reflectance")
+            scene.write_geotiff(destination/(name+".tif"),array,units="kelvin" if name.endswith("_k") else "TOA radiance [W m-2 sr-1 um-1]")
         # Keep only the georeferenced final products, remove individual staging files.
         for name in list(products):
             products[name]._mmap.close()
@@ -158,7 +157,6 @@ def validate(folder, output, tile_rows):
             halo=(r0-radius,r0+roi_size+radius,c0-radius,c0+roi_size+radius)
             optical,thermal,mask=scene.calibrated(halo,exclude_water=True)
             ndvi=spectral_index("ndvi",nir=optical[5],red=optical[4],mask=mask)
-            evi=spectral_index("evi",nir=optical[5],red=optical[4],blue=optical[2],mask=mask)
             t0=time.perf_counter()
             pwv=water_vapor(thermal[10],thermal[11],ndvi,mask=mask,
                            ndvi_range=(global_min,global_max))
@@ -184,7 +182,7 @@ def validate(folder, output, tile_rows):
             stat=Stats();stat.add(pwv_core)
             scene.write_geotiff(destination/f"roi_{index}_pwv.tif",pwv_core,window=core,units="g/cm2")
             scene.write_geotiff(destination/f"roi_{index}_jimenez_k.tif",jimenez[selection],window=core,units="kelvin")
-            plot=dict(TOA_red=optical[4][selection],NDVI_TOA=ndvi[selection],BT10_C=thermal[10][selection]-273.15,
+            plot=dict(Radiance_red_W_m2_sr_um=optical[4][selection],NDVI_radiance=ndvi[selection],BT10_C=thermal[10][selection]-273.15,
                       mono_C=mono[selection]-273.15,du_C=du[selection]-273.15,PWV_g_cm2=pwv_core)
             preview(destination/f"roi_{index}.png",plot,f"{scene.sensor}; ROI {index}; row={r0}, col={c0}")
             roi_results.append(dict(window=core,halo=radius,pwv_seconds=pwv_seconds,pwv=stat.result(),pwv_extrapolation_pixels=int(extrapolation.sum()),pwv_reference_range=[0.066,7.833]))
@@ -194,7 +192,7 @@ def validate(folder, output, tile_rows):
             backend=scene.backend,grid_repr=repr(scene.grid),version=__version__,
             full_scene_seconds=full_seconds,total_seconds=time.perf_counter()-started,
             tile_rows=tile_rows,ndvi_land_range=[global_min,global_max],
-            optical_product="TOA",solar_angle="per-pixel SZA / 100" if "SZA" in scene.sources else "MTL scene-centre",
+            optical_product="TOA radiance",optical_units="W m-2 sr-1 um-1",solar_angle="not used to rescale radiance; SZA validity mask retained",
             full_scene_methods=["mono-window-2016","du-2015"],
             wang_scope="three 256x256 ROIs with 10-pixel halo and full-scene NDVI bounds",
             temperature_validation="operational consistency only; no ground-truth RMSE",
@@ -208,7 +206,7 @@ def validate(folder, output, tile_rows):
         lines=[f"# Scene validation: {scene.product_id}","",
             f"pyLSTemp {__version__}; {scene.shape[0]} x {scene.shape[1]} pixels; backend {scene.backend}.",
             "","## Scientific scope","",
-            "Optical inputs: TOA reflectance, corrected with per-pixel SZA where available.",
+            "Optical inputs: TOA radiance [W m-2 sr-1 um-1], using per-band MTL coefficients.",
             "QA: fill/cloud/cirrus/shadow/snow, B2/B4/B5 saturation and terrain occlusion.",
             "Water is excluded for Wang. Full-scene runs: mono-window and Du. Wang/Jimenez: three ROIs.",
             "No surface reflectance or ground-truth temperature is present. These are operational checks.",

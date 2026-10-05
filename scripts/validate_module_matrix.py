@@ -12,6 +12,7 @@ sys.path.insert(0,str(ROOT))
 from pylstemp import spectral_index, brightness, emissivity, single_window, split_window, water_vapor
 from pylstemp.algorithms import FAMILY_REGISTRIES
 from pylstemp.scene import LandsatScene
+from pylstemp.calibration import toa_radiance, toa_reflectance
 from scripts import matrix_references as ref
 
 def stats(a):
@@ -61,16 +62,15 @@ def run_roi(scene,dest,index,core,bounds):
     r0,r1,c0,c1=core
     halo=(r0-10,r1+10,c0-10,c1+10)
     optical,thermal,mask=scene.calibrated(halo,exclude_water=True)
-    red,nir,blue=optical[4],optical[5],optical[2]
+    red,nir=optical[4],optical[5]
     t10,t11=thermal[10],thermal[11]
     select=np.s_[10:-10,10:-10]
     cases,artifacts=[],[]
     n=ref.ndvi(nir,red)
     for method in FAMILY_REGISTRIES["spectral_index"].available_keys():
         kwargs=dict(nir=nir,red=red,mask=mask)
-        if method=="evi":kwargs["blue"]=blue
         record(cases,dict(module="spectral_index",method=method),
-            lambda m=method,k=kwargs:spectral_index(m,**k),ref.spectral(method,nir,red,blue,mask),mask=mask)
+            lambda m=method,k=kwargs:spectral_index(m,**k),ref.spectral(method,nir,red,mask=mask),mask=mask)
     n=np.where(mask,np.nan,n)
     for band in (10,11):
         md=scene.metadata
@@ -79,7 +79,10 @@ def run_roi(scene,dest,index,core,bounds):
             md[f"RADIANCE_MULT_BAND_{band}"],md[f"RADIANCE_ADD_BAND_{band}"],mask)
         record(cases,dict(module="brightness",band=band,sensor=scene.sensor),
             lambda b=band,d=raw:brightness(d,b,scene.sensor,rad_gain=md[f"RADIANCE_MULT_BAND_{b}"],
-                rad_bias=md[f"RADIANCE_ADD_BAND_{b}"],mask=mask),expected,mask=mask)
+                rad_bias=md[f"RADIANCE_ADD_BAND_{b}"],mask=mask,input_quantity="dn"),expected,mask=mask)
+        radiance=toa_radiance(raw,metadata=md,band=band,mask=mask)
+        record(cases,dict(module="brightness",band=band,input_quantity="radiance",sensor=scene.sensor),
+            lambda b=band,a=radiance:brightness(a,b,metadata=md,mask=mask),expected,mask=mask)
     pwvs={}
     for window in (3,5,21):
         for groups in (1,3):
@@ -148,14 +151,18 @@ def run_roi(scene,dest,index,core,bounds):
     # Metadata-based optical calibration, separately from production helpers.
     sza=scene.read("SZA",halo) if "SZA" in scene.sources else None
     elevation=90-sza.astype(float)*.01 if sza is not None else scene.metadata["SUN_ELEVATION"]
-    for band in (2,4,5):
+    for band in (4,5):
         dn=scene.read(f"B{band}",halo)
         with np.errstate(all="ignore"):
             expected=(dn.astype(float)*scene.metadata[f"REFLECTANCE_MULT_BAND_{band}"]+
                 scene.metadata[f"REFLECTANCE_ADD_BAND_{band}"])/np.sin(np.deg2rad(elevation))
         expected=np.where(mask|(dn<=0)|~np.isfinite(expected),np.nan,expected)
         record(cases,dict(module="calibration",band=band,quantity="TOA_reflectance"),
-            lambda b=band:optical[b],expected,mask=mask)
+            lambda b=band:toa_reflectance(scene.read(f"B{b}",halo),metadata=scene.metadata,band=b,mask=mask,sun_elevation=elevation),expected,mask=mask)
+        expected_radiance=dn.astype(float)*scene.metadata[f"RADIANCE_MULT_BAND_{band}"]+scene.metadata[f"RADIANCE_ADD_BAND_{band}"]
+        expected_radiance=np.where(mask|(dn<=0)|~np.isfinite(expected_radiance),np.nan,expected_radiance)
+        record(cases,dict(module="calibration",band=band,quantity="TOA_radiance"),
+            lambda b=band:optical[b],expected_radiance,mask=mask)
     # Real-pixel chunk-size equivalence; no change to algorithm.
     sub=np.s_[80:144,80:144]
     a=water_vapor(t10[sub],t11[sub],n[sub],mask=mask[sub],ndvi_range=bounds,chunk_rows=1)
@@ -170,17 +177,12 @@ def run_roi(scene,dest,index,core,bounds):
 def probes():
     """Audit suspicious contracts without concealing them as passing tests."""
     cases=[]
-    for blue,label in ((np.inf,"evi_nonfinite_blue"),):
-        value=spectral_index("evi",nir=np.array([[.6]]),red=np.array([[.2]]),blue=np.array([[blue]]))
-        cases.append(dict(probe=label,expected="NaN",actual=repr(float(value[0,0])),
-            status="finding" if np.isfinite(value).any() else "passed"))
     value=spectral_index("ndvi",nir=np.array([[0.]]),red=np.array([[0.]]))
     cases.append(dict(probe="ndvi_zero_denominator",expected="undefined ratio / NaN",
         actual=repr(float(value[0,0])),status="finding" if np.isfinite(value).any() else "passed"))
     for name,call in (
         ("scalar_ndvi",lambda:spectral_index("ndvi",nir=.6,red=.2)),
-        ("scalar_evi",lambda:spectral_index("evi",nir=.6,red=.2,blue=.1)),
-        ("uppercase_band_alias",lambda:brightness([[20000.]],"B10","landsat_8"))):
+        ("uppercase_band_alias",lambda:brightness([[10.]],"B10","landsat_8"))):
         try:
             value=call()
             cases.append(dict(probe=name,status="accepted",actual=repr(value)))
@@ -207,7 +209,7 @@ def main():
                 rois.append(run_roi(scene,dest,i,(r,r+256,c,c+256),full["ndvi_land_range"]))
                 print(scene.sensor,"deep matrix ROI",i,"passed",flush=True)
             result=dict(scene=scene.product_id,sensor=scene.sensor,rois=rois,
-                input_sha256=full["input_sha256"],optical_level="Level-1 TOA",
+                input_sha256=full["input_sha256"],optical_level="Level-1 TOA radiance",optical_units="W m-2 sr-1 um-1",
                 coefficient_transfer="Landsat 9 and legacy AVHRR coefficients are not accuracy-validated")
             (dest/"results.json").write_text(json.dumps(result,indent=2,allow_nan=False),encoding="utf-8")
             scenes.append(result)

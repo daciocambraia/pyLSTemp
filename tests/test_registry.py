@@ -41,5 +41,5 @@ class TestRegistries(unittest.TestCase):
 
     def test_thermal_and_spectral_index_registries_discover_default_modules(self):
         self.assertIn("brightness", thermal_registry.available_keys())
-        self.assertIn("evi", spectral_index_registry.available_keys())
+        self.assertEqual(spectral_index_registry.available_keys(), ("ndvi",))
         self.assertIn("ndvi", spectral_index_registry.available_keys())

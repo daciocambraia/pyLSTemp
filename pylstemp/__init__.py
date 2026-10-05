@@ -10,7 +10,7 @@ from .api import (
     water_vapor,
 )
 from .references import ORIGINAL_LIBRARY_CREDIT
-from .calibration import reflectance
+from .calibration import reflectance, toa_radiance, toa_reflectance, read_mtl
 
 __all__ = [
     "brightness",
@@ -18,6 +18,9 @@ __all__ = [
     "list_algorithms",
     "spectral_index",
     "reflectance",
+    "toa_radiance",
+    "toa_reflectance",
+    "read_mtl",
     "single_window",
     "split_window",
     "water_vapor",

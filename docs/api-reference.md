@@ -6,16 +6,15 @@
 
 Computes a spectral index selected by name. NDVI accepts calibrated radiance or
 reflectance; record the input quantity because band-specific conversions can
-change the ratio. EVI requires physical reflectance. Raw DN is not generally
+change the ratio. The standard scene workflow uses TOA radiance. Raw DN is not generally
 equivalent to calibrated radiance/reflectance. Undefined ratios and any nonfinite input
 become NaN. NDVI uses the exact ratio for valid denominators; `eps=1e-15` is a
-denominator tolerance, not an additive bias. The existing `abs(EVI)>1` mask remains.
+denominator tolerance, not an additive bias.
 Only `spectral_index` is listed in the catalog; legacy `spectral_indices` imports
 share the canonical NDVI implementation.
 Currently supported:
 
 - `index="ndvi"` with `nir`, `red`, and optional `mask`
-- `index="evi"` with `nir`, `red`, `blue`, and optional `mask`
 
 Example:
 
@@ -26,27 +25,39 @@ ndvi_image = spectral_index(
     red=red,
 )
 
-evi_image = spectral_index(
-    index="evi",
-    nir=nir,
-    red=red,
-    blue=blue,
-)
 ```
 
-### `brightness(thermal_band, band, sensor, rad_gain=None, rad_bias=None, mask=None)`
+### `toa_radiance(dn, *, metadata, band, mask=None)`
 
-Computes brightness temperature for the selected Landsat thermal band using `sensor="landsat_8"` or `sensor="landsat_9"`.
-Use `band="band_10"` or `band="band_11"`.
-`rad_gain` corresponds to `RADIANCE_MULT_BAND_X` and `rad_bias` corresponds to `RADIANCE_ADD_BAND_X`.
+Convert Level-1 DN to TOA spectral radiance in **W m-2 sr-1 um-1**.
+Bands 1..11 use their own `RADIANCE_MULT_BAND_x` and `RADIANCE_ADD_BAND_x`
+from the matching MTL. Formula: `L = M_L * DN + A_L`. No solar rescaling.
+Nonfinite values, DN <= 0 and mask=True become NaN; values are not clipped.
+Public import: `from pylstemp import toa_radiance, read_mtl`.
 
-Default values:
-- `landsat_8`, band 10: `rad_gain=0.0003342`, `rad_bias=0.1`
-- `landsat_8`, band 11: `rad_gain=0.0003342`, `rad_bias=0.1`
-- `landsat_9`, band 10: `rad_gain=0.00038`, `rad_bias=0.1`
-- `landsat_9`, band 11: `rad_gain=0.000349`, `rad_bias=0.1`
+### `toa_reflectance(dn, *, metadata, band, mask=None, sun_elevation=None)`
 
-You can override these values in the function call.
+Convert Level-1 optical DN (bands 1..9) to **dimensionless TOA reflectance**:
+`rho = (M_rho * DN + A_rho) / sin(solar elevation)`.
+Elevation is in degrees; use a scalar or an aligned per-pixel array. The MTL
+scene-centre value is the fallback. Negative/above-one output is preserved.
+This does not perform atmospheric correction or produce surface reflectance.
+
+### `brightness(thermal_band, band, sensor=None, rad_gain=None, rad_bias=None, mask=None, *, metadata=None, input_quantity="radiance")`
+
+Canonical implementation: `pylstemp.calibration.brightness`, also exported at
+`pylstemp.brightness` and `pylstemp.api.brightness`. Default input: **TOA radiance
+in W m-2 sr-1 um-1**. Output: **TOA brightness temperature in K**.
+Use band 10/11 or the documented aliases. Matching Level-1 MTL supplies K1/K2;
+`sensor="landsat_8"`/`"landsat_9"` provides fallback constants if MTL is omitted.
+USGS equation: `BT = K2 / log(1 + K1 / L)`. BT is not surface temperature.
+
+Explicit `input_quantity="dn"` keeps the historical DN shortcut. Matching MTL
+provides all coefficients. Without MTL, sensor gain/bias defaults are available
+and `rad_gain`/`rad_bias` overrides are supported. Those arguments are rejected
+for already calibrated radiance or with authoritative MTL. A sensor conflicting
+with the MTL is also rejected. Nonpositive radiance and nonfinite inputs become NaN.
+The legacy thermal-family band helpers still accept DN for compatibility.
 
 ### `emissivity(ndvi_image, band, band_4_red=None, emissivity_method="avdan-2016")`
 
@@ -137,7 +148,7 @@ SR scaling remains an optional calibration utility. Available emissivity methods
 use NDVI and do not require an additional SR product.
 
 ~~~python
-from pylstemp import reflectance
+from pylstemp import reflectance, read_mtl
 from pylstemp.calibration import read_mtl
 red_toa = reflectance(red_dn, metadata=read_mtl("L1_MTL.txt"), band=4)
 red_sr = reflectance(sr_b4_dn, metadata=read_mtl("L2_MTL.txt"), band=4, kind="surface")
@@ -184,7 +195,6 @@ Sensor constants are stored under `pylstemp/sensors/`.
 ### `spectral_index`
 
 - `ndvi`
-- `evi`
 
 ### `radiative_transfer`
 
@@ -193,6 +203,16 @@ Sensor constants are stored under `pylstemp/sensors/`.
 ## Internal organization
 
 - shared public orchestration: `pylstemp/api.py`
+- DN/radiance/reflectance/TOA BT calibration: `pylstemp/calibration.py`
 - algorithm family discovery: `pylstemp/algorithms/__init__.py`
 - algorithm module discovery inside each family: `pylstemp/registry.py`
 - family implementations: `pylstemp/algorithms/*`
+
+### `LandsatScene.calibrated(window=None, *, exclude_water=False, optical_quantity="radiance")`
+
+Returns optical B4/B5 (and B2 when present), thermal BT10/BT11 [K], and the
+boolean invalid-pixel mask. Optical defaults to TOA radiance [W m-2 sr-1 um-1].
+Select `optical_quantity="reflectance"` for TOA reflectance with solar correction.
+B4/B5/B10/B11, matching MTL, QA_PIXEL and QA_RADSAT are required. B2 is optional.
+Both modes share QA and supplied SZA validity masks for controlled comparisons.
+All returned arrays are aligned. Scene inputs are never modified.

@@ -17,7 +17,7 @@ def contextual_errors(function):
         except (PyLandTempError,ValueError,TypeError) as exc:
             selectors=[]
             if bound is not None:
-                for key in ("index","lst_method","emissivity_method","method","band","sensor","kind"):
+                for key in ("index","lst_method","emissivity_method","method","band","sensor","kind","input_quantity"):
                     if key in bound.arguments:
                         value=repr(bound.arguments[key])
                         selectors.append(key+"="+(value if len(value)<100 else value[:97]+"..."))

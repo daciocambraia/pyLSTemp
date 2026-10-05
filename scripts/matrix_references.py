@@ -30,14 +30,11 @@ def ndvi(nir,red):
     return np.where(np.isfinite(value)&(np.abs(value)<=1),value,np.nan)
 
 def spectral(index,nir,red,blue=None,mask=None):
-    if index=="ndvi":
-        value=ndvi(nir,red)
-    else:
-        nir,red,blue=(np.asarray(a,dtype=float) for a in (nir,red,blue))
-        with np.errstate(all="ignore"):
-            value=2.5*(nir-red)/(1+nir+6*red-7.5*blue)
-        value=np.where(np.isfinite(nir)&np.isfinite(red)&np.isfinite(blue)&np.isfinite(value)&(np.abs(value)<=1),value,np.nan)
-    return np.where(mask,value*0+np.nan,value) if mask is not None else value
+    if index != "ndvi":
+        raise ValueError(f"Unsupported index {index!r}; only NDVI is retained.")
+    value = ndvi(nir, red)
+    return np.where(mask, np.nan, value) if mask is not None else value
+
 
 def brightness(dn,k1,k2,gain,bias,mask=None):
     a=np.asarray(dn,dtype=float)

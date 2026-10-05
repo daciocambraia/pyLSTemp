@@ -13,6 +13,9 @@ from pylstemp import (
     single_window,
     split_window,
     list_algorithms,
+    toa_radiance,
+    toa_reflectance,
+    read_mtl,
 )
 ```
 
@@ -22,12 +25,24 @@ from pylstemp import (
 import numpy as np
 from pylstemp import spectral_index
 
-red = np.array([[0.2, 0.3], [0.4, 0.5]])
-nir = np.array([[0.6, 0.7], [0.8, 0.9]])
-blue = np.array([[0.1, 0.1], [0.2, 0.2]])
-
+# Synthetic MTL and DN for an executable example. For real scenes use:
+# metadata = read_mtl("path/to/SCENE_MTL.txt")
+metadata = dict(PROCESSING_LEVEL="L1TP", SPACECRAFT_ID="LANDSAT_8",
+    SUN_ELEVATION=30, RADIANCE_MULT_BAND_4=.007425383,
+    RADIANCE_ADD_BAND_4=-37.126915, RADIANCE_MULT_BAND_5=.005048835,
+    RADIANCE_ADD_BAND_5=-25.244175, REFLECTANCE_MULT_BAND_4=.00002,
+    REFLECTANCE_ADD_BAND_4=-.1,
+    RADIANCE_MULT_BAND_10=.0003342, RADIANCE_ADD_BAND_10=.1,
+    RADIANCE_MULT_BAND_11=.0003342, RADIANCE_ADD_BAND_11=.1,
+    K1_CONSTANT_BAND_10=774.8853, K2_CONSTANT_BAND_10=1321.0789,
+    K1_CONSTANT_BAND_11=480.8883, K2_CONSTANT_BAND_11=1201.1442)
+red_dn = np.array([[20000., 22000.], [24000., 26000.]])
+nir_dn = np.array([[30000., 33000.], [36000., 39000.]])
+red = toa_radiance(red_dn, metadata=metadata, band=4)
+nir = toa_radiance(nir_dn, metadata=metadata, band=5)
 ndvi_image = spectral_index(index="ndvi", nir=nir, red=red)
-evi_image = spectral_index(index="evi", nir=nir, red=red, blue=blue)
+# Optional dimensionless TOA reflectance, outside the default radiance workflow:
+red_toa_reflectance = toa_reflectance(red_dn, metadata=metadata, band=4)
 ```
 
 ## 2. Compute brightness temperature
@@ -36,24 +51,21 @@ evi_image = spectral_index(index="evi", nir=nir, red=red, blue=blue)
 import numpy as np
 from pylstemp import brightness
 
-band_10 = np.full((2, 2), 1000.0)
-band_11 = np.full((2, 2), 900.0)
-sensor = "landsat_8"
-
-brightness_10 = brightness(
-    band_10,
-    band="band_10",
-    sensor=sensor,
-)
-
-brightness_11 = brightness(
-    band_11,
-    band="band_11",
-    sensor=sensor,
-)
+band_10_dn = np.full((2, 2), 20000.0)
+band_11_dn = np.full((2, 2), 20000.0)
+radiance_10 = toa_radiance(band_10_dn, metadata=metadata, band=10)
+radiance_11 = toa_radiance(band_11_dn, metadata=metadata, band=11)
+brightness_10 = brightness(radiance_10, band=10, metadata=metadata)
+brightness_11 = brightness(radiance_11, band=11, metadata=metadata)
 ```
 
-To override the default sensor metadata values, pass `rad_gain=` and `rad_bias=` explicitly.
+`brightness` lives in `pylstemp.calibration` and remains exported at the package root.
+Its default input is TOA radiance in W m-2 sr-1 um-1; the output is TOA BT in K.
+It matches the [USGS Level-1 equation](https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product).
+It does not correct emissivity or atmospheric effects. Prefer the matching MTL.
+For the former DN shortcut set `input_quantity="dn"` explicitly. Without MTL,
+`sensor=` selects fallback constants and `rad_gain`/`rad_bias` can override defaults.
+Those overrides are rejected for radiance input to prevent double calibration.
 
 ## 3. Compute emissivity
 
@@ -177,18 +189,20 @@ print(catalog["water_vapor"].keys())
 - `NaN` values are propagated through the calculations
 - manual masks passed to `spectral_index(index="ndvi", ...)` or `brightness(...)` must be boolean
 - `sensor` must be `landsat_8` or `landsat_9`
-- `rad_gain` and `rad_bias` default to the sensor metadata values and can be overridden manually in the brightness temperature function call
-- these radiance values are different from the sensor constants `K1` and `K2`
+- DN gain/bias overrides apply only to `input_quantity="dn"` without MTL; metadata is authoritative when supplied
+- gain/bias calibrate DN to radiance; `K1` and `K2` convert radiance to BT
 
 ## Scientific contracts and real scenes
 
 NDVI accepts calibrated radiance or reflectance; preserve the input quantity
 and check that emissivity/land-cover thresholds match its intended use.
-EVI requires physical reflectance. The supplied scene examples use Level-1 TOA
-reflectance. Xiaolei is not available in this release; emissivity methods are
+The supplied scene examples use Level-1 TOA radiance. EVI was removed because
+it is not used by the retained retrieval methods. Xiaolei is not available; emissivity methods are
 avdan-2016 and gopinadh-2018.
-Use pylstemp.calibration.read_mtl, toa_reflectance and brightness_from_mtl for Level-1 calibration.
-The LandsatScene reader applies per-pixel SZA and C2 QA.
+Use pylstemp.calibration.read_mtl, toa_radiance, toa_reflectance and brightness for Level-1 calibration.
+LandsatScene.calibrated() defaults to optical_quantity="radiance". Select "reflectance" explicitly
+for TOA reflectance with per-pixel SZA (or MTL solar elevation). QA applies in both modes.
+B4/B5/B10/B11, MTL and QA are required; B2 is optional.
 Both LST workflows and water_vapor accept keyword-only mask=.
 Wang supports ndvi_range=(scene_min,scene_max) and chunk_rows=. External tiles require halo pixels.
 Nonfinite/negative PWV pixels are masked, scalar negative PWV is rejected.

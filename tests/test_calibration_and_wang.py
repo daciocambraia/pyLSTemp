@@ -40,7 +40,7 @@ class CalibrationTests(unittest.TestCase):
         self.assertAlmostEqual(float(result[0,0]),expected,places=10)
 
     def test_zero_dn_is_nodata_without_explicit_mask(self):
-        self.assertTrue(np.isnan(brightness([[0]],band="band_10",sensor="landsat_8")).all())
+        self.assertTrue(np.isnan(brightness([[0]],band="band_10",sensor="landsat_8", input_quantity="dn")).all())
 
     def test_qa_bits_match_usgs_table(self):
         qa=np.array([[0]+[1<<i for i in range(8)]],dtype=np.uint16)

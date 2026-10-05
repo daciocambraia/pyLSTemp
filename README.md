@@ -14,8 +14,9 @@ Landsat 8/9 Level-1 radiometric calibration is metadata-driven. Retrieval coeffi
 transfer to Landsat 9 is experimental. No ground-truth LST accuracy is claimed.
 Available emissivity methods are Avdan and Gopinadh. Xiaolei has been removed
 from this release; no available retrieval method requires an additional SR product.
-NDVI accepts calibrated radiance or reflectance; EVI uses physical reflectance.
-The scene reader uses MTL-driven TOA reflectance for the Level-1 optical bands.
+NDVI is the single retained spectral index and uses TOA radiance in the default workflow.
+EVI was removed because it is not used by the retrieval methods. The calibration module
+provides MTL-driven TOA radiance, optional TOA reflectance and TOA brightness temperature.
 
 Install examples with `pip install -e ".[examples]"`. Process scenes with:
 `python scripts/validate_scenes.py --input ../Imagens --output Verificacao/v1.11.0`.
@@ -67,6 +68,9 @@ from pylstemp import (
     split_window,
     list_algorithms,
     reflectance,
+    toa_radiance,
+    toa_reflectance,
+    read_mtl,
 )
 ```
 
@@ -77,10 +81,18 @@ Sensor-specific thermal constants live under `pylstemp/sensors/`.
 
 Typical thermal workflow:
 
-1. compute vegetation indices with `spectral_index(index="ndvi", ...)` or `spectral_index(index="evi", ...)`
-2. compute `brightness(..., band="band_10")` and, when needed, `brightness(..., band="band_11")` using `sensor`, `rad_gain`, and `rad_bias`
-3. optionally estimate water vapor with `water_vapor(method="wang-2015", ...)`
-4. pass the resulting brightness temperature arrays into `single_window(...)` or `split_window(...)`
+1. calibrate Level-1 DN using `toa_radiance(..., metadata=mtl, band=...)` (W m-2 sr-1 um-1)
+2. compute NDVI with calibrated B5/B4 radiance using `spectral_index(index="ndvi", ...)`
+3. compute TOA BT with `brightness(radiance, band=10/11, metadata=mtl)` (K)
+4. compute emissivity from NDVI; optionally estimate PWV with `water_vapor(method="wang-2015", ...)` (g/cm2)
+5. pass BT in K and B4/B5 radiance into `single_window(...)` or `split_window(...)`
+
+`LandsatScene.calibrated()` follows this radiance workflow. TOA reflectance is
+available explicitly with `optical_quantity="reflectance"`. B2 is optional.
+The DN shortcut in `brightness` requires `input_quantity="dn"`; its default
+now expects radiance. Do not supply gain/bias with already calibrated radiance.
+NDVI-derived emissivity thresholds need a compatible radiometric convention;
+execution tests do not establish their scientific accuracy in a new convention.
 
 ## Modular architecture
 
@@ -108,7 +120,8 @@ That means `list_algorithms()` grows with the codebase instead of depending on a
 - [Deep module and combination validation](docs/AVALIACAO_MODULOS_v1.11.md)
 - [Improvements identified after validation](docs/MELHORIAS_MODULOS_v1.11.md)
 - [Index corrections, reflectance conversion and method messages](docs/CORRECOES_INDICES_REFLECTANCIA_v1.11.md)
-- [Current scope: Xiaolei removal and retained-method verification](docs/ESCOPO_LEVEL1_v1.11.md)
+- [Previous scope: Xiaolei removal](docs/ESCOPO_LEVEL1_v1.11.md)
+- [Radiance workflow, calibration and EVI removal](docs/FLUXO_RADIANCIA_v1.11.md)
 
 ## Development
 

@@ -27,7 +27,7 @@ def example_inputs():
         r0,c0=scene.shape[0]//2,scene.shape[1]//2
         win=(r0,min(r0+256,scene.shape[0]),c0,min(c0+256,scene.shape[1]))
         optical,thermal,mask=scene.calibrated(win,exclude_water=True)
-        return dict(blue=optical[2],red=optical[4],nir=optical[5],
+        return dict(red=optical[4],nir=optical[5],
             bt10=thermal[10],bt11=thermal[11],mask=mask,sensor=scene.sensor,
-            product=scene.product_id,window=win,
+            product=scene.product_id,window=win,optical_quantity="TOA radiance",optical_units="W m-2 sr-1 um-1",
             ndvi=spectral_index("ndvi",nir=optical[5],red=optical[4],mask=mask))

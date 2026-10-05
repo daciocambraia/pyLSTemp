@@ -7,11 +7,11 @@ from pylstemp.exceptions import InvalidMethodRequested
 
 
 class ReleaseScope(unittest.TestCase):
-    def test_catalog_contains_only_retained_emissivity_and_twelve_algorithms(self):
+    def test_catalog_contains_only_retained_emissivity_and_eleven_algorithms(self):
         catalog = list_algorithms()
         self.assertEqual(set(catalog["emissivity"]), {"avdan-2016", "gopinadh-2018"})
         self.assertEqual(sum(len(methods) for family, methods in catalog.items()
-                             if family != "credit"), 12)
+                             if family != "credit"), 11)
         self.assertIsNone(importlib.util.find_spec(
             "pylstemp.algorithms.emissivity.xiaolei_2014"))
 
@@ -54,3 +54,9 @@ class ReleaseScope(unittest.TestCase):
             rtol=0, atol=1e-15)
         differently_scaled = spectral_index("ndvi", nir=2*nir, red=red)
         self.assertFalse(np.allclose(actual, differently_scaled))
+
+    def test_evi_is_absent_from_catalog_module_and_dispatch(self):
+        self.assertEqual(set(list_algorithms()["spectral_index"]), {"ndvi"})
+        self.assertIsNone(importlib.util.find_spec("pylstemp.algorithms.spectral_index.evi"))
+        with self.assertRaisesRegex(InvalidMethodRequested, "ndvi"):
+            spectral_index("evi", nir=[[.6]], red=[[.2]], blue=[[.1]])

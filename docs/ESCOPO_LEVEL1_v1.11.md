@@ -1,3 +1,5 @@
+> Atualizacao posterior: EVI removido e fluxo padrao alterado para radiancia TOA. Este relatorio registra uma etapa anterior. Consulte [a verificacao atual](FLUXO_RADIANCIA_v1.11.md) para os contratos e resultados vigentes.
+
 # Escopo Level-1 e retirada de Xiaolei - v1.11.0
 
 Data: 05/10/2026. Alteracao de escopo solicitada pelo usuario.

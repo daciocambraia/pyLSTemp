@@ -9,7 +9,8 @@ import numpy as np
 from collections.abc import Mapping
 from .messages import contextual_errors
 
-from .utils import apply_mask, compute_brightness_temperature
+from .utils import apply_mask, compute_brightness_temperature, radiance_brightness_temperature
+from .sensors import get_landsat_thermal_constants
 from .validation import to_float_array, ensure_boolean_mask, ensure_same_shape
 
 
@@ -53,6 +54,90 @@ def _level1(metadata):
         raise ValueError("Raw DN calibration requires Level-1 metadata (L1TP/L1GT/L1GS). Do not treat Level-2 SR/ST values as Level-1 DN.")
 
 
+def normalize_thermal_band(band):
+    """Normalize the public thermal-band aliases to band_10/band_11."""
+    if isinstance(band, str):
+        band = band.strip().lower()
+    aliases = {10: "band_10", 11: "band_11", "10": "band_10", "11": "band_11",
+               "b10": "band_10", "b11": "band_11", "band_10": "band_10", "band_11": "band_11"}
+    try:
+        return aliases[band]
+    except (KeyError, TypeError) as exc:
+        raise ValueError(f"band must be 10 or 11 ('band_10', 'band_11', 'b10', 'b11'); received {band!r}.") from exc
+
+
+@contextual_errors
+def toa_radiance(dn, *, metadata, band, mask=None):
+    """Level-1 DN -> TOA spectral radiance [W m-2 sr-1 um-1], bands 1..11.
+
+    Uses the matching MTL: L = RADIANCE_MULT_BAND_x * DN + RADIANCE_ADD_BAND_x.
+    DN <= 0, nonfinite values and mask=True become NaN. No solar correction,
+    atmospheric correction, emissivity correction or clipping is performed.
+    """
+    _level1(metadata)
+    if isinstance(band, (bool, np.bool_)) or not isinstance(band, (int, np.integer)) or band not in range(1, 12):
+        raise ValueError("Radiance band must be an integer from 1 to 11.")
+    image = to_float_array("dn", dn)
+    gain = _number(metadata, f"RADIANCE_MULT_BAND_{band}")
+    bias = _number(metadata, f"RADIANCE_ADD_BAND_{band}")
+    if gain <= 0:
+        raise ValueError("Radiance gain must be positive.")
+    invalid = ~np.isfinite(image) | (image <= 0)
+    if mask is not None:
+        invalid |= ensure_boolean_mask(mask, shape=image.shape)
+    with np.errstate(over="ignore", invalid="ignore"):
+        value = gain * image + bias
+    return apply_mask(value, invalid | ~np.isfinite(value))
+
+
+@contextual_errors
+def brightness(thermal_band, band, sensor=None, rad_gain=None, rad_bias=None, mask=None,
+               *, metadata=None, input_quantity="radiance"):
+    """TOA brightness temperature [K], using the USGS Planck inversion.
+
+    Default input_quantity='radiance' requires TOA spectral radiance in
+    W m-2 sr-1 um-1. Supply matching Level-1 metadata for band-specific K1/K2;
+    sensor='landsat_8'/'landsat_9' is a fallback when metadata is unavailable.
+    Radiance is never scaled again: rad_gain/rad_bias are rejected in this mode.
+
+    input_quantity='dn' explicitly enables the historical thermal DN shortcut.
+    Matching MTL is preferred. Without MTL, sensor defaults can be overridden
+    by rad_gain/rad_bias. Conflicting sensor/MTL or overrides with MTL are rejected.
+    True mask entries, nonpositive radiance and nonfinite inputs become NaN.
+    This is TOA BT, not emissivity/atmosphere-corrected surface temperature.
+    """
+    key = normalize_thermal_band(band)
+    number = int(key[-2:])
+    if not isinstance(input_quantity, str) or input_quantity.strip().lower() not in {"radiance", "dn"}:
+        raise ValueError("input_quantity must be 'radiance' [W m-2 sr-1 um-1] or 'dn' [Level-1].")
+    quantity = input_quantity.strip().lower()
+    if quantity == "radiance" and (rad_gain is not None or rad_bias is not None):
+        raise ValueError("Radiance is already calibrated; omit rad_gain/rad_bias or use input_quantity='dn'.")
+    if metadata is not None:
+        _level1(metadata)
+        spacecraft = metadata.get("SPACECRAFT_ID")
+        if spacecraft not in {"LANDSAT_8", "LANDSAT_9"}:
+            raise ValueError("MTL SPACECRAFT_ID must be LANDSAT_8 or LANDSAT_9.")
+        if sensor is not None:
+            get_landsat_thermal_constants(sensor)
+            if sensor != spacecraft.lower():
+                raise ValueError("sensor and MTL SPACECRAFT_ID must describe the same scene.")
+        if rad_gain is not None or rad_bias is not None:
+            raise ValueError("With metadata, use the matching MTL coefficients; omit rad_gain/rad_bias.")
+        k1 = _number(metadata, f"K1_CONSTANT_BAND_{number}")
+        k2 = _number(metadata, f"K2_CONSTANT_BAND_{number}")
+        radiance = toa_radiance(thermal_band, metadata=metadata, band=number, mask=mask) if quantity == "dn" else thermal_band
+        return radiance_brightness_temperature(radiance, k1, k2, mask=mask)
+    constants = get_landsat_thermal_constants(sensor)
+    k1 = getattr(constants, f"k1_constant_{number}")
+    k2 = getattr(constants, f"k2_constant_{number}")
+    if quantity == "radiance":
+        return radiance_brightness_temperature(thermal_band, k1, k2, mask=mask)
+    gain = getattr(constants, f"radiance_mult_band_{number}") if rad_gain is None else float(rad_gain)
+    bias = getattr(constants, f"radiance_add_band_{number}") if rad_bias is None else float(rad_bias)
+    return compute_brightness_temperature(thermal_band, gain, bias, k1, k2, mask=mask)
+
+
 @contextual_errors
 def toa_reflectance(dn, *, metadata, band, mask=None, sun_elevation=None):
     """Convert Level-1 optical DN to TOA reflectance (dimensionless).
@@ -86,15 +171,9 @@ def toa_reflectance(dn, *, metadata, band, mask=None, sun_elevation=None):
 @contextual_errors
 def brightness_from_mtl(dn, *, metadata, band, mask=None):
     """Convert Level-1 thermal DN to kelvin using MTL gain, bias, K1 and K2."""
-    _level1(metadata)
     if isinstance(band, (bool, np.bool_)) or not isinstance(band, (int, np.integer)) or band not in (10, 11):
         raise ValueError("Thermal band must be 10 or 11.")
-    return compute_brightness_temperature(
-        dn, _number(metadata, f"RADIANCE_MULT_BAND_{band}"),
-        _number(metadata, f"RADIANCE_ADD_BAND_{band}"),
-        _number(metadata, f"K1_CONSTANT_BAND_{band}"),
-        _number(metadata, f"K2_CONSTANT_BAND_{band}"), mask=mask,
-    )
+    return brightness(dn, band, metadata=metadata, input_quantity="dn", mask=mask)
 
 
 @contextual_errors

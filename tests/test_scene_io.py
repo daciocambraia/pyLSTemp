@@ -20,6 +20,8 @@ class SceneIOTests(unittest.TestCase):
         for band in (2,4,5):
             metadata[f"REFLECTANCE_MULT_BAND_{band}"]=2e-5
             metadata[f"REFLECTANCE_ADD_BAND_{band}"]=-0.1
+            metadata[f"RADIANCE_MULT_BAND_{band}"]=.005
+            metadata[f"RADIANCE_ADD_BAND_{band}"]=-25.
         for band in (10,11):
             metadata[f"RADIANCE_MULT_BAND_{band}"]=0.0003342
             metadata[f"RADIANCE_ADD_BAND_{band}"]=0.1
@@ -47,7 +49,7 @@ class SceneIOTests(unittest.TestCase):
 
     def test_mtl_angles_and_qa_are_used(self):
         with LandsatScene(self.folder,backend="pillow") as scene:
-            optical,thermal,mask=scene.calibrated()
+            optical,thermal,mask=scene.calibrated(optical_quantity="reflectance")
             self.assertEqual(scene.shape,(12,14))
             self.assertTrue(mask[2,3])
             self.assertTrue(np.isnan(optical[4][2,3]))
@@ -79,3 +81,21 @@ class SceneIOTests(unittest.TestCase):
         with LandsatScene(self.folder,backend="pillow") as scene:
             with self.assertRaises(ValueError):
                 scene.read("B4",(-1,5,0,5))
+
+    def test_radiance_default_and_explicit_reflectance(self):
+        with LandsatScene(self.folder,backend="pillow") as scene:
+            optical,thermal,mask=scene.calibrated()
+            reflected,other,other_mask=scene.calibrated(optical_quantity="reflectance")
+            self.assertEqual(float(optical[4][0,0]),75.)
+            self.assertAlmostEqual(float(reflected[4][0,0]),.6)
+            np.testing.assert_array_equal(thermal[10],other[10])
+            np.testing.assert_array_equal(mask,other_mask)
+            with self.assertRaisesRegex(ValueError,"optical_quantity"):
+                scene.calibrated(optical_quantity="dn")
+
+    def test_scene_without_blue_runs_and_exports(self):
+        (self.folder/"TEST_B2.TIF").unlink()
+        with LandsatScene(self.folder,backend="pillow") as scene:
+            optical,thermal,mask=scene.calibrated()
+            self.assertEqual(set(optical),{4,5})
+            scene.write_geotiff(self.folder/"no_blue.tif",thermal[10],units="K")

@@ -25,7 +25,10 @@ def main():
         dest=args.results/"cenas_completas"/info["scene"]
         assert info["input_sha256"]==old[info["scene"]]["input_sha256"],"Scene inputs changed"
         for key,metric in info["metrics"].items():
-            baseline=old[info["scene"]]["metrics"][key]
+            baseline=old[info["scene"]]["metrics"].get(key)
+            if baseline is None:
+                changes.append(dict(scene=info["scene"],method=key,status="new diagnostic",stats=metric))
+                continue
             changes.append(dict(scene=info["scene"],method=key,
                 valid_delta=metric["valid"]-baseline["valid"],
                 mean_delta=metric["mean"]-baseline["mean"]))

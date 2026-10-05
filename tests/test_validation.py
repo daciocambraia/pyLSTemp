@@ -20,7 +20,7 @@ class TestValidation(unittest.TestCase):
 
     def test_brightness_rejects_unknown_band(self):
         with self.assertRaisesRegex(ValueError, "band must be"):
-            brightness(np.ones((2, 2)), band="band_12", sensor="landsat_8")
+            brightness(np.ones((2, 2)), band="band_12", sensor="landsat_8", input_quantity="dn")
 
     def test_mask_builder_marks_zero_and_nan(self):
         image = np.array([[1.0, 0.0], [np.nan, 2.0]])

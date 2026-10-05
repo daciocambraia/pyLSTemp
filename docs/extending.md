@@ -81,5 +81,6 @@ If the family only needs to be discoverable and listed, the registry layer alrea
 
 Sensor-specific constants that should not be duplicated across algorithms can live under `pylstemp/sensors/`.
 
-For the current thermal workflow, keep the radiometric conversion concentrated in `brightness(...)`.
+For the current thermal workflow, keep DN-to-radiance/reflectance and radiance-to-BT conversions in `calibration`.
+Public `brightness(...)` defaults to radiance; LST workflows receive BT in kelvin.
 The `single_window(...)` and `split_window(...)` public functions should stay focused on LST computation from precomputed brightness temperature arrays.

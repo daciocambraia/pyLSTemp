@@ -13,10 +13,11 @@ Near-surface air temperature is not a ground-truth substitute for skin temperatu
 - NDVI accepts calibrated optical radiance or reflectance. Preserve the quantity, product type and calibration.
 - Rouse et al. (1974) used radiance; common multiplicative scaling cancels in NDVI, band-specific gains and offsets generally do not.
 - NDVI thresholds used by downstream methods require a compatible radiometric convention.
-- EVI requires physical optical reflectance; its additive constant does not cancel a change of input units.
+- EVI has been removed; NDVI is the only spectral index required by the retained workflows.
+- Default optical inputs are TOA radiance [W m-2 sr-1 um-1]: L = M_L * DN + A_L.
 - Level-1 TOA reflectance: (MTL gain * DN + MTL offset) / sin(solar elevation).
 - Per-pixel SZA, when present, is stored in hundredths of degrees. Elevation = 90 - SZA/100.
-- Level-1 BT: K2 / log(1 + K1 / (radiance gain * DN + radiance offset)).
+- TOA BT: K2 / log(1 + K1 / L), in kelvin. brightness defaults to radiance; DN requires input_quantity="dn".
 - All four thermal coefficients come from the scene MTL in the scene reader.
 - C2 Level-2 SR_B* scaling is 0.0000275 * DN - 0.2. This scaling does not atmospherically correct Level-1.
 - Current emissivity methods are Avdan and Gopinadh; Xiaolei was removed because its additional SR requirement is outside the selected release scope.
@@ -108,8 +109,7 @@ Mono-window is an emissivity-only correction here; it does not explicitly retrie
 ## Index and calibration update (2026-10-05)
 
 NDVI no longer adds epsilon to a valid denominator. Undefined ratios and any
-nonfinite optical input produce NaN for NDVI/EVI. The tolerance is 1e-15 for
-NDVI; the existing EVI absolute-value mask remains. Removing the bias can
+nonfinite optical input produce NaN for NDVI. The tolerance is 1e-15. Removing the bias can
 change a piecewise emissivity class at an exact NDVI boundary.
 
 The catalog now contains one NDVI. Legacy imports remain aliases to that
@@ -122,8 +122,15 @@ See [correction report](CORRECOES_INDICES_REFLECTANCIA_v1.11.md).
 ## Current release scope (2026-10-05)
 
 Xiaolei was removed from discovery, implementation, imports and active examples.
-The catalog has 12 algorithms and one NDVI. Numerical equations and default
-calibration of retained methods are unchanged. NDVI radiance support is checked
-without changing the TOA-based real-scene workflow.
+The catalog now has 11 algorithms, with NDVI as its sole spectral index.
+TOA radiance is the default scene workflow. TOA reflectance remains an explicit
+alternative. Public brightness is implemented in calibration and exported at
+the root and API. Its default input is radiance; the legacy thermal family
+helpers keep their documented DN convention for compatibility.
+Radiance and reflectance NDVI generally differ because per-band coefficients
+do not cancel. Published emissivity endmembers/classes are preserved, not
+recalibrated implicitly. A radiance workflow needs independent justification
+of these thresholds before scientific application. See the new verification
+report for measured changes on both supplied scenes.
 Rouse reference: [NASA original record](https://ntrs.nasa.gov/citations/19740022614).
-See [current verification report](ESCOPO_LEVEL1_v1.11.md).
+See [current verification report](FLUXO_RADIANCIA_v1.11.md).

@@ -1,5 +1,13 @@
 # Changelog
 
+## Radiance workflow and EVI removal (2026-10-05)
+
+- Remove unused EVI implementation, discovery entry, imports and active examples; retain one canonical NDVI.
+- Add metadata-driven TOA radiance conversion; expose TOA reflectance explicitly.
+- Move public brightness to calibration: default input TOA radiance, output TOA BT in K; DN requires input_quantity="dn".
+- Standardize scene/examples/validation workflow on optical radiance and make B2 optional.
+- Document quantity units, prevent double calibration, and compare radiance/reflectance NDVI on both supplied scenes.
+
 ## 1.11.0 - 2026-10-04 (updated 2026-10-05)
 
 - Verify retained scope: 619 tests, 106 subtests, 486 real cases and 102 unchanged GeoTIFFs; see docs/ESCOPO_LEVEL1_v1.11.md.

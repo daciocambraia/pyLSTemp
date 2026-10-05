@@ -77,7 +77,6 @@ def index_case(index,dtype,mask_mode):
         _,_,red,nir,blue=inputs(dtype)
         mask=mask_for(red.shape,mask_mode)
         kw=dict(nir=nir,red=red,mask=mask)
-        if index=="evi":kw["blue"]=blue
         actual=spectral_index(index,**kw)
         ref.check(actual,ref.spectral(index,nir,red,blue,mask),atol=1e-13)
         if index=="ndvi":
@@ -109,7 +108,7 @@ def brightness_case(sensor,band,alias,overrides,mask_mode):
         k1,k2,gain,bias=ref.THERMAL[sensor,band]
         kw={}
         if overrides:gain,bias=.0003,.2;kw=dict(rad_gain=gain,rad_bias=bias)
-        actual=brightness(a,band=alias,sensor=sensor,mask=mask,**kw)
+        actual=brightness(a,band=alias,sensor=sensor,mask=mask,**kw, input_quantity="dn")
         ref.check(actual,ref.brightness(a,k1,k2,gain,bias,mask),atol=1e-10)
     return test
 
@@ -161,14 +160,13 @@ class DeepContracts(unittest.TestCase):
     def test_shape_mask_unit_and_unknown_method_errors(self):
         a,b,red,nir,blue=inputs()
         for call in (lambda:spectral_index("ndvi",nir=nir,red=red[:1]),
-                     lambda:spectral_index("evi",nir=nir,red=red,blue=blue[:1]),
                      lambda:single_window(a,red[:1],nir),
                      lambda:split_window(a,b[:1],red,nir,lst_method="du-2015"),
                      lambda:emissivity(ref.ndvi(nir,red),10,band_4_red=red[:1]),
                      lambda:water_vapor(a,b,ref.ndvi(nir,red)[:1])):
             with self.assertRaises(InputShapesNotEqual):call()
         for call in (lambda:spectral_index("ndvi",nir=nir,red=red,mask=np.zeros(a.shape,int)),
-                     lambda:brightness(a,10,"landsat_8",mask=np.zeros(a.shape,int)),
+                     lambda:brightness(a,10,"landsat_8",mask=np.zeros(a.shape,int), input_quantity="dn"),
                      lambda:single_window(a,red,nir,mask=np.zeros(a.shape,int)),
                      lambda:split_window(a,b,red,nir,lst_method="du-2015",mask=np.zeros(a.shape,int)),
                      lambda:water_vapor(a,b,ref.ndvi(nir,red),mask=np.zeros(a.shape,int))):

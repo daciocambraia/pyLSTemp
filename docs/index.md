@@ -14,7 +14,7 @@ This folder contains the user-facing documentation for the current modular `pyLS
 ## Main ideas
 
 - the public API stays small and stable
-- brightness temperature is an explicit preprocessing step before LST workflows
+- calibration supplies TOA radiance, optional TOA reflectance and TOA brightness temperature; NDVI is the sole spectral index
 - sensor-specific thermal constants live in `pylstemp/sensors/`
 - the real implementations live in `pylstemp/algorithms/`
 - new algorithms are discovered automatically from their family folder
@@ -25,3 +25,5 @@ This folder contains the user-facing documentation for the current modular `pyLS
 - [Index corrections, one NDVI, reflectance and actionable errors](CORRECOES_INDICES_REFLECTANCIA_v1.11.md)
 
 - [Current Level-1 scope and Xiaolei removal](ESCOPO_LEVEL1_v1.11.md)
+
+- [Current radiance workflow and EVI removal](FLUXO_RADIANCIA_v1.11.md)

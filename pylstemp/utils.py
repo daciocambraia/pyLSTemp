@@ -121,13 +121,24 @@ def compute_brightness_temperature(
     if not np.all(np.isfinite(coefficients)) or mult_factor <= 0 or k1 <= 0 or k2 <= 0:
         raise ValueError("Radiance gain, K1 and K2 must be positive and all coefficients finite.")
     invalid = ~np.isfinite(image_array) | (image_array <= 0)
-    toa_radiance = (mult_factor * image_array) + add_factor
-    invalid |= toa_radiance <= 0
     if mask is not None:
         invalid |= ensure_boolean_mask(mask, shape=image_array.shape)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        brightness_temp = k2 / np.log((k1 / toa_radiance) + 1)
-    return apply_mask(brightness_temp, invalid | ~np.isfinite(brightness_temp))
+    with np.errstate(over="ignore", invalid="ignore"):
+        radiance = mult_factor * image_array + add_factor
+    return radiance_brightness_temperature(radiance, k1, k2, mask=invalid)
+
+
+def radiance_brightness_temperature(radiance, k1, k2, mask=None):
+    """Invert Planck: TOA radiance [W m-2 sr-1 um-1] -> TOA BT [K]."""
+    image = to_float_array("radiance", radiance)
+    if not np.all(np.isfinite([k1, k2])) or k1 <= 0 or k2 <= 0:
+        raise ValueError("K1 and K2 must be finite and positive.")
+    invalid = ~np.isfinite(image) | (image <= 0)
+    if mask is not None:
+        invalid |= ensure_boolean_mask(mask, shape=image.shape)
+    with np.errstate(all="ignore"):
+        temperature = k2 / np.log1p(k1 / image)
+    return apply_mask(temperature, invalid | ~np.isfinite(temperature))
 
 
 def fractional_vegetation_cover(ndvi) -> np.ndarray:

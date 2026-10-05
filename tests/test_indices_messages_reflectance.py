@@ -24,23 +24,18 @@ class IndexCorrections(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"tolerance"):compute_ndvi([[.6]],[[.2]],eps=eps)
 
     def test_all_nonfinite_index_inputs_propagate(self):
-        for name in ("ndvi","evi"):
-            for band in (("nir","red") if name=="ndvi" else ("nir","red","blue")):
+        for name in ("ndvi",):
+            for band in ("nir","red"):
                 for bad in (np.nan,np.inf,-np.inf):
                     data=dict(nir=np.array([[.6]]),red=np.array([[.2]]))
-                    if name=="evi":data["blue"]=np.array([[.1]])
                     data[band][0,0]=bad
                     with self.subTest(index=name,band=band,value=bad):
                         self.assertTrue(np.isnan(spectral_index(name,**data)).all())
 
-    def test_evi_zero_denominator_and_overflow_are_invalid(self):
-        self.assertTrue(np.isnan(spectral_index("evi",nir=[[0.]],red=[[0.]],blue=[[1/7.5]])).all())
-        self.assertTrue(np.isnan(spectral_index("evi",nir=[[1e308]],red=[[1e308]],blue=[[1e308]])).all())
 
     def test_scalar_and_vector_shapes_are_supported(self):
         self.assertEqual(spectral_index("ndvi",nir=.6,red=.2).shape,())
         self.assertAlmostEqual(float(spectral_index("ndvi",nir=.6,red=.2)),.5)
-        self.assertAlmostEqual(float(spectral_index("evi",nir=.6,red=.2,blue=.1)),20/41)
         np.testing.assert_allclose(spectral_index("ndvi",nir=[.6,.8],red=[.2,.4]),[.5,1/3])
 
     def test_inputs_not_mutated(self):
@@ -74,7 +69,7 @@ class CanonicalAndMessages(unittest.TestCase):
     def test_actionable_errors_cover_all_public_workflows(self):
         cases=[
           (lambda:spectral_index("ndvi",nir=self.nir,red=self.red[:1]),InputShapesNotEqual,"spectral_index"),
-          (lambda:brightness(self.t,12,"landsat_8"),ValueError,"band must be"),
+          (lambda:brightness(self.t,12,"landsat_8", input_quantity="dn"),ValueError,"band must be"),
           (lambda:emissivity(self.red,12,emissivity_method="gopinadh-2018"),ValueError,"band must be"),
           (lambda:single_window(self.t,self.red,self.nir,mask=np.zeros(self.t.shape,int)),InvalidMaskError,"single_window"),
           (lambda:split_window(self.t,self.t-2,self.red,self.nir,lst_method="du-2015",water_vapor=np.full(self.t.shape,2.)),ValueError,"scalar"),
@@ -93,10 +88,10 @@ class CanonicalAndMessages(unittest.TestCase):
         with self.assertRaisesRegex(InvalidTemperatureUnitError,"kelvin"):single_window(self.t,self.red,self.nir,unit=None)
 
     def test_band_aliases_are_case_and_whitespace_insensitive(self):
-        expected=brightness([[20000.]],10,"landsat_8")
+        expected=brightness([[20000.]],10,"landsat_8", input_quantity="dn")
         for band in ("B10"," Band_10 "," b10 "):
-            np.testing.assert_array_equal(brightness([[20000.]],band,"landsat_8"),expected)
-        with self.assertRaisesRegex(ValueError,"landsat_8"):brightness([[20000.]],10,None)
+            np.testing.assert_array_equal(brightness([[20000.]],band,"landsat_8", input_quantity="dn"),expected)
+        with self.assertRaisesRegex(ValueError,"landsat_8"):brightness([[20000.]],10,None, input_quantity="dn")
 
     def test_unused_pwv_warns_for_all_legacy_methods(self):
         for method in ("price-1984","kerr-1992","sobrino-1993"):

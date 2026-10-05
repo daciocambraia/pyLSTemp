@@ -6,13 +6,13 @@ DLL loading is unavailable. Reading via Pillow may cache a full band in RAM.
 from pathlib import Path
 import warnings
 import numpy as np
-from .calibration import read_mtl, toa_reflectance, brightness_from_mtl, quality_mask
+from .calibration import read_mtl, toa_reflectance, toa_radiance, brightness_from_mtl, quality_mask
 
 GEOTAGS = (33550, 33922, 34264, 34735, 34736, 34737)
 
 
 class LandsatScene:
-    """An aligned B2/B4/B5/B10/B11 + QA scene; inputs are never modified."""
+    """An aligned B4/B5/B10/B11 + QA scene (B2 is optional); inputs are never modified."""
 
     def __init__(self, folder, *, backend="auto"):
         self.folder = Path(folder)
@@ -37,7 +37,9 @@ class LandsatScene:
                 warnings.warn(f"Rasterio unavailable; using Pillow GeoTIFF reader: {exc}", RuntimeWarning)
         self.backend = "rasterio" if rasterio is not None else "pillow"
         self.sources, self.paths = {}, {}
-        tokens = ["B2", "B4", "B5", "B10", "B11", "QA_PIXEL", "QA_RADSAT"]
+        tokens = ["B4", "B5", "B10", "B11", "QA_PIXEL", "QA_RADSAT"]
+        if (self.folder / f"{self.product_id}_B2.TIF").exists():
+            tokens.append("B2")
         sza = self.folder / f"{self.product_id}_SZA.TIF"
         if sza.exists():
             tokens.append("SZA")
@@ -58,7 +60,7 @@ class LandsatScene:
                     if not src.tag_v2.get(34735) or not (src.tag_v2.get(33550) and src.tag_v2.get(33922) or src.tag_v2.get(34264)):
                         raise ValueError("GeoTIFF coordinate/transform tags are required.")
                 self.sources[token] = src
-                if token == "B2":
+                if token == "B4":
                     self.grid = grid
                     self.shape = (src.height, src.width)
                 elif grid != self.grid:
@@ -79,8 +81,17 @@ class LandsatScene:
             return src.read(1, window=((r0, r1), (c0, c1)))
         return np.array(src.crop((c0, r0, c1, r1)))
 
-    def calibrated(self, window=None, *, exclude_water=False):
-        """Return aligned TOA optical reflectance, BT kelvin and boolean QA."""
+    def calibrated(self, window=None, *, exclude_water=False, optical_quantity="radiance"):
+        """Return optical bands, thermal TOA BT [K], and invalid-pixel QA mask.
+
+        optical_quantity='radiance' (default): TOA L [W m-2 sr-1 um-1].
+        optical_quantity='reflectance': TOA rho [dimensionless], SZA/MTL-corrected.
+        B4/B5 are always returned; B2 is returned only if present. Both modes
+        use the same conservative B2/B4/B5 QA policy and valid-solar-angle mask
+        when SZA is supplied, to make controlled quantity comparisons possible.
+        """
+        if optical_quantity not in {"radiance", "reflectance"}:
+            raise ValueError("optical_quantity must be 'radiance' or 'reflectance'.")
         mask = quality_mask(self.read("QA_PIXEL", window), self.read("QA_RADSAT", window),
                             exclude_water=exclude_water)
         optical = {}
@@ -91,8 +102,13 @@ class LandsatScene:
             sun = 90 - sza.astype(float) * 0.01
             mask |= (sza == -32768) | (sza < 0) | (sza >= 9000)
         for band in (2, 4, 5):
-            optical[band] = toa_reflectance(self.read(f"B{band}", window),
-                metadata=self.metadata, band=band, mask=mask, sun_elevation=sun)
+            if f"B{band}" not in self.sources:
+                continue
+            dn = self.read(f"B{band}", window)
+            if optical_quantity == "radiance":
+                optical[band] = toa_radiance(dn, metadata=self.metadata, band=band, mask=mask)
+            else:
+                optical[band] = toa_reflectance(dn, metadata=self.metadata, band=band, mask=mask, sun_elevation=sun)
         thermal = {band: brightness_from_mtl(self.read(f"B{band}", window),
             metadata=self.metadata, band=band, mask=mask) for band in (10, 11)}
         return optical, thermal, mask
@@ -102,7 +118,7 @@ class LandsatScene:
         if self.backend == "rasterio":
             from rasterio.windows import Window, transform
             import rasterio
-            profile = self.sources["B2"].profile.copy()
+            profile = self.sources["B4"].profile.copy()
             profile.update(dtype="float32", count=1, height=array.shape[0],
                            width=array.shape[1], nodata=np.nan, compress="deflate")
             if window is not None:
@@ -114,7 +130,7 @@ class LandsatScene:
         else:
             from PIL import Image, TiffImagePlugin
             tags = TiffImagePlugin.ImageFileDirectory_v2()
-            original = self.sources["B2"].tag_v2
+            original = self.sources["B4"].tag_v2
             for key in GEOTAGS:
                 if key in original:
                     tags[key] = original[key]

@@ -56,7 +56,7 @@ def run_scene(folder,out,tile_rows):
     with LandsatScene(folder) as scene:
         dest=out/scene.product_id
         dest.mkdir(parents=True,exist_ok=False)
-        names=["bt10_k","bt11_k","ndvi","evi","legacy_ndvi",
+        names=["bt10_k","bt11_k","ndvi","legacy_ndvi","ndvi_reflectance","ndvi_minus_reflectance",
                "avdan_e10","avdan_e11","gopinadh_e10","gopinadh_e11",
                "mono_avdan_k","mono_gopinadh_k"]+[key+"_k" for key in SPLIT]
         metrics={name:Stats() for name in names}
@@ -73,11 +73,13 @@ def run_scene(folder,out,tile_rows):
                 for band in (10,11):
                     api=brightness(scene.read(f"B{band}",window),band=f"band_{band}",sensor=scene.sensor,
                         rad_gain=scene.metadata[f"RADIANCE_MULT_BAND_{band}"],
-                        rad_bias=scene.metadata[f"RADIANCE_ADD_BAND_{band}"],mask=mask)
+                        rad_bias=scene.metadata[f"RADIANCE_ADD_BAND_{band}"],mask=mask,input_quantity="dn")
                     np.testing.assert_allclose(api,thermal[band],rtol=0,atol=1e-10,equal_nan=True)
                 ndvi=spectral_index("ndvi",nir=optical[5],red=optical[4],mask=mask)
                 values["ndvi"]=ndvi
-                values["evi"]=spectral_index("evi",nir=optical[5],red=optical[4],blue=optical[2],mask=mask)
+                reflected,_,_=scene.calibrated(window,optical_quantity="reflectance")
+                values["ndvi_reflectance"]=spectral_index("ndvi",nir=reflected[5],red=reflected[4],mask=mask)
+                values["ndvi_minus_reflectance"]=ndvi-values["ndvi_reflectance"]
                 values["legacy_ndvi"]=spectral_indices_registry.create("ndvi")(
                     band_5_nir=optical[5],band_4_red=optical[4],mask=mask)
                 np.testing.assert_allclose(values["legacy_ndvi"],ndvi,rtol=0,atol=1e-14,equal_nan=True)
@@ -90,7 +92,7 @@ def run_scene(folder,out,tile_rows):
                     values[method+"_k"]=split_window(thermal[10],thermal[11],optical[4],optical[5],
                         lst_method=method,emissivity_method="gopinadh-2018",mask=mask)
                 for name,array in values.items():
-                    kind="index" if name in ("ndvi","evi","legacy_ndvi") else "emissivity" if "_e1" in name else "temperature"
+                    kind="difference" if name=="ndvi_minus_reflectance" else "index" if name in ("ndvi","legacy_ndvi","ndvi_reflectance") else "emissivity" if "_e1" in name else "temperature"
                     valid_output(array,mask,kind=kind)
                     metrics[name].add(array)
                     if name in products: products[name][row:r1]=array
@@ -148,7 +150,7 @@ def run_scene(folder,out,tile_rows):
             rois.append(dict(window=core,halo_pixels=10,metrics=roi_metrics,roi_mean_cwv=cwv,
                 pwv_extrapolation_pixels=int(extrap[select].sum())))
         result=dict(scene=scene.product_id,sensor=scene.sensor,shape=scene.shape,
-            backend=scene.backend,full_scene_seconds=full_seconds,total_seconds=time.perf_counter()-start,
+            backend=scene.backend,optical_quantity="TOA radiance",optical_units="W m-2 sr-1 um-1",thermal_units="K",full_scene_seconds=full_seconds,total_seconds=time.perf_counter()-start,
             metrics={key:stat.result() for key,stat in metrics.items()},rois=rois,warnings=warnings_log,
             ndvi_land_range=[global_min,global_max],
             legacy_models="Price/Kerr/Sobrino are unvalidated AVHRR-to-Landsat adaptations",

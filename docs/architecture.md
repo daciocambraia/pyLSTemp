@@ -7,6 +7,8 @@ The codebase is split into a small public layer and a modular algorithm layer.
 ```text
 pylstemp/
   api.py
+  calibration.py
+  scene.py
   registry.py
   sensors/
   validation.py
@@ -52,7 +54,7 @@ The public functions in `pylstemp/api.py` orchestrate the workflow:
 
 - validate inputs
 - build masks
-- compute brightness temperature with sensor-specific constants when the user calls `brightness(...)`
+- export the canonical `calibration.brightness` conversion: TOA radiance to TOA BT using scene MTL K1/K2
 - call spectral-index and emissivity helpers for LST workflows
 - pass precomputed brightness temperature arrays into `single_window(...)` or `split_window(...)`
 - select the requested algorithm from the proper family registry
@@ -63,3 +65,7 @@ The public functions in `pylstemp/api.py` orchestrate the workflow:
 - adding a new split-window method is local to `pylstemp/algorithms/split_window/`
 - adding a new emissivity method is local to `pylstemp/algorithms/emissivity/`
 - adding a future family such as `atmosphere/` or `indices/` is mostly local to one new package
+
+Calibration lives in `calibration.py`: Level-1 DN to TOA radiance or optional TOA reflectance, and TOA radiance to TOA BT.
+The default scene pipeline uses radiance, NDVI, emissivity, BT and LST. EVI is removed.
+Legacy thermal-band helpers accept DN and share the same numerical Planck inversion.

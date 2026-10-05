@@ -33,7 +33,7 @@ class AllModelTests(unittest.TestCase):
     def test_inventory_is_exhaustive(self):
         expected = {
             "emissivity": set(EMISSIVITY), "single_channel": {"mono-window-2016"},
-            "spectral_index": {"ndvi", "evi"},
+            "spectral_index": {"ndvi"},
             "split_window": set(SPLIT), "thermal": {"brightness"},
             "water_vapor": {"wang-2015"}, "radiative_transfer": set(),
         }
@@ -128,14 +128,13 @@ class AllModelTests(unittest.TestCase):
                     ("landsat_9",10,285.7496039316584),("landsat_9",11,283.8210641402533))
         for sensor,band,expected in references:
             with self.subTest(sensor=sensor,band=band):
-                result=brightness(np.full((1,1),20000.),band=f"band_{band}",sensor=sensor)
+                result=brightness(np.full((1,1),20000.),band=f"band_{band}",sensor=sensor, input_quantity="dn")
                 self.assertAlmostEqual(float(result[0,0]),expected,places=10)
 
     def test_spectral_indices_and_legacy_numeric_references(self):
         nir=np.array([[.6,.8]]);red=np.array([[.2,.4]]);blue=np.array([[.1,.2]])
         np.testing.assert_allclose(spectral_index("ndvi",nir=nir,red=red),[[.5,1/3]],atol=1e-14)
         np.testing.assert_allclose(legacy_registry.create("ndvi")(band_5_nir=nir,band_4_red=red),[[.5,1/3]],atol=1e-14)
-        np.testing.assert_allclose(spectral_index("evi",nir=nir,red=red,blue=blue),[[20/41,10/27]],atol=1e-14)
 
     def test_wang_low_transmittance_reference(self):
         x=np.arange(100,dtype=float).reshape(10,10)+290

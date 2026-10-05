@@ -12,10 +12,7 @@ from .algorithms import FAMILY_REGISTRIES
 from .algorithms.emissivity import emissivity_registry
 from .algorithms.single_channel import single_channel_registry
 from .algorithms.split_window import split_window_registry
-from .algorithms.thermal import (
-    brightness_band_10,
-    brightness_band_11,
-)
+from .calibration import brightness, normalize_thermal_band as _normalize_thermal_band
 from .algorithms.spectral_index import ndvi as _ndvi
 from .algorithms.spectral_index import spectral_index_registry
 from .algorithms.water_vapor import water_vapor_registry
@@ -33,61 +30,22 @@ CELSIUS_SCALER = 273.15
 SINGLE_CHANNEL_EMISSIVITY_METHODS = {"avdan-2016"}
 
 
-def _normalize_thermal_band(band) -> str:
-    """
-    Normalize supported thermal band identifiers.
-
-    Parameters
-    ----------
-    band : str or int
-        Thermal band identifier or alias.
-
-    Returns
-    -------
-    str
-        Canonical band key, either ``"band_10"`` or ``"band_11"``.
-
-    Raises
-    ------
-    ValueError
-        If the band identifier is not supported.
-    """
-
-    aliases = {
-        10: "band_10",
-        "10": "band_10",
-        "band_10": "band_10",
-        "b10": "band_10",
-        11: "band_11",
-        "11": "band_11",
-        "band_11": "band_11",
-        "b11": "band_11",
-    }
-    if isinstance(band, str):
-        band = band.strip().lower()
-    try:
-        return aliases[band]
-    except (KeyError, TypeError) as exc:
-        raise ValueError(f"band must be 10 or 11 ('band_10', 'band_11', 'b10', 'b11'); received {band!r}.") from exc
-
-
 @contextual_errors
 def spectral_index(index: str, **kwargs):
     """
     Compute a spectral index selected by name.
 
     This dispatcher routes the request to one of the registered spectral
-    index algorithms, such as NDVI or EVI.
+    index algorithm NDVI.
 
     Parameters
     ----------
     index : str
         Name of the spectral index to compute. Currently supported values
-        include `"ndvi"` and `"evi"`.
+        include `"ndvi"`.
     **kwargs
         Input bands and optional parameters required by the selected index.
-        For `index="ndvi"`, provide `nir` and `red`. For `index="evi"`,
-        provide `nir`, `red`, and `blue`.
+        For `index="ndvi"`, provide `nir` and `red` in the same physical quantity.
 
     Returns
     -------
@@ -98,107 +56,15 @@ def spectral_index(index: str, **kwargs):
     -----
     - Input arrays must have the same shape and spatial alignment.
     - NDVI accepts calibrated radiance or reflectance; record the input quantity.
-    - EVI requires physical reflectance for its additive constant to be meaningful.
     - A boolean `mask` can be passed to mark invalid pixels as `NaN`.
 
     Examples
     --------
     >>> from pylstemp import spectral_index
     >>> ndvi = spectral_index(index="ndvi", nir=nir, red=red)
-    >>> evi = spectral_index(index="evi", nir=nir, red=red, blue=blue)
     """
 
     return spectral_index_registry.create(index)(**kwargs)
-
-
-@contextual_errors
-def brightness(
-    thermal_band,
-    band: str,
-    sensor: str,
-    rad_gain: float | None = None,
-    rad_bias: float | None = None,
-    mask=None,
-) -> np.ndarray:
-    """
-    Compute brightness temperature for a selected Landsat thermal band.
-
-    This function converts a thermal band image to top-of-atmosphere
-    brightness temperature using the selected Landsat sensor constants
-    and radiance rescaling coefficients.
-
-    Parameters
-    ----------
-    thermal_band : array-like
-        Thermal band image to convert. Use the band 10 array when
-        `band="band_10"` and the band 11 array when `band="band_11"`.
-    band : str
-        Thermal band identifier. Supported values are `"band_10"` and
-        `"band_11"`. Short aliases such as `"10"`, `"11"`, `"b10"` and
-        `"b11"` are also accepted.
-    sensor : str
-        Landsat sensor name. Supported values are `"landsat_8"` and
-        `"landsat_9"`.
-    rad_gain : float, optional
-        Radiance multiplicative rescaling factor. This corresponds to
-        `RADIANCE_MULT_BAND_X` in the scene metadata. If omitted, the
-        default value registered for the selected sensor and band is used.
-    rad_bias : float, optional
-        Radiance additive rescaling factor. This corresponds to
-        `RADIANCE_ADD_BAND_X` in the scene metadata. If omitted, the
-        default value registered for the selected sensor and band is used.
-    mask : array-like of bool, optional
-        Boolean mask where True values indicate invalid pixels
-        (e.g., nodata, clouds, shadows, or saturated pixels).
-
-    Returns
-    -------
-    numpy.ndarray
-        Array containing brightness temperature values in Kelvin.
-
-    Notes
-    -----
-    - Input arrays should be radiometrically consistent with the selected
-      Landsat sensor and band.
-    - `rad_gain` and `rad_bias` are different from the thermal constants
-      `K1` and `K2`; `K1` and `K2` are selected internally from the sensor
-      metadata.
-    - It is recommended to apply quality masks before using the result in
-      land surface temperature workflows.
-
-    Examples
-    --------
-    >>> from pylstemp import brightness
-    >>> brightness_10 = brightness(
-    ...     thermal_band=band_10,
-    ...     band="band_10",
-    ...     sensor="landsat_8",
-    ... )
-    >>> brightness_11 = brightness(
-    ...     thermal_band=band_11,
-    ...     band="band_11",
-    ...     sensor="landsat_8",
-    ...     rad_gain=0.0003342,
-    ...     rad_bias=0.1,
-    ... )
-    """
-
-    normalized_band = _normalize_thermal_band(band)
-    if normalized_band == "band_10":
-        return brightness_band_10(
-            thermal_band,
-            sensor=sensor,
-            rad_gain=rad_gain,
-            rad_bias=rad_bias,
-            mask=mask,
-        )
-    return brightness_band_11(
-        thermal_band,
-        sensor=sensor,
-        rad_gain=rad_gain,
-        rad_bias=rad_bias,
-        mask=mask,
-    )
 
 
 def _emissivity_pair(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
@@ -625,7 +491,7 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
     >>> from pylstemp import list_algorithms
     >>> catalog = list_algorithms()
     >>> catalog["spectral_index"].keys()
-    dict_keys(['evi', 'ndvi'])
+    dict_keys(['ndvi'])
     """
     catalog = {"credit": {"original_library": ORIGINAL_LIBRARY_CREDIT}}
 
