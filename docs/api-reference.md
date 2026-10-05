@@ -128,31 +128,15 @@ The resulting water vapor raster can be used directly in `split_window(..., lst_
 
 Returns a catalog of discovered families, algorithm metadata, and original-library credit.
 Each method includes `input_requirements` and `water_vapor_support`.
-There are 12 algorithm entries, including exactly one NDVI.
+There are 11 algorithm entries, including exactly one NDVI.
 
-### `reflectance(dn, *, metadata, band, kind="toa", mask=None, sun_elevation=None)`
+### Migration: explicit TOA reflectance
 
-Public import: `from pylstemp import reflectance`. Parse matching MTL with
-`from pylstemp.calibration import read_mtl`.
-
-- `kind="toa"`: Level-1 optical DN, integer band 1..9, MTL gain/offset and solar
-  elevation correction. Optional elevation is in degrees, scalar or aligned raster.
-- `kind="surface"`: existing Landsat 8/9 Collection 2 Level-2 SR_B1..SR_B7 DN
-  with L2SP/L2SR metadata; applies `DN * 0.0000275 - 0.2`.
-  Level-1 metadata and a second solar correction are rejected.
-
-Nonpositive DN, nonfinite values and boolean masks become NaN. Physical
-reflectance outside [0,1] is preserved for explicit quality decisions.
-This function does not perform atmospheric correction of Level-1/TOA data.
-SR scaling remains an optional calibration utility. Available emissivity methods
-use NDVI and do not require an additional SR product.
-
-~~~python
-from pylstemp import reflectance, read_mtl
-from pylstemp.calibration import read_mtl
-red_toa = reflectance(red_dn, metadata=read_mtl("L1_MTL.txt"), band=4)
-red_sr = reflectance(sr_b4_dn, metadata=read_mtl("L2_MTL.txt"), band=4, kind="surface")
-~~~
+Use `toa_reflectance(dn, metadata=mtl, band=4)` for Level-1 optical calibration.
+The former `reflectance(..., kind="toa")` dispatcher has been removed. Its
+Level-2 selection branch was unused by every retained retrieval model.
+The internal `calibration.surface_reflectance` scaling helper remains separate;
+it requires existing Level-2 SR data and does not atmospherically correct Level-1.
 
 ## Validation messages
 

@@ -67,7 +67,6 @@ from pylstemp import (
     single_window,
     split_window,
     list_algorithms,
-    reflectance,
     toa_radiance,
     toa_reflectance,
     read_mtl,
@@ -122,6 +121,7 @@ That means `list_algorithms()` grows with the codebase instead of depending on a
 - [Index corrections, reflectance conversion and method messages](docs/CORRECOES_INDICES_REFLECTANCIA_v1.11.md)
 - [Previous scope: Xiaolei removal](docs/ESCOPO_LEVEL1_v1.11.md)
 - [Radiance workflow, calibration and EVI removal](docs/FLUXO_RADIANCIA_v1.11.md)
+- [Explicit TOA reflectance API: redundant dispatcher removed](docs/REMOCAO_REFLECTANCE_v1.11.md)
 
 ## Development
 

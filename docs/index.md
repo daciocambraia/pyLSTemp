@@ -27,3 +27,5 @@ This folder contains the user-facing documentation for the current modular `pyLS
 - [Current Level-1 scope and Xiaolei removal](ESCOPO_LEVEL1_v1.11.md)
 
 - [Current radiance workflow and EVI removal](FLUXO_RADIANCIA_v1.11.md)
+
+- [Explicit TOA reflectance API](REMOCAO_REFLECTANCE_v1.11.md)

@@ -1,13 +1,14 @@
 """Regressions for index corrections, one NDVI and actionable method errors."""
 import unittest,warnings
 import numpy as np
-from pylstemp import spectral_index,brightness,emissivity,single_window,split_window,water_vapor,reflectance,list_algorithms
+from pylstemp import spectral_index,brightness,emissivity,single_window,split_window,water_vapor,toa_reflectance,list_algorithms
 from pylstemp.algorithms import FAMILY_REGISTRIES
 from pylstemp.algorithms.spectral_index import spectral_index_registry
 from pylstemp.algorithms.spectral_indices import spectral_indices_registry
 from pylstemp.algorithms.spectral_indices.ndvi import ndvi as legacy_ndvi
 from pylstemp.exceptions import InvalidMaskError,InvalidTemperatureUnitError,InvalidMethodRequested,InputShapesNotEqual
 from pylstemp.utils import compute_ndvi
+from pylstemp.calibration import surface_reflectance
 
 class IndexCorrections(unittest.TestCase):
     def test_ndvi_zero_and_near_zero_denominators_are_invalid(self):
@@ -109,33 +110,20 @@ class ReflectanceInputs(unittest.TestCase):
     def setUp(self):
         self.l1=dict(PROCESSING_LEVEL="L1TP",SPACECRAFT_ID="LANDSAT_8",COLLECTION_NUMBER=2,
             SUN_ELEVATION=30,REFLECTANCE_MULT_BAND_4=.00002,REFLECTANCE_ADD_BAND_4=-.1)
-        self.l2=dict(self.l1,PROCESSING_LEVEL="L2SP")
 
     def test_level1_toa_matches_known_physical_value(self):
-        np.testing.assert_allclose(reflectance([[20000,0]],metadata=self.l1,band=4),[[.6,np.nan]],atol=1e-14)
+        np.testing.assert_allclose(toa_reflectance([[20000,0]],metadata=self.l1,band=4),[[.6,np.nan]],atol=1e-14)
 
     def test_level2_surface_scaling_and_qa_mask(self):
         m=np.array([[False,True,False]])
-        np.testing.assert_allclose(reflectance([[10000,20000,0]],metadata=self.l2,band=4,kind="surface",mask=m),
+        np.testing.assert_allclose(surface_reflectance([[10000,20000,0]],mask=m),
             [[.075,np.nan,np.nan]],atol=1e-14)
 
-    def test_level1_cannot_be_scaled_as_surface_reflectance(self):
-        with self.assertRaisesRegex(ValueError,"atmospheric"):
-            reflectance([[20000]],metadata=self.l1,band=4,kind="surface")
 
-    def test_wrong_collection_sensor_band_and_double_solar_correction_rejected(self):
-        for metadata in (dict(self.l2,COLLECTION_NUMBER=1),dict(self.l2,COLLECTION_NUMBER=20),
-                         dict(self.l2,SPACECRAFT_ID="LANDSAT_7")):
-            with self.assertRaises(ValueError):reflectance([[20000]],metadata=metadata,band=4,kind="surface")
-        for band in (10,True,4.0):
-            with self.assertRaises(ValueError):reflectance([[20000]],metadata=self.l2,band=band,kind="surface")
-        with self.assertRaisesRegex(ValueError,"second solar"):
-            reflectance([[20000]],metadata=self.l2,band=4,kind="surface",sun_elevation=30)
 
     def test_surface_values_are_not_silently_clipped(self):
-        value=reflectance([[1,50000]],metadata=self.l2,band=4,kind="surface")
+        value=surface_reflectance([[1,50000]])
         self.assertLess(value[0,0],0);self.assertGreater(value[0,1],1)
 
-    def test_invalid_kind_and_metadata_are_actionable(self):
-        with self.assertRaisesRegex(ValueError,"kind"):reflectance([[20000]],metadata=self.l1,band=4,kind="invalid")
-        with self.assertRaisesRegex(ValueError,"MTL"):reflectance([[20000]],metadata=None,band=4)
+    def test_invalid_metadata_is_actionable(self):
+        with self.assertRaisesRegex(ValueError,"MTL"):toa_reflectance([[20000]],metadata=None,band=4)

@@ -1,3 +1,5 @@
+> Atualizacao posterior: o dispatcher generico `reflectance()` foi removido; utilize `toa_reflectance()` diretamente. As estatisticas de imagens abaixo registram a rodada em radiancia e continuam aplicaveis, pois suas equacoes foram preservadas. Veja [a verificacao da simplificacao](REMOCAO_REFLECTANCE_v1.11.md).
+
 # Fluxo em radiancia TOA e remocao do EVI - v1.11.0
 
 Data: 2026-10-05. Projeto: `D:\Codex\pyLSTemp\v1.11`.
@@ -9,7 +11,7 @@ O EVI foi retirado da implementacao, descoberta, imports, catalogo, exemplos e r
 | Funcao/etapa | Entrada | Saida |
 |---|---|---|
 | `toa_radiance` | DN Level-1 e coeficientes por banda do MTL | Radiancia TOA, W m-2 sr-1 um-1 |
-| `toa_reflectance` / `reflectance(kind="toa")` | DN optico Level-1, MTL e elevacao solar | Reflectancia TOA adimensional |
+| `toa_reflectance` | DN optico Level-1, MTL e elevacao solar | Reflectancia TOA adimensional |
 | `brightness` | Radiancia TOA termal e K1/K2 do MTL | Temperatura de brilho TOA, K |
 | `spectral_index("ndvi")` | B5/B4 em radiancia no fluxo padrao | NDVI adimensional |
 | `emissivity` | NDVI | Emissividade adimensional |

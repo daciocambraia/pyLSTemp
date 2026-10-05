@@ -7,7 +7,6 @@ INPUT_HELP = {
     "single_window": "Provide aligned band-10 brightness in Kelvin and red/nir TOA radiance [W m-2 sr-1 um-1] for NDVI (reflectance is an explicit alternative). Select a registered LST and emissivity method.",
     "split_window": "Provide aligned band-10/11 brightness in Kelvin and red/nir TOA radiance [W m-2 sr-1 um-1] for NDVI (reflectance is an explicit alternative). Avdan is single-channel only. PWV is in g/cm2.",
     "water_vapor": "Provide aligned 2D band-10/11 brightness in Kelvin and NDVI. Use odd window_size>=3, group_count>=1, chunk_rows>=1 and a boolean mask.",
-    "reflectance": "Use kind='toa' with Level-1 MTL/DN, or kind='surface' with Collection 2 Level-2 SR_B* DN and matching MTL. Scaling is not atmospheric correction.",
     "toa_radiance": "Provide Level-1 DN, band 1..11 and matching MTL radiance gain/bias. Output W m-2 sr-1 um-1; no solar-angle correction.",
     "toa_reflectance": "Provide Level-1 MTL, optical DN/band 1..9 and a solar elevation in degrees within (0,90].",
     "surface_reflectance": "Provide existing Collection 2 Level-2 SR_B* DN. Default scale=0.0000275, offset=-0.2; this does not correct Level-1 atmosphere.",

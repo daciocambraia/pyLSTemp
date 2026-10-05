@@ -1,5 +1,11 @@
 # Changelog
 
+## Explicit TOA reflectance API (2026-10-05)
+
+- Remove the redundant public `reflectance` dispatcher and its unused Level-2 selection branch.
+- Use `toa_reflectance` directly for Level-1 TOA reflectance; retained calibration/retrieval equations are unchanged.
+- Remove obsolete dispatcher-specific tests and update imports, help, API docs and release artifacts.
+
 ## Radiance workflow and EVI removal (2026-10-05)
 
 - Remove unused EVI implementation, discovery entry, imports and active examples; retain one canonical NDVI.

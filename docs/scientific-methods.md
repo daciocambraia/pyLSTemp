@@ -113,10 +113,10 @@ nonfinite optical input produce NaN for NDVI. The tolerance is 1e-15. Removing t
 change a piecewise emissivity class at an exact NDVI boundary.
 
 The catalog now contains one NDVI. Legacy imports remain aliases to that
-implementation. `reflectance(..., kind="surface")` accepts matching Collection 2
-Level-2 SR data, while Level-1 can be converted to TOA. Scaling is not atmospheric
-correction. The helper remains optional; current retrieval methods do not
-require an additional SR product.
+implementation. Level-1 optical DN is converted directly with `toa_reflectance`.
+The redundant public `reflectance` dispatcher has been removed. The separate internal
+`surface_reflectance` helper only scales existing Level-2 SR; scaling is not atmospheric
+correction. Current retrieval methods do not require an additional SR product.
 See [correction report](CORRECOES_INDICES_REFLECTANCIA_v1.11.md).
 
 ## Current release scope (2026-10-05)

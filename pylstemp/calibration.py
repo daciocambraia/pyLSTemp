@@ -211,36 +211,3 @@ def quality_mask(qa_pixel, qa_radsat=None, *, exclude_water=False):
             raise ValueError("QA_RADSAT must contain unsigned 16-bit integer values.")
         invalid |= (sat.astype(np.uint16) & ((1 << 1) | (1 << 3) | (1 << 4) | (1 << 11))) != 0
     return invalid
-
-
-@contextual_errors
-def reflectance(dn, *, metadata, band, kind="toa", mask=None, sun_elevation=None):
-    """Convert Landsat optical DN with an explicit radiometric input level.
-
-    kind='toa': Level-1 DN + matching MTL + optional solar elevation (degrees).
-    kind='surface': Collection 2 Level-2 SR_B1..SR_B7 DN + matching MTL.
-    This dispatcher does not perform atmospheric correction on Level-1 data.
-    Negative/above-one reflectance is preserved for explicit quality masking.
-    """
-    if not isinstance(metadata, Mapping):
-        raise ValueError("metadata must be parsed from the matching Landsat MTL file.")
-    if not isinstance(kind, str) or kind.strip().lower() not in {"toa", "surface"}:
-        raise ValueError(f"kind must be 'toa' or 'surface'; received {kind!r}.")
-    kind = kind.strip().lower()
-    if kind == "toa":
-        return toa_reflectance(dn, metadata=metadata, band=band, mask=mask, sun_elevation=sun_elevation)
-    level = str(metadata.get("PROCESSING_LEVEL", ""))
-    if level not in {"L2SP", "L2SR"}:
-        raise ValueError(
-            "Surface reflectance requires Level-2 SR_B* DN and matching L2SP/L2SR MTL. "
-            "Level-1 DN can produce TOA reflectance; surface retrieval requires atmospheric "
-            "correction (e.g. LaSRC and auxiliary data) or the corresponding Level-2 product.")
-    if _number(metadata, "COLLECTION_NUMBER") != 2:
-        raise ValueError("Surface scaling is supported for Landsat Collection 2 only; check COLLECTION_NUMBER in MTL.")
-    if metadata.get("SPACECRAFT_ID") not in {"LANDSAT_8", "LANDSAT_9"}:
-        raise ValueError("Surface reflectance requires Landsat 8/9 Collection 2 metadata.")
-    if isinstance(band, (bool, np.bool_)) or not isinstance(band, (int, np.integer)) or band not in range(1,8):
-        raise ValueError("Surface reflectance band must be an integer from 1 to 7 (SR_B1..SR_B7).")
-    if sun_elevation is not None:
-        raise ValueError("Do not apply a second solar-angle correction to Level-2 surface reflectance; omit sun_elevation.")
-    return surface_reflectance(dn, mask=mask)
