@@ -145,7 +145,7 @@ next action. Existing exception classes remain catchable; original causes are
 chained. Shape errors include field names and actual shapes; boolean masks use
 `True` for invalid pixels. Temperature outputs accept kelvin/celsius; inputs
 remain Kelvin. Calibration errors explicitly distinguish Level-1 from Level-2.
-See [verified examples and scene results](CORRECOES_INDICES_REFLECTANCIA_v1.11.md).
+See [verified examples and scene results](validation.md).
 
 ## Current algorithm families
 

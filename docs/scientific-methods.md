@@ -117,7 +117,7 @@ implementation. Level-1 optical DN is converted directly with `toa_reflectance`.
 The redundant public `reflectance` dispatcher has been removed. The separate internal
 `surface_reflectance` helper only scales existing Level-2 SR; scaling is not atmospheric
 correction. Current retrieval methods do not require an additional SR product.
-See [correction report](CORRECOES_INDICES_REFLECTANCIA_v1.11.md).
+See [correction report](validation.md).
 
 ## Current release scope (2026-10-05)
 
@@ -133,4 +133,4 @@ recalibrated implicitly. A radiance workflow needs independent justification
 of these thresholds before scientific application. See the new verification
 report for measured changes on both supplied scenes.
 Rouse reference: [NASA original record](https://ntrs.nasa.gov/citations/19740022614).
-See [current verification report](FLUXO_RADIANCIA_v1.11.md).
+See [current verification report](validation.md).

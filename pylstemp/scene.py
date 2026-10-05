@@ -121,12 +121,17 @@ class LandsatScene:
             profile = self.sources["B4"].profile.copy()
             profile.update(dtype="float32", count=1, height=array.shape[0],
                            width=array.shape[1], nodata=np.nan, compress="deflate")
+            if not profile.get("tiled", False):
+                # GDAL strip outputs must not inherit tiled-only block options.
+                profile.pop("blockxsize", None)
+                profile.pop("blockysize", None)
             if window is not None:
                 r0, r1, c0, c1 = window
                 profile["transform"] = transform(Window(c0, r0, c1-c0, r1-r0), profile["transform"])
             with rasterio.open(path, "w", **profile) as dst:
                 dst.write(np.asarray(array, dtype=np.float32), 1)
-                dst.update_tags(units=units, product_id=self.product_id)
+                dst.update_tags(units=units, product_id=self.product_id,
+                                AREA_OR_POINT=self.sources["B4"].tags().get("AREA_OR_POINT", "Area"))
         else:
             from PIL import Image, TiffImagePlugin
             tags = TiffImagePlugin.ImageFileDirectory_v2()

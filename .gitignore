@@ -22,3 +22,7 @@ exemples/data/*.tif
 *.tar
 *.npz
 /exemples/data/
+
+# Generated example outputs
+/resultados/
+/exemples/resultados/

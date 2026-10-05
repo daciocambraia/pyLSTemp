@@ -37,11 +37,13 @@ class SceneIOTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def write(self,token,data,x_origin=100):
+    def write(self,token,data,x_origin=100,pixel_is_point=False):
         tags=TiffImagePlugin.ImageFileDirectory_v2()
         tags[33550]=(30.,30.,0.)
         tags[33922]=(0.,0.,0.,x_origin,1000.,0.)
-        tags[34735]=(1,1,0,2,1024,0,1,1,3072,0,1,32623)
+        tags[34735]=(1,1,0,3 if pixel_is_point else 2,1024,0,1,1,3072,0,1,32623)
+        if pixel_is_point:
+            tags[34735]+= (1025,0,1,2)
         tags.tagtype[33550]=12
         tags.tagtype[33922]=12
         tags.tagtype[34735]=3
@@ -99,3 +101,27 @@ class SceneIOTests(unittest.TestCase):
             optical,thermal,mask=scene.calibrated()
             self.assertEqual(set(optical),{4,5})
             scene.write_geotiff(self.folder/"no_blue.tif",thermal[10],units="K")
+
+    def test_rasterio_preserves_point_pixel_registration_in_crop(self):
+        try:
+            import rasterio
+        except (ImportError, OSError) as exc:
+            self.skipTest(f"Rasterio unavailable: {exc}")
+        for token in ("B2","B4","B5","B10","B11","QA_PIXEL","QA_RADSAT","SZA"):
+            value=6000 if token=="SZA" else 0 if token.startswith("QA") else 20000
+            data=np.full((12,14),value,dtype=np.uint16)
+            if token=="QA_PIXEL": data[2,3]=8
+            self.write(token,data,pixel_is_point=True)
+        with LandsatScene(self.folder,backend="rasterio") as scene:
+            data=scene.calibrated((3,7,4,9))[0][4]
+            path=self.folder/"point_crop.tif"
+            scene.write_geotiff(path,data,window=(3,7,4,9),units="W m-2 sr-1 um-1")
+            with Image.open(path) as exported:
+                keys=exported.tag_v2[34735]
+                point=next(keys[i+3] for i in range(4,len(keys),4) if keys[i]==1025)
+                self.assertEqual(point,2)
+                self.assertEqual(exported.tag_v2[33922][3:5],(220.,910.))
+                np.testing.assert_array_equal(np.array(exported),data)
+            with rasterio.open(path) as exported:
+                self.assertEqual(exported.tags()["units"],"W m-2 sr-1 um-1")
+                self.assertEqual(exported.tags()["AREA_OR_POINT"],"Point")

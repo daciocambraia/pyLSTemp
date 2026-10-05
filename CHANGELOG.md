@@ -1,5 +1,12 @@
 # Changelog
 
+## Image examples and workspace cleanup (2026-10-05)
+
+- Replace synthetic-array usage examples with direct Landsat image reading and connected algorithms.
+- Add a runnable image workflow; simplify the six notebooks and remove the hidden example-input helper.
+- Consolidate current validation docs and preserve historical reports in the local verification archive.
+- Remove exact duplicate verification products by SHA-256 and disposable build/cache files.
+
 ## Explicit TOA reflectance API (2026-10-05)
 
 - Remove the redundant public `reflectance` dispatcher and its unused Level-2 selection branch.
