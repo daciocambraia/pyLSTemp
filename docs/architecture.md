@@ -1,6 +1,6 @@
 # Arquitetura
 
-A biblioteca tem 12 algoritmos registrados, separados por familia. Calibracao,
+A biblioteca tem 13 algoritmos registrados, separados por familia. Calibracao,
 leitura de cenas e workflows sao funcoes auxiliares, sem duplicar o catalogo.
 
 | Pasta | Conteudo | Distribuicao |
@@ -35,6 +35,7 @@ docs/
   api-reference.md
   architecture.md
   du-pwv-workflow.md
+  image-only-methods.md
   extending.md
   index.md
   installation.md
@@ -47,6 +48,7 @@ exemples/
   brightness.ipynb
   emissivity.ipynb
   fluxo_completo.py
+  metodos_imagem.py
   single_window.ipynb
   spectral_index.ipynb
   split_window.ipynb
@@ -81,6 +83,7 @@ pylstemp/
       jimenez_munoz_2014.py
       kerr_1992.py
       price_1984.py
+      rozenstein_2014.py
       sobrino_1993.py
     thermal/
       __init__.py
@@ -90,6 +93,8 @@ pylstemp/
       wang_2015.py
   api.py
   calibration.py
+  emissivity_models.py
+  optical.py
   exceptions.py
   messages.py
   metadata.py
@@ -123,3 +128,7 @@ completa e os verificadores de cenas sao executados no ambiente local.
 
 Veja [API](api-reference.md), [extensao](extending.md),
 [workflow Du/PWV](du-pwv-workflow.md) e [estado da validacao](validation.md).
+
+`emissivity_models.py` expoe Sobrino 2004/2008 sem atribuir constantes
+espectrais nao verificadas a TIRS. `optical.py` separa ajuste de haze e
+aplicacao DOS/COST, permitindo reutilizar parametros entre blocos.

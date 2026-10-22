@@ -211,3 +211,31 @@ Select `optical_quantity="reflectance"` for TOA reflectance with solar correctio
 B4/B5/B10/B11, matching MTL, QA_PIXEL and QA_RADSAT are required. B2 is optional.
 Both modes share QA and supplied SZA validity masks for controlled comparisons.
 All returned arrays are aligned. Scene inputs are never modified.
+
+
+## Source-checked additional methods
+
+`split_window(..., lst_method="rozenstein-2014", water_vapor=pwv,
+atmospheric_profile="midlatitude-summer", temperature_range="0-60")`
+requires a selected published profile and PWV in [0.5,3] g/cm2. See
+[domains, equations and adaptations](image-only-methods.md).
+
+`split_window_from_emissivity(bt10, bt11, e10, e11, *, lst_method,
+water_vapor=None, mask=None, unit="kelvin", ndvi_image=None,
+atmospheric_profile=None, temperature_range="0-60")` accepts prepared,
+aligned band emissivities. `ndvi_image` is required for Kerr.
+
+`sobrino_2004_tm6(ndvi, *, mask=None)` is specific to TM5 band 6, with
+unresolved bare-soil classes returned as NaN.
+
+`sobrino_2008(ndvi, *, soil_emissivity, vegetation_emissivity,
+variant="simplified", ...)` requires band-specific endmembers. Full mode
+also needs `red_surface` and `soil_red_coefficients=(a,b)`; do not pass TOA
+radiance or TOA reflectance as surface reflectance.
+
+`fit_chavez(toa_reflectance, *, sun_elevation, method="cost",
+percentile=0.01, assumed_dark_surface=0.01, mask=None)` returns reusable
+parameters. `chavez_reflectance(toa_reflectance, *, parameters, mask=None)`
+applies them, preserving the same angle and haze fit across tiles.
+These functions are imported from the package root. They do not estimate
+thermal atmospheric parameters and do not constitute operational SR.

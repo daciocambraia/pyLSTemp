@@ -5,6 +5,7 @@
 - [API e grandezas](api-reference.md)
 - [Workflow Wang -> Du](du-pwv-workflow.md)
 - [Metodos cientificos e limites](scientific-methods.md)
+- [Rozenstein, Sobrino e Chavez](image-only-methods.md)
 - [Estado da validacao](validation.md)
 - [Arquitetura](architecture.md)
 - [Adicionar metodos](extending.md)

@@ -68,3 +68,11 @@ comparison between radiative transfer equation-based method, split window
 algorithm and single channel method. Remote Sensing, 2014.
 
 Links for all current algorithms are also listed in the [README](../README.md#algoritmos-e-artigos).
+
+## Metodos adicionais
+
+- Rozenstein, O., Qin, Z., Derimian, Y., Karnieli, A. (2014). Derivation of Land Surface Temperature for Landsat-8 TIRS Using a Split Window Algorithm. Sensors, 14, 5768-5780. [Artigo](https://doi.org/10.3390/s140405768). Eqs.3--10; Tabelas 1--2.
+- Sobrino, J.A., Jimenez-Munoz, J.C., Paolini, L. (2004). Land surface temperature retrieval from LANDSAT TM 5. Remote Sensing of Environment, 90, 434-440. [Artigo](https://doi.org/10.1016/j.rse.2004.02.003). Secao 3, Eqs.8--13. Constantes de TM6.
+- Sobrino, J.A., et al. (2008). Land Surface Emissivity Retrieval From Different VNIR and TIR Sensors. IEEE TGRS, 46, 316-327. [Artigo](https://doi.org/10.1109/TGRS.2007.904834). Eqs.5--9. Endmembers devem corresponder a banda.
+- Chavez, P.S., Jr. (1996). Image-Based Atmospheric Corrections - Revisited and Improved. PE&RS, 62, 1025-1036. [Artigo](https://static1.1.sqspcdn.com/static/f/891472/15133582/1321370214637/Chavez_P.S._1996.pdf). Eq.2 e discussoes DOS/COST, pp.1027--1029.
+- Ren, H., et al. (2015). Atmospheric water vapor retrieval from Landsat 8 thermal infrared images. JGR Atmospheres, 120, 1723-1738. [Artigo](https://doi.org/10.1002/2014JD022619). Candidato ainda nao implementado: equacoes nao verificadas integralmente.

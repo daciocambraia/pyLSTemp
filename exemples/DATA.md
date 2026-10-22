@@ -34,3 +34,15 @@ cientificos em [scientific-methods.md](../docs/scientific-methods.md).
 
 O notebook single_window compara Avdan e Jimenez-Munoz SC. O SC usa radiancia10
 e PWV, com restricao operacional 0..3 g/cm2.
+
+
+## Rozenstein, Sobrino e Chavez
+
+```bash
+python exemples/metodos_imagem.py CAMINHO_DA_CENA --perfil midlatitude-summer --saida resultados/metodos
+```
+
+O exemplo usa imagens reais em um recorte central controlado, com halo de Wang,
+COST e emissividade Sobrino 2008 com endmembers declarados. O perfil e escolhido
+explicitamente e a parametrizacao Chavez pertence ao recorte. Veja
+[dominios e adaptacoes](../docs/image-only-methods.md).
