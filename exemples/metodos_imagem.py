@@ -6,7 +6,7 @@ Parameters fitted here describe this ROI; they are not a full-scene haze fit.
 from pathlib import Path
 import argparse
 import json
-from pylstemp import (toa_reflectance, spectral_index, water_vapor, fit_chavez,
+from pylstemp import (toa_reflectance, water_vapor, fit_chavez,
                      chavez_reflectance, sobrino_2008, split_window_from_emissivity)
 from pylstemp.scene import LandsatScene
 from pylstemp.workflows import scene_ndvi_range
@@ -22,8 +22,7 @@ def executar(pasta, saida, perfil):
         janela=(r,r+128,c,c+128);halo=(r-10,r+138,c-10,c+138)
         limites=scene_ndvi_range(cena)
         opt,bt,mascara=cena.calibrated(halo,exclude_water=True)
-        n=spectral_index("ndvi",nir=opt[5],red=opt[4],mask=mascara)
-        pwv=water_vapor(bt[10],bt[11],n,mask=mascara,ndvi_range=limites)
+        pwv=water_vapor(bt[10],bt[11],red=opt[4],nir=opt[5],mask=mascara,ndvi_range=limites)
         recorte=(slice(10,-10),slice(10,-10))
         pwv=pwv[recorte];mascara=mascara[recorte]
         elevacao=float(cena.metadata["SUN_ELEVATION"])
@@ -31,17 +30,15 @@ def executar(pasta, saida, perfil):
                               band=b,sun_elevation=elevacao,mask=mascara) for b in (4,5)}
         parametros={b:fit_chavez(rho[b],sun_elevation=elevacao,method="cost",mask=mascara) for b in (4,5)}
         corrigido={b:chavez_reflectance(rho[b],parameters=parametros[b],mask=mascara) for b in (4,5)}
-        ndvi=spectral_index("ndvi",nir=corrigido[5],red=corrigido[4],mask=mascara)
         # Controlled combination: Sobrino's squared FVC with existing Rongali
         # TIRS endmembers. These parameters do not constitute new calibration.
-        e10=sobrino_2008(ndvi,soil_emissivity=.971,vegetation_emissivity=.987,mask=mascara)
-        e11=sobrino_2008(ndvi,soil_emissivity=.977,vegetation_emissivity=.989,mask=mascara)
+        e10=sobrino_2008(red=corrigido[4],nir=corrigido[5],soil_emissivity=.971,vegetation_emissivity=.987,mask=mascara)
+        e11=sobrino_2008(red=corrigido[4],nir=corrigido[5],soil_emissivity=.977,vegetation_emissivity=.989,mask=mascara)
         lst=split_window_from_emissivity(bt[10][recorte],bt[11][recorte],e10,e11,
                     lst_method="rozenstein-2014",water_vapor=pwv,mask=mascara,
                     atmospheric_profile=perfil,temperature_range="0-60")
         for name,value,unit in (("red_cost",corrigido[4],"dimensionless"),
                                 ("nir_cost",corrigido[5],"dimensionless"),
-                                ("ndvi_cost",ndvi,"dimensionless"),
                                 ("emissivity10",e10,"dimensionless"),
                                 ("emissivity11",e11,"dimensionless"),
                                 ("pwv_wang",pwv,"g/cm2"),("lst_rozenstein",lst,"kelvin")):

@@ -13,16 +13,16 @@ Near-surface air temperature is not a ground-truth substitute for skin temperatu
 - NDVI accepts calibrated optical radiance or reflectance. Preserve the quantity, product type and calibration.
 - Rouse et al. (1974) used radiance; common multiplicative scaling cancels in NDVI, band-specific gains and offsets generally do not.
 - NDVI thresholds used by downstream methods require a compatible radiometric convention.
-- EVI has been removed; NDVI is the only spectral index required by the retained workflows.
+- NDVI is calculated internally where required; there is no public spectral-index API.
 - Default optical inputs are TOA radiance [W m-2 sr-1 um-1]: L = M_L * DN + A_L.
 - Level-1 TOA reflectance: (MTL gain * DN + MTL offset) / sin(solar elevation).
 - Per-pixel SZA, when present, is stored in hundredths of degrees. Elevation = 90 - SZA/100.
 - TOA BT: K2 / log(1 + K1 / L), in kelvin. brightness defaults to radiance; DN requires input_quantity="dn".
 - All four thermal coefficients come from the scene MTL in the scene reader.
 - C2 Level-2 SR_B* scaling is 0.0000275 * DN - 0.2. This scaling does not atmospherically correct Level-1.
-- Current emissivity methods are Avdan and Gopinadh; Xiaolei was removed because its additional SR requirement is outside the selected release scope.
+- Registered emissivity methods are Avdan and Gopinadh; standalone Sobrino functions are also available; Xiaolei was removed because its additional SR requirement is outside the selected release scope.
 - QA excludes fill, dilated cloud, high-confidence cirrus/cloud/shadow/snow, selected optical saturation and terrain occlusion.
-- Wang operates over land; exclude QA water. Cloud masking is an initial quality screen, not complete atmospheric correction.
+- Wang and Ren scene PWV workflows operate over land; exclude QA water. Cloud masking is an initial quality screen, not complete atmospheric correction.
 
 Sources: [USGS Level-1 calibration](https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product),
 [USGS C2 QA](https://www.usgs.gov/landsat-missions/landsat-collection-2-quality-assessment-bands),
@@ -53,6 +53,19 @@ Chunk rows control memory. External spatial tiles require radius-sized halo pixe
 and full-scene ndvi_range. Invalid central pixels are never implicitly interpolated.
 Nonfinite/negative PWV is NaN. No arbitrary upper PWV clipping is applied; source-domain
 extrapolations must be identified in reports.
+
+### Ren et al. (2015)
+
+The supplied PDF confirms Eqs.1b/1c and Eq.2: forward covariance divided by
+B10 variance, with PWV = -9.674*Rji^2 + 0.653*Rji + 9.087. The implementation
+uses local means and the Section 4.2 NDVI +/-1.5 sigma sample screen, assuming
+unity emissivity ratio. It does not reuse Wang groups or Wang regression.
+The source calibration domain is [0.06,6.3] g/cm2. Centered odd windows,
+minimum 10 samples and a 0.95 quality screen are explicit operational choices.
+The standalone default is 11 pixels; the scene workflow uses 33 pixels for
+about 1 km on the usual 30-m delivery grid. Resampling does not create
+independent native-TIRS observations. See [equations, diagnostics and support
+choices](image-only-methods.md#ren-2015-mswcvr).
 
 ### Jimenez-Munoz et al. (2014)
 
@@ -90,7 +103,7 @@ InvalidMethodRequested; Avdan is available for single-channel and Gopinadh for
 single-channel and split-window workflows.
 Temperature above 56.7 C is no longer discarded. Nonfinite/nonpositive absolute
 temperature and invalid emissivity are NaN. Workflow masks are explicit keyword arguments.
-Legacy spectral_indices remains available for compatibility; spectral_index is preferred.
+The public spectral-index dispatcher and legacy namespaces were removed; retained methods calculate NDVI internally.
 
 ## Primary references
 
@@ -112,8 +125,7 @@ NDVI no longer adds epsilon to a valid denominator. Undefined ratios and any
 nonfinite optical input produce NaN for NDVI. The tolerance is 1e-15. Removing the bias can
 change a piecewise emissivity class at an exact NDVI boundary.
 
-The catalog now contains one NDVI. Legacy imports remain aliases to that
-implementation. Level-1 optical DN is converted directly with `toa_reflectance`.
+NDVI now uses one shared internal helper, outside the algorithm catalog. Level-1 optical DN is converted directly with `toa_reflectance`.
 The redundant public `reflectance` dispatcher has been removed. The separate internal
 `surface_reflectance` helper only scales existing Level-2 SR; scaling is not atmospheric
 correction. Current retrieval methods do not require an additional SR product.
@@ -122,7 +134,7 @@ See [correction report](validation.md).
 ## Current release scope (2026-10-05)
 
 Xiaolei was removed from discovery, implementation, imports and active examples.
-The catalog now has 12 algorithms, with NDVI as its sole spectral index.
+The current catalog has 13 algorithms; NDVI is an internal calculation.
 TOA radiance is the default scene workflow. TOA reflectance remains an explicit
 alternative. Public brightness is implemented in calibration and exported at
 the root and API. Its default input is radiance; the legacy thermal family
@@ -158,3 +170,11 @@ matching sensor MTL. Wang PWV requires both thermal bands even when LST SC
 uses Band 10 only. The radiance NDVI convention and emissivity thresholds
 retain their previously documented limitations.
 [Original article](https://doi.org/10.1109/LGRS.2014.2312032).
+
+## Additional source-checked methods (2026-10-22)
+
+The catalog includes Rozenstein 2014 LST and Ren 2015 PWV. Sobrino 2004/2008
+emissivity functions and Chavez DOS/COST optical correction are standalone
+helpers with explicit band/domain requirements. They do not replace the
+historical Sobrino 1993 AVHRR temperature adaptation or silently calibrate
+TM coefficients for TIRS. See [additional methods](image-only-methods.md).

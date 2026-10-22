@@ -48,7 +48,7 @@ def apply_mask(image, mask: np.ndarray | None) -> np.ndarray:
     return output
 
 
-def compute_ndvi(nir, red, eps: float = 1e-15, mask: np.ndarray | None = None) -> np.ndarray:
+def _compute_ndvi(nir, red, eps: float = 1e-15, mask: np.ndarray | None = None) -> np.ndarray:
     """
     Compute the Normalized Difference Vegetation Index.
 
@@ -73,7 +73,7 @@ def compute_ndvi(nir, red, eps: float = 1e-15, mask: np.ndarray | None = None) -
     red_array = to_float_array("red", red)
     ensure_same_shape(nir=nir_array, red=red_array)
     if not np.isscalar(eps) or not np.isfinite(eps) or eps < 0:
-        raise ValueError("compute_ndvi: eps must be a finite nonnegative denominator tolerance.")
+        raise ValueError("_compute_ndvi: eps must be a finite nonnegative denominator tolerance.")
     with np.errstate(all="ignore"):
         denominator = nir_array + red_array
         valid = np.isfinite(nir_array) & np.isfinite(red_array)
@@ -82,6 +82,23 @@ def compute_ndvi(nir, red, eps: float = 1e-15, mask: np.ndarray | None = None) -
         np.divide(nir_array - red_array, denominator, out=output, where=valid)
     output = np.where(np.isfinite(output) & (np.abs(output) <= 1), output, np.nan)
     return apply_mask(output, mask)
+
+
+def _resolve_ndvi(ndvi_image=None, *, red=None, nir=None, mask=None):
+    """Resolve an internal NDVI from optical bands or an explicitly supplied raster.
+
+    Use matching calibrated radiance/reflectance for red and nir. A prepared
+    NDVI remains accepted for callers reusing an independently prepared input;
+    mixing it with optical bands is rejected to avoid an ambiguous convention.
+    """
+    if ndvi_image is not None:
+        if red is not None or nir is not None:
+            raise ValueError("Supply red/nir or ndvi_image, not both.")
+        return apply_mask(to_float_array("ndvi_image", ndvi_image), mask)
+    if red is None or nir is None:
+        raise ValueError("Provide both red and nir optical bands; NDVI is calculated internally.")
+    return _compute_ndvi(nir=nir, red=red, mask=mask)
+
 
 
 def compute_brightness_temperature(

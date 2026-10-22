@@ -19,7 +19,7 @@ class AlgorithmRegistry(Generic[T]):
     Parameters
     ----------
     family : str
-        Algorithm family name, such as ``spectral_index``, ``emissivity``,
+        Algorithm family name, such as ``emissivity``, ``water_vapor``,
         ``single_window``, or ``split_window``.
 
     Notes

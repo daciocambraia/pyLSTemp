@@ -12,20 +12,20 @@ SZA e utilizado quando presente. Todas as bandas precisam estar alinhadas.
 python exemples/fluxo_completo.py "D:/dados/LC08_CENA" --saida resultados
 ```
 
-Substitua o caminho pela pasta da imagem. Nove GeoTIFFs sao salvos: NDVI, BT10,
-BT11, emissividade10/11, LST single-channel, LST Du, PWV e LST Jimenez.
+Substitua o caminho pela pasta da imagem. Nove GeoTIFFs sao salvos: BT10,
+BT11, emissividade10/11, LST Avdan, LST Du, PWV Wang, LST Jimenez SC e
+LST Jimenez SW.
 Os nomes incluem o identificador da cena para separar Landsat 8 e Landsat 9.
 
 ## Notebooks
 
 Abra o notebook desejado, altere `pasta` na primeira celula e execute:
 
-- `spectral_index.ipynb`: imagens B4/B5 -> NDVI.
 - `brightness.ipynb`: DN B10/B11 -> radiancia TOA -> BT em K.
-- `emissivity.ipynb`: NDVI -> emissividade B10/B11.
+- `emissivity.ipynb`: B4/B5 -> NDVI interno -> emissividade B10/B11.
 - `single_window.ipynb`: BT10 + B4/B5 -> LST em C.
 - `split_window.ipynb`: Du e Jimenez; Jimenez recebe PWV calculado por Wang.
-- `water_vapor.ipynb`: BT10/BT11 + NDVI -> PWV bruto em g/cm2.
+- `water_vapor.ipynb`: BT10/BT11 + B4/B5 -> PWV bruto em g/cm2.
 
 Os exemplos leem arquivos de imagem e nao criam matrizes artificiais. O recorte
 central de ate 256 x 256 pixels e tratado como uma imagem de demonstracao.
@@ -46,3 +46,8 @@ O exemplo usa imagens reais em um recorte central controlado, com halo de Wang,
 COST e emissividade Sobrino 2008 com endmembers declarados. O perfil e escolhido
 explicitamente e a parametrizacao Chavez pertence ao recorte. Veja
 [dominios e adaptacoes](../docs/image-only-methods.md).
+
+Para Ren, use `water_vapor(..., method="ren-2015")` ou o
+[workflow Du com Wang/Ren](../docs/du-pwv-workflow.md). O fluxo completo
+acima continua usando Wang explicitamente; selecionar outro metodo exige
+registrar a configuracao e aplicar o dominio da equacao LST.

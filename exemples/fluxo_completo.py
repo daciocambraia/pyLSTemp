@@ -6,7 +6,7 @@ Uso na raiz do projeto:
 from pathlib import Path
 import argparse
 from pylstemp.scene import LandsatScene
-from pylstemp import spectral_index, emissivity, single_window, split_window, water_vapor, toa_radiance
+from pylstemp import emissivity, single_window, split_window, water_vapor, toa_radiance
 
 
 def executar(pasta, saida):
@@ -22,14 +22,13 @@ def executar(pasta, saida):
         vermelho, infravermelho = bandas[4], bandas[5]  # radiancia TOA
         bt10, bt11 = temperatura[10], temperatura[11]  # kelvin
 
-        ndvi = spectral_index("ndvi", nir=infravermelho, red=vermelho, mask=mascara)
-        emissividade10 = emissivity(ndvi, band=10, emissivity_method="gopinadh-2018")
-        emissividade11 = emissivity(ndvi, band=11, emissivity_method="gopinadh-2018")
+        emissividade10 = emissivity(red=vermelho, nir=infravermelho, mask=mascara, band=10, emissivity_method="gopinadh-2018")
+        emissividade11 = emissivity(red=vermelho, nir=infravermelho, mask=mascara, band=11, emissivity_method="gopinadh-2018")
         lst_single = single_window(bt10, vermelho, infravermelho,
                                    emissivity_method="avdan-2016", unit="celsius", mask=mascara)
         lst_du = split_window(bt10, bt11, vermelho, infravermelho,
                               lst_method="du-2015", unit="celsius", mask=mascara)
-        pwv = water_vapor(bt10, bt11, ndvi, mask=mascara)
+        pwv = water_vapor(bt10, bt11, red=vermelho, nir=infravermelho, mask=mascara)
         radiancia10 = toa_radiance(cena.read("B10", janela), metadata=cena.metadata,
                                    band=10, mask=mascara)
         lst_jimenez_sc = single_window(
@@ -43,7 +42,6 @@ def executar(pasta, saida):
                                    unit="celsius", mask=mascara_pwv)
 
         produtos = {
-            "ndvi": (ndvi, "dimensionless"),
             "bt10": (bt10, "kelvin"),
             "bt11": (bt11, "kelvin"),
             "emissividade10": (emissividade10, "dimensionless"),

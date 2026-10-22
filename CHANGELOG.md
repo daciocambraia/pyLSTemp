@@ -1,11 +1,24 @@
 # Changelog
 
+## Internal NDVI and simpler public API (2026-10-22)
+
+- Remove the public spectral-index dispatcher, its registry and legacy namespaces; use a single internal NDVI helper. The catalog has 13 algorithms.
+- Emissivity, PWV, Sobrino and Kerr prepared-emissivity calls accept red/nir and compute NDVI internally. Prepared NDVI remains an alternative for numerical reuse; mixed input forms are rejected.
+- Migrate workflows, examples and documentation; preserve prior modules/notebook locally under Verificacao.
+
+## Ren/MSWCVR and documentation (2026-10-22)
+
+- Add independent `ren-2015` PWV from verified original Eqs.1b/1c/2, with local NDVI screening, diagnostics and explicit domain/support choices.
+- Allow Ren in Du scene raster/mean workflows with automatic halo and diagnostic exports; preserve Wang numerical defaults.
+- Simplify the README image example to scene calibration, function calls and GeoTIFF output, without row/column configuration. Preserve the public documentation layout and update API, references and method limits.
+- Keep scientific tests and detailed reports in the local verification archive.
+
 ## Source-checked image methods (2026-10-22)
 
 - Added rozenstein-2014 with explicit atmospheric profiles, published fit intervals and PWV domain [0.5,3].
 - Added prepared-emissivity SW API and Sobrino TM6/parameterized 2008 functions without assigning unsupported TIRS constants.
 - Added reusable Chavez DOS/COST scene parameters, masks and an image-based example.
-- Scientific tests, articles and real-scene outputs remain local; Ren remains pending access to primary equations.
+- Scientific tests, articles and real-scene outputs remain local; Ren was pending access to primary equations in that round.
 
 
 ## Public repository cleanup (2026-10-22)
@@ -21,7 +34,7 @@
 - Invalid/out-of-domain raster PWV becomes NaN; mismatched shapes are rejected.
 - Added general/mean/raster scene workflow for the alternative Wang -> Du chain, automatic halo, scene-wide NDVI bounds and provenance exports.
 - Added boundary, independent-equation, tiled and real-scene validation. See docs/validation.md for actual results.
-- Original Du/Ren atmospheric estimator remains pending source-equation audit; no ren-2015 key or unverified polynomial added.
+- At this earlier stage, the original Du/Ren estimator was pending source-equation audit; it is supplied by the Ren addition documented above.
 
 
 ## Publication structure review (2026-10-05)

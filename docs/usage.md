@@ -10,7 +10,7 @@ Nenhuma banda artificial precisa ser criada. Instale `pip install -e ".[examples
 from pathlib import Path
 from pylstemp.scene import LandsatScene
 from pylstemp import (
-    toa_radiance, brightness, spectral_index, emissivity,
+    toa_radiance, brightness, emissivity,
     water_vapor, single_window, split_window, list_algorithms,
 )
 
@@ -24,26 +24,22 @@ os nomes originais. B2 e opcional. Os coeficientes do sensor sao lidos do MTL.
 
 ## 1. Abrir as imagens
 
-O recorte central de ate 256 x 256 pixels deixa a demonstracao rapida.
+A leitura abaixo usa a cena inteira, sem definir linhas ou colunas.
 A mascara QA marca pixels invalidos; aqui tambem excluimos agua para Wang.
 
 ```python
 with LandsatScene(pasta) as cena:
-    altura, largura = cena.shape
-    linha = max(0, altura // 2 - 128)
-    coluna = max(0, largura // 2 - 128)
-    janela = (linha, min(altura, linha + 256), coluna, min(largura, coluna + 256))
-    bandas, _, mascara = cena.calibrated(janela, exclude_water=True)
+    bandas, _, mascara = cena.calibrated(exclude_water=True)
     red, nir = bandas[4], bandas[5]  # radiancia TOA
-    dn10 = cena.read("B10", janela)
-    dn11 = cena.read("B11", janela)
+    dn10 = cena.read("B10")
+    dn11 = cena.read("B11")
     metadata = cena.metadata
 ```
 
-O leitor fecha os arquivos ao sair do bloco; os recortes lidos ficam disponiveis.
-Para uma cena inteira, `window=None` le toda a grade, com maior uso de memoria.
-PWV processado por blocos exige halo e grupos globais de NDVI; este recorte e uma
-imagem de demonstracao. Veja [metodos cientificos](scientific-methods.md).
+O leitor fecha os arquivos ao sair do bloco; os arrays lidos ficam disponiveis.
+A cena inteira exige mais memoria; os scripts prontos demonstram recortes
+pequenos. PWV de Wang processado por blocos exige halo e limites globais de NDVI;
+Ren usa halo e filtro NDVI local. Veja [metodos cientificos](scientific-methods.md).
 
 ## 2. Calcular radiancia e temperatura de brilho
 
@@ -58,20 +54,18 @@ Radiancia: **W m-2 sr-1 um-1**. BT: **kelvin**, temperatura de brilho TOA.
 BT nao e LST. `brightness` recebe radiancia por padrao; para DN, use
 `input_quantity="dn"`. As constantes K1/K2 devem pertencer a mesma banda e cena.
 
-## 3. Calcular NDVI
+## 3. NDVI interno
 
-```python
-ndvi = spectral_index(index="ndvi", nir=nir, red=red, mask=mascara)
-```
-
-NDVI e adimensional. Use vermelho e infravermelho na mesma grade e convencao
-radiometrica. Radiancia e reflectancia podem produzir NDVIs diferentes.
+Nao e necessario calcular ou fornecer NDVI no fluxo normal. As funcoes de
+emissividade e PWV calculam o indice internamente a partir de `red` e `nir`.
+Use as duas bandas na mesma grade e convencao radiometrica; radiancia e
+reflectancia podem produzir NDVIs diferentes.
 
 ## 4. Calcular emissividade das bandas 10 e 11
 
 ```python
-emissividade10 = emissivity(ndvi, band=10, emissivity_method="gopinadh-2018")
-emissividade11 = emissivity(ndvi, band=11, emissivity_method="gopinadh-2018")
+emissividade10 = emissivity(red=red, nir=nir, mask=mascara, band=10, emissivity_method="gopinadh-2018")
+emissividade11 = emissivity(red=red, nir=nir, mask=mascara, band=11, emissivity_method="gopinadh-2018")
 ```
 
 `gopinadh-2018` fornece valores por banda. `avdan-2016` tambem esta disponivel,
@@ -97,7 +91,7 @@ O metodo usa BT10 e corrige emissividade. Nao modela explicitamente a atmosfera.
 
 ```python
 pwv = water_vapor(
-    brightness_band_10=bt10, brightness_band_11=bt11, ndvi_image=ndvi,
+    brightness_band_10=bt10, brightness_band_11=bt11, red=red, nir=nir,
     method="wang-2015", window_size=21, group_count=3, mask=mascara,
 )
 ```
@@ -153,7 +147,7 @@ A mascara SW acima usa o intervalo de referencia TIGR3 do estimador Wang
 
 ```python
 with LandsatScene(pasta) as cena:
-    reflectancia, _, _ = cena.calibrated(janela, optical_quantity="reflectance")
+    reflectancia, _, _ = cena.calibrated(optical_quantity="reflectance")
     rho4 = reflectancia[4]
 ```
 
@@ -165,7 +159,6 @@ guia continua em radiancia; nenhum metodo termico acrescentado exige SR.
 
 ```python
 produtos = {
-    "ndvi": (ndvi, "dimensionless"),
     "emissividade10": (emissividade10, "dimensionless"),
     "emissividade11": (emissividade11, "dimensionless"),
     "bt10": (bt10, "kelvin"), "bt11": (bt11, "kelvin"),
@@ -177,7 +170,7 @@ produtos = {
 }
 with LandsatScene(pasta) as cena:
     for nome, (imagem, unidade) in produtos.items():
-        cena.write_geotiff(saida / f"{nome}.tif", imagem, window=janela, units=unidade)
+        cena.write_geotiff(saida / f"{nome}.tif", imagem, units=unidade)
 ```
 
 Os GeoTIFFs conservam coordenadas, unidade e NoData NaN.
@@ -197,7 +190,24 @@ print(catalogo["single_channel"]["jimenez-munoz-sc-2014"]["input_requirements"])
 python exemples/fluxo_completo.py CAMINHO_DA_CENA --saida resultados
 ```
 
-Ha seis [notebooks por modulo](../exemples/DATA.md). O script gera dez produtos;
+Ha cinco [notebooks por modulo](../exemples/DATA.md). O script gera nove produtos;
 este guia inclui ainda reflectancia opcional. Calibracao Landsat 8/9 usa o MTL;
 transferencia de coeficientes de recuperacao para Landsat 9 e experimental.
 Veja [referencia da API](api-reference.md) e [validacao](validation.md).
+
+
+## PWV por Ren/MSWCVR
+
+Com as mesmas imagens BT10/BT11, vermelho e infravermelho:
+
+```python
+pwv_ren = water_vapor(bt10, bt11, red=red, nir=nir, method="ren-2015", window_size=33, mask=mascara)
+```
+
+`33` pixels representam aproximadamente 1 km na grade Landsat de 30 m.
+O metodo usa covariancia/variancia local e a regressao de Ren, sem grupos
+globais de NDVI. A janela centrada e uma adaptacao declarada da aplicacao
+original em suporte termico nativo; pixels reamostrados nao sao amostras
+termicas independentes. PWV fora de [0.06,6.3] g/cm2 ou sem suporte suficiente
+fica NaN. O resultado pode ser fornecido a Du ou Jimenez, aplicando o dominio
+de cada metodo. Veja [Ren e escolhas operacionais](image-only-methods.md#ren-2015-mswcvr).

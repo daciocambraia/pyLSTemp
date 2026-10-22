@@ -1,5 +1,6 @@
 """Source-specific Sobrino emissivity functions, without invented TIRS constants."""
 import numpy as np
+from .utils import _resolve_ndvi
 from .validation import to_float_array, ensure_same_shape, ensure_boolean_mask
 
 
@@ -14,25 +15,28 @@ def _inputs(ndvi, mask, ndvi_soil, ndvi_vegetation):
     return n, fvc, invalid
 
 
-def sobrino_2004_tm6(ndvi, *, mask=None):
+def sobrino_2004_tm6(ndvi=None, *, red=None, nir=None, mask=None):
     """TM5 band-6 Eq.13 for mixed pixels, and 0.99 for full vegetation.
 
     Bare soil (NDVI<0.2), water, snow and undefined inputs are NOT inferred
     from Eq.13: they are NaN. Constants are not calibrated for Landsat 8/9.
-    Pass a suitable land mask; NDVI alone cannot identify water or snow.
+    Pass red/nir for internal NDVI, with a suitable land mask; NDVI alone
+    cannot identify water or snow. A prepared ndvi remains an alternative.
     """
+    ndvi = _resolve_ndvi(ndvi, red=red, nir=nir, mask=mask)
     n, fvc, invalid = _inputs(ndvi, mask, .2, .5)
     invalid |= n < .2
     result = np.where(n > .5, .99, .004*fvc+.986)
     return np.where(invalid, np.nan, result)
 
 
-def sobrino_2008(ndvi, *, soil_emissivity, vegetation_emissivity,
+def sobrino_2008(ndvi=None, *, red=None, nir=None, soil_emissivity, vegetation_emissivity,
                  variant="simplified", red_surface=None, soil_red_coefficients=None,
                  cavity_factor=.55, vegetation_cavity=.005,
                  ndvi_soil=.2, ndvi_vegetation=.5, mask=None):
     """NDVI thresholds: simplified Eq.9, or full Eqs.5--8 with cavity.
 
+    Pass red/nir for internal NDVI, or an explicitly prepared ndvi.
     Endmembers must be provided per spectral band, with their provenance.
     Full mode requires calibrated SURFACE red reflectance and (a,b) for the
     soil relationship a+b*rho_red. No TM/AVHRR constants are assigned to TIRS.
@@ -40,6 +44,7 @@ def sobrino_2008(ndvi, *, soil_emissivity, vegetation_emissivity,
     vegetation_cavity=.005 follows the typical value discussed in 2008.
     Water/snow/urban classification is the caller's masking responsibility.
     """
+    ndvi = _resolve_ndvi(ndvi, red=red, nir=nir, mask=mask)
     n, fvc, invalid = _inputs(ndvi, mask, ndvi_soil, ndvi_vegetation)
     es, ev = (to_float_array(k,v) for k,v in
               (("soil_emissivity",soil_emissivity),("vegetation_emissivity",vegetation_emissivity)))
