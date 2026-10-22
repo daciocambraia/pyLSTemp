@@ -35,8 +35,8 @@ class BaseEmissivityAlgorithm:
         ndvi : array-like
             NDVI image used to estimate land-cover fraction.
         red_band : array-like, optional
-            Red band image. Required only by methods that explicitly use
-            reflectance information, such as ``xiaolei-2014``.
+            Optional red band array retained for API compatibility. The current
+            Avdan and Gopinadh methods derive emissivity from NDVI only.
 
         Returns
         -------
@@ -57,13 +57,13 @@ class BaseEmissivityAlgorithm:
             red_band=red_band_image,
         )
 
-        invalid_mask = np.isnan(ndvi_image)
+        invalid_mask = ~np.isfinite(ndvi_image) | (np.abs(ndvi_image) > 1)
         emissivity_10 = np.asarray(emissivity_10, dtype=float)
-        emissivity_10[invalid_mask] = np.nan
+        emissivity_10[invalid_mask | ~np.isfinite(emissivity_10) | (emissivity_10 <= 0) | (emissivity_10 > 1)] = np.nan
 
         if emissivity_11 is not None:
             emissivity_11 = np.asarray(emissivity_11, dtype=float)
-            emissivity_11[invalid_mask] = np.nan
+            emissivity_11[invalid_mask | ~np.isfinite(emissivity_11) | (emissivity_11 <= 0) | (emissivity_11 > 1)] = np.nan
 
         return emissivity_10, emissivity_11
 

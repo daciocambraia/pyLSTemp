@@ -54,6 +54,9 @@ class AlgorithmRegistry(Generic[T]):
             Algorithm factory, key, aliases, and citation metadata.
         """
         canonical_key = spec.key.lower()
+        keys = [canonical_key] + [alias.lower() for alias in spec.aliases]
+        if len(set(keys)) != len(keys) or any(key in self._factories or key in self._aliases for key in keys):
+            raise ValueError(f"Algorithm key or alias collision: {keys}")
         self._factories[canonical_key] = spec.factory
         self._metadata[canonical_key] = AlgorithmMetadata(
             key=canonical_key,
@@ -80,7 +83,11 @@ class AlgorithmRegistry(Generic[T]):
         str
             Canonical lowercase algorithm key.
         """
-        lookup_key = key.lower()
+        if not isinstance(key, str) or not key.strip():
+            raise InvalidMethodRequested(
+                f"Method for family '{self.family}' must be a nonempty string; received {key!r}. "
+                f"Available methods: {sorted(self.available_keys())}")
+        lookup_key = key.strip().lower()
         return self._aliases.get(lookup_key, lookup_key)
 
     def create(self, key: str) -> T:
@@ -105,7 +112,7 @@ class AlgorithmRegistry(Generic[T]):
         canonical_key = self.resolve_key(key)
         if canonical_key not in self._factories:
             raise InvalidMethodRequested(
-                f"Requested method '{key}' is not registered. "
+                f"Requested method '{key}' is not registered in family '{self.family}'. "
                 f"Available methods: {sorted(self.available_keys())}"
             )
         return self._factories[canonical_key]()
@@ -132,7 +139,7 @@ class AlgorithmRegistry(Generic[T]):
         canonical_key = self.resolve_key(key)
         if canonical_key not in self._metadata:
             raise InvalidMethodRequested(
-                f"Requested method '{key}' is not registered. "
+                f"Requested method '{key}' is not registered in family '{self.family}'. "
                 f"Available methods: {sorted(self.available_keys())}"
             )
         return self._metadata[canonical_key]

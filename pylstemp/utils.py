@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .validation import ensure_boolean_mask, to_float_array
+from .validation import ensure_boolean_mask, ensure_same_shape, to_float_array
 
 
 def generate_mask(image) -> np.ndarray:
@@ -22,7 +22,7 @@ def generate_mask(image) -> np.ndarray:
         Mask where True indicates NaN or zero-valued pixels.
     """
     array = to_float_array("image", image)
-    return np.isnan(array) | (array == 0)
+    return ~np.isfinite(array) | (array == 0)
 
 
 def apply_mask(image, mask: np.ndarray | None) -> np.ndarray:
@@ -59,7 +59,8 @@ def compute_ndvi(nir, red, eps: float = 1e-15, mask: np.ndarray | None = None) -
     red : array-like
         Red band.
     eps : float, default=1e-15
-        Small value used to avoid division by zero.
+        Nonnegative absolute denominator tolerance. Values <= eps are invalid;
+        eps is not added to valid denominators.
     mask : array-like of bool, optional
         Boolean mask where True values indicate invalid pixels.
 
@@ -70,10 +71,17 @@ def compute_ndvi(nir, red, eps: float = 1e-15, mask: np.ndarray | None = None) -
     """
     nir_array = to_float_array("nir", nir)
     red_array = to_float_array("red", red)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        ndvi = (nir_array - red_array) / (nir_array + red_array + eps)
-    ndvi[np.abs(ndvi) > 1] = np.nan
-    return apply_mask(ndvi, mask)
+    ensure_same_shape(nir=nir_array, red=red_array)
+    if not np.isscalar(eps) or not np.isfinite(eps) or eps < 0:
+        raise ValueError("compute_ndvi: eps must be a finite nonnegative denominator tolerance.")
+    with np.errstate(all="ignore"):
+        denominator = nir_array + red_array
+        valid = np.isfinite(nir_array) & np.isfinite(red_array)
+        valid &= np.isfinite(denominator) & (np.abs(denominator) > eps)
+        output = np.full(nir_array.shape, np.nan, dtype=float)
+        np.divide(nir_array - red_array, denominator, out=output, where=valid)
+    output = np.where(np.isfinite(output) & (np.abs(output) <= 1), output, np.nan)
+    return apply_mask(output, mask)
 
 
 def compute_brightness_temperature(
@@ -109,10 +117,28 @@ def compute_brightness_temperature(
         Brightness temperature in Kelvin.
     """
     image_array = to_float_array("image", image)
-    toa_radiance = (mult_factor * image_array) + add_factor
-    with np.errstate(divide="ignore", invalid="ignore"):
-        brightness_temp = k2 / np.log((k1 / toa_radiance) + 1)
-    return apply_mask(brightness_temp, mask)
+    coefficients = np.asarray([mult_factor, add_factor, k1, k2], dtype=float)
+    if not np.all(np.isfinite(coefficients)) or mult_factor <= 0 or k1 <= 0 or k2 <= 0:
+        raise ValueError("Radiance gain, K1 and K2 must be positive and all coefficients finite.")
+    invalid = ~np.isfinite(image_array) | (image_array <= 0)
+    if mask is not None:
+        invalid |= ensure_boolean_mask(mask, shape=image_array.shape)
+    with np.errstate(over="ignore", invalid="ignore"):
+        radiance = mult_factor * image_array + add_factor
+    return radiance_brightness_temperature(radiance, k1, k2, mask=invalid)
+
+
+def radiance_brightness_temperature(radiance, k1, k2, mask=None):
+    """Invert Planck: TOA radiance [W m-2 sr-1 um-1] -> TOA BT [K]."""
+    image = to_float_array("radiance", radiance)
+    if not np.all(np.isfinite([k1, k2])) or k1 <= 0 or k2 <= 0:
+        raise ValueError("K1 and K2 must be finite and positive.")
+    invalid = ~np.isfinite(image) | (image <= 0)
+    if mask is not None:
+        invalid |= ensure_boolean_mask(mask, shape=image.shape)
+    with np.errstate(all="ignore"):
+        temperature = k2 / np.log1p(k1 / image)
+    return apply_mask(temperature, invalid | ~np.isfinite(temperature))
 
 
 def fractional_vegetation_cover(ndvi) -> np.ndarray:

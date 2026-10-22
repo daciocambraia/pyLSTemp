@@ -1,21 +1,18 @@
-# Documentation
+# Documentacao
 
-This folder contains the user-facing documentation for the current modular `pyLSTemp` codebase.
+1. [Instalacao](installation.md)
+2. [Uso com imagens Landsat](usage.md)
+3. [API e grandezas](api-reference.md)
+4. [Metodos cientificos e migracao](scientific-methods.md)
+5. [Validacao atual](validation.md)
+6. [Melhorias pendentes](MELHORIAS_MODULOS_v1.11.md)
+7. [Arquitetura](architecture.md)
+8. [Adicionar metodos](extending.md)
+9. [Referencias e creditos](references.md)
+10. [Preparacao para publicacao](publication.md)
 
-## Suggested reading order
+Exemplos executaveis: [exemples/DATA.md](../exemples/DATA.md).
+Relatorios detalhados e dados de verificacao ficam no arquivo local
+`Verificacao/`, fora do repositorio.
 
-1. [installation.md](installation.md)
-2. [usage.md](usage.md)
-3. [api-reference.md](api-reference.md)
-4. [architecture.md](architecture.md)
-5. [extending.md](extending.md)
-6. [references.md](references.md)
-
-## Main ideas
-
-- the public API stays small and stable
-- brightness temperature is an explicit preprocessing step before LST workflows
-- sensor-specific thermal constants live in `pylstemp/sensors/`
-- the real implementations live in `pylstemp/algorithms/`
-- new algorithms are discovered automatically from their family folder
-- new families can also be discovered automatically when they expose a family registry
+- [Du/PWV: workflow e limites](du-pwv-workflow.md)

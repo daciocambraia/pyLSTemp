@@ -82,8 +82,8 @@ ALGORITHM_SPEC = AlgorithmSpec(
     name="Kerr 1992 split-window LST",
     reference="Kerr et al. (1992)",
     citation=(
-        "Kerr, Y. H., Lagouarde, J. P., Nerry, F., and Ottle, C. A semiempirical "
-        "approach to the retrieval of land surface temperature from AVHRR data. "
+        "Kerr, Y. H., Lagouarde, J. P., and Imbernon, J. Accurate land surface "
+        "temperature retrieval from AVHRR data with use of an improved split window algorithm. "
         "Remote Sensing of Environment, 1992. This implementation interpolates "
         "the bare-soil and vegetation coefficients reported in Table 1 using "
         "the article's linear NDVI cover with NDVIbs=0.11 and NDVIv=0.72, "

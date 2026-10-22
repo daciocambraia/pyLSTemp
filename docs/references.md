@@ -11,20 +11,21 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 
 - `ndvi`
   Rouse, J. W., Haas, R. H., Schell, J. A., and Deering, D. W. Monitoring vegetation systems in the Great Plains with ERTS. NASA SP-351, 1974.
-- `evi`
-  Huete, A. R., Liu, H. Q., Batchily, K., and van Leeuwen, W. A comparison of vegetation indices over a global set of TM images for EOS-MODIS. Remote Sensing of Environment, 1997.
-  The article names this equation SARVI2; pyLSTemp exposes it as EVI because the implemented coefficients match the common enhanced vegetation index structure: `2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))`.
-
 ## Thermal
 
 - `brightness`
-  Brightness temperature conversion using scene-specific radiance gain and bias supplied in the function call together with sensor-specific `K1` and `K2` constants for Landsat 8 or Landsat 9.
+  TOA radiance to TOA brightness temperature using band-specific K1/K2 from the matching MTL. DN-to-radiance uses per-band gain/bias first.
+  [USGS Level-1 calibration equations](https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product).
 
 ## Single-channel temperature algorithms
 
 - `mono-window-2016`
   Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016.
   This is a Band 10 single-channel workflow. The implementation uses `lambda=10.895e-6 m`, calculated as the midpoint of the Landsat 8/9 TIRS Band 10 range (`10.6-11.19 um`).
+
+- `jimenez-munoz-sc-2014`
+  Jimenez-Munoz et al. (2014). Band-10 SC: Eqs. 1, 2, 4 and 6.
+  [Article](https://doi.org/10.1109/LGRS.2014.2312032).
 
 ## Split-window temperature algorithms
 
@@ -35,7 +36,7 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 - `sobrino-1993`
   Sobrino, J. A., Caselles, V., and Coll, C. Theoretical split window algorithms for determining the actual surface temperature. Il Nuovo Cimento, 1993.
 - `kerr-1992`
-  Kerr, Y. H., Lagouarde, J. P., Nerry, F., and Ottle, C. A semiempirical approach to the retrieval of land surface temperature from AVHRR data. Remote Sensing of Environment, 1992.
+  Kerr, Y. H., Lagouarde, J. P., and Imbernon, J. Accurate land surface temperature retrieval from AVHRR data with use of an improved split window algorithm. Remote Sensing of Environment, 1992.
   The implementation interpolates the paper's bare-soil and vegetation coefficients using the linear NDVI cover from the article, with `NDVIbs=0.11` and `NDVIv=0.72` cited from Begue (1991).
 - `price-1984`
   Price, J. C. Land surface temperature measurements from the split window channels of the NOAA advanced very high-resolution radiometer. Journal of Geophysical Research, 1984.
@@ -46,8 +47,6 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 - `avdan-2016`
   Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016.
   Emissivity follows the article's NDVI conditional rules, including `C=0.005` for mixed pixels.
-- `xiaolei-2014`
-  Yu, X., Guo, X., and Wu, Z. Land surface temperature retrieval from Landsat 8 TIRS - comparison between radiative transfer equation-based method, split window algorithm and single channel method. Remote Sensing, 2014.
 - `gopinadh-2018`
   Rongali, G., et al. Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data. Journal of Geovisualization and Spatial Analysis, 2018.
 
@@ -59,3 +58,13 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 ## Radiative transfer
 
 This family is currently reserved for future methods.
+
+## Historical method removed from the current release
+
+Xiaolei (xiaolei-2014) is no longer registered or shipped because the selected
+release scope does not include its additional surface-reflectance input.
+Yu, X., Guo, X., and Wu, Z. Land surface temperature retrieval from Landsat 8 TIRS -
+comparison between radiative transfer equation-based method, split window
+algorithm and single channel method. Remote Sensing, 2014.
+
+Links for all current algorithms are also listed in the [README](../README.md#algoritmos-e-artigos).

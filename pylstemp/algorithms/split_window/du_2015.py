@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from ...exceptions import assert_required_keywords_provided
 from ...metadata import AlgorithmSpec
+from ...validation import ensure_same_shape
 from .base import SplitWindowParentLST
 
 
@@ -19,7 +22,9 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
     -----
     - If ``water_vapor`` is None, the all-CWV coefficient set reported by
       Du et al. is used.
-    - If ``water_vapor`` is provided, it must be between 0.0 and 6.3 g/cm2.
+    - Scalar ``water_vapor`` must be finite and in [0, 6.3] g/cm2.
+    - Aligned raster PWV selects coefficients per pixel; invalid pixels become
+      NaN, with the mean of LST estimates in inclusive overlap intervals.
     - Brightness temperature and emissivity must be computed before calling
       this method.
     """
@@ -59,7 +64,13 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
         if water_vapor is None:
             return (cls.default_coefficients,)
 
-        cwv = float(water_vapor)
+        cwv_array = np.asarray(water_vapor, dtype=float)
+        if cwv_array.ndim != 0:
+            raise ValueError("Coefficient helper requires scalar PWV; pass rasters to the algorithm.")
+        cwv = float(cwv_array)
+        if not np.isfinite(cwv) or not 0 <= cwv <= 6.3:
+            raise ValueError(
+                f"water_vapor for 'du-2015' must be between 0.0 and 6.3 g/cm2 and finite; received {cwv!r}.")
         matches = []
         for (lower, upper), coefficients in cls.coefficient_ranges:
             if lower <= cwv <= upper:
@@ -118,7 +129,7 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
             Band 10 land-surface emissivity.
         emissivity_11 : array-like
             Band 11 land-surface emissivity.
-        water_vapor : float, optional
+        water_vapor : float or aligned array-like, optional
             Atmospheric column water vapor in g/cm2.
         mask : array-like of bool or None
             Boolean mask where True values indicate invalid pixels.
@@ -141,7 +152,13 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
         tb_11 = kwargs["brightness_temperature_11"]
         emissivity_10 = kwargs["emissivity_10"]
         emissivity_11 = kwargs["emissivity_11"]
-        coefficient_sets = self._coefficients_for(kwargs.get("water_vapor"))
+        water = kwargs.get("water_vapor")
+        water = None if water is None else np.asarray(water, dtype=float)
+        raster = water is not None and water.ndim != 0
+        if raster:
+            ensure_same_shape(brightness_temperature_10=tb_10, water_vapor=water)
+        else:
+            coefficient_sets = self._coefficients_for(water)
         mask = self._validate_inputs(
             mask=kwargs["mask"],
             brightness_temperature_10=tb_10,
@@ -150,17 +167,27 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
             emissivity_11=emissivity_11,
         )
 
-        estimates = (
-            self._estimate_with_coefficients(
-                coefficients,
-                tb_10,
-                tb_11,
-                emissivity_10,
-                emissivity_11,
+        if raster:
+            mask |= ~np.isfinite(water) | (water < 0) | (water > 6.3)
+            total = np.zeros(tb_10.shape, dtype=float)
+            count = np.zeros(tb_10.shape, dtype=np.uint8)
+            for (lower, upper), coefficients in self.coefficient_ranges:
+                selected = ~mask & (water >= lower) & (water <= upper)
+                if not selected.any():
+                    continue
+                total[selected] += self._estimate_with_coefficients(
+                    coefficients, tb_10[selected], tb_11[selected],
+                    emissivity_10[selected], emissivity_11[selected])
+                count[selected] += 1
+            result = np.full(tb_10.shape, np.nan)
+            np.divide(total, count, out=result, where=count > 0)
+        else:
+            estimates = (
+                self._estimate_with_coefficients(
+                    coefficients, tb_10, tb_11, emissivity_10, emissivity_11)
+                for coefficients in coefficient_sets
             )
-            for coefficients in coefficient_sets
-        )
-        result = sum(estimates) / len(coefficient_sets)
+            result = sum(estimates) / len(coefficient_sets)
         return result, mask
 
 

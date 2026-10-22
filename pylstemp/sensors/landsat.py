@@ -89,6 +89,8 @@ def get_landsat_thermal_constants(sensor: str) -> LandsatThermalConstants:
         If the sensor is not supported.
     """
 
+    if not isinstance(sensor, str):
+        raise ValueError(f"sensor must be 'landsat_8' or 'landsat_9'; received {sensor!r}.")
     normalized_sensor = sensor.strip().lower()
     if normalized_sensor not in LANDSAT_THERMAL_CONSTANTS:
         raise ValueError(

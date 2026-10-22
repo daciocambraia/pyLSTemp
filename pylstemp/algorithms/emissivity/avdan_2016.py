@@ -26,7 +26,7 @@ class ComputeEmissivityAvdan2016(BaseEmissivityAlgorithm):
     """
 
     water_emissivity = 0.991
-    soil_emissivity = 0.996
+    soil_emissivity = 0.966  # Table 2; text value 0.996 is inconsistent.
     vegetation_emissivity = 0.973
     roughness_correction = 0.005
 

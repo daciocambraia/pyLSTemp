@@ -62,8 +62,10 @@ def assert_temperature_unit(unit: str) -> None:
     InvalidTemperatureUnitError
         If the unit is not kelvin or celsius.
     """
-    normalized = unit.lower()
+    if not isinstance(unit, str):
+        raise InvalidTemperatureUnitError(f"Temperature unit must be 'kelvin' or 'celsius'; received {unit!r}.")
+    normalized = unit.strip().lower()
     if normalized not in {"kelvin", "celsius"}:
         raise InvalidTemperatureUnitError(
-            "Temperature unit should be either 'kelvin' or 'celsius'."
+            "Temperature unit should be either 'kelvin' or 'celsius'; brightness inputs must remain in Kelvin."
         )

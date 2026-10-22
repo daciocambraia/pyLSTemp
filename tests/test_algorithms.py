@@ -33,8 +33,8 @@ class TestAlgorithms(unittest.TestCase):
         ndvi = np.array([[-0.1, 0.1, 0.35, 0.6]])
         emissivity_10, emissivity_11 = ComputeEmissivityAvdan2016()(ndvi=ndvi)
         mixed_fvc = ((0.35 - 0.2) / (0.5 - 0.2)) ** 2
-        expected_mixed = (0.973 * mixed_fvc) + (0.996 * (1 - mixed_fvc)) + 0.005
-        expected = np.array([[0.991, 0.996, expected_mixed, 0.973]])
+        expected_mixed = (0.973 * mixed_fvc) + (0.966 * (1 - mixed_fvc)) + 0.005
+        expected = np.array([[0.991, 0.966, expected_mixed, 0.973]])
 
         self.assertTrue(np.allclose(emissivity_10, expected))
         self.assertTrue(np.allclose(emissivity_11, expected))

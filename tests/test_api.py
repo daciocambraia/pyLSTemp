@@ -13,11 +13,11 @@ from pylstemp import (
 
 
 def brightness_band_10(thermal_band, **kwargs):
-    return brightness(thermal_band, band="band_10", **kwargs)
+    return brightness(thermal_band, band="band_10", **kwargs, input_quantity="dn")
 
 
 def brightness_band_11(thermal_band, **kwargs):
-    return brightness(thermal_band, band="band_11", **kwargs)
+    return brightness(thermal_band, band="band_11", **kwargs, input_quantity="dn")
 
 
 def emissivity_band_10(ndvi_image, **kwargs):
@@ -47,14 +47,6 @@ class TestPublicApi(unittest.TestCase):
         output = spectral_index(index="ndvi", nir=self.band_5, red=self.band_4)
         self.assertEqual(output.shape, self.band_5.shape)
 
-    def test_evi_returns_expected_shape_and_values(self):
-        output = spectral_index(index="evi", nir=self.band_5, red=self.band_4, blue=self.band_2)
-        expected = 2.5 * (
-            (self.band_5 - self.band_4)
-            / (self.band_5 + (6.0 * self.band_4) - (7.5 * self.band_2) + 1.0)
-        )
-        self.assertEqual(output.shape, self.band_5.shape)
-        np.testing.assert_allclose(output, expected)
 
     def test_individual_brightness_helpers_preserve_shape(self):
         brightness_10 = brightness_band_10(

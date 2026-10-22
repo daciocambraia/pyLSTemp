@@ -1,181 +1,203 @@
-# Usage Guide
+# Guia de uso
 
-This guide shows the main workflows exposed by the public API.
+Este guia acompanha o fluxo publico por funcao, com imagens reais Landsat
+Collection 2 Level-1. Execute os blocos em ordem no mesmo script ou notebook.
+Nenhuma banda artificial precisa ser criada. Instale `pip install -e ".[examples]"`.
 
-## Import the public functions
+## Importar as funcoes publicas e escolher a imagem
 
 ```python
+from pathlib import Path
+from pylstemp.scene import LandsatScene
 from pylstemp import (
-    spectral_index,
-    brightness,
-    emissivity,
-    water_vapor,
-    single_window,
-    split_window,
-    list_algorithms,
+    toa_radiance, brightness, spectral_index, emissivity,
+    water_vapor, single_window, split_window, list_algorithms,
 )
+
+pasta = Path("caminho/para/cena_landsat")
+saida = Path("resultados")
+saida.mkdir(parents=True, exist_ok=True)
 ```
 
-## 1. Compute NDVI
+A pasta deve conter B4, B5, B10, B11, MTL.txt, QA_PIXEL e QA_RADSAT, mantendo
+os nomes originais. B2 e opcional. Os coeficientes do sensor sao lidos do MTL.
+
+## 1. Abrir as imagens
+
+O recorte central de ate 256 x 256 pixels deixa a demonstracao rapida.
+A mascara QA marca pixels invalidos; aqui tambem excluimos agua para Wang.
 
 ```python
-import numpy as np
-from pylstemp import spectral_index
-
-red = np.array([[0.2, 0.3], [0.4, 0.5]])
-nir = np.array([[0.6, 0.7], [0.8, 0.9]])
-blue = np.array([[0.1, 0.1], [0.2, 0.2]])
-
-ndvi_image = spectral_index(index="ndvi", nir=nir, red=red)
-evi_image = spectral_index(index="evi", nir=nir, red=red, blue=blue)
+with LandsatScene(pasta) as cena:
+    altura, largura = cena.shape
+    linha = max(0, altura // 2 - 128)
+    coluna = max(0, largura // 2 - 128)
+    janela = (linha, min(altura, linha + 256), coluna, min(largura, coluna + 256))
+    bandas, _, mascara = cena.calibrated(janela, exclude_water=True)
+    red, nir = bandas[4], bandas[5]  # radiancia TOA
+    dn10 = cena.read("B10", janela)
+    dn11 = cena.read("B11", janela)
+    metadata = cena.metadata
 ```
 
-## 2. Compute brightness temperature
+O leitor fecha os arquivos ao sair do bloco; os recortes lidos ficam disponiveis.
+Para uma cena inteira, `window=None` le toda a grade, com maior uso de memoria.
+PWV processado por blocos exige halo e grupos globais de NDVI; este recorte e uma
+imagem de demonstracao. Veja [metodos cientificos](scientific-methods.md).
+
+## 2. Calcular radiancia e temperatura de brilho
 
 ```python
-import numpy as np
-from pylstemp import brightness
-
-band_10 = np.full((3, 3), 1000.0)
-band_11 = np.full((3, 3), 900.0)
-sensor = "landsat_8"
-
-brightness_10 = brightness(
-    band_10,
-    band="band_10",
-    sensor=sensor,
-)
-
-brightness_11 = brightness(
-    band_11,
-    band="band_11",
-    sensor=sensor,
-)
+radiancia10 = toa_radiance(dn10, metadata=metadata, band=10, mask=mascara)
+radiancia11 = toa_radiance(dn11, metadata=metadata, band=11, mask=mascara)
+bt10 = brightness(radiancia10, metadata=metadata, band=10, mask=mascara)
+bt11 = brightness(radiancia11, metadata=metadata, band=11, mask=mascara)
 ```
 
-To override the default sensor metadata values, pass `rad_gain=` and `rad_bias=` explicitly.
+Radiancia: **W m-2 sr-1 um-1**. BT: **kelvin**, temperatura de brilho TOA.
+BT nao e LST. `brightness` recebe radiancia por padrao; para DN, use
+`input_quantity="dn"`. As constantes K1/K2 devem pertencer a mesma banda e cena.
 
-## 3. Compute emissivity
+## 3. Calcular NDVI
 
 ```python
-from pylstemp import emissivity
-
-emissivity_10 = emissivity(
-    ndvi_image,
-    band="band_10",
-    band_4_red=red,
-    emissivity_method="avdan-2016",
-)
-
-emissivity_11 = emissivity(
-    ndvi_image,
-    band="band_11",
-    band_4_red=red,
-    emissivity_method="avdan-2016",
-)
+ndvi = spectral_index(index="ndvi", nir=nir, red=red, mask=mascara)
 ```
 
-`avdan-2016` follows the NDVI conditional emissivity rules from Avdan and Jovanovska: water, soil, mixed pixels using fractional vegetation cover plus `C=0.005`, and vegetation. Because this source method is single-channel, it returns the same emissivity for band 10 and band 11 workflows. For split-window methods, consider `gopinadh-2018` or `xiaolei-2014` when you want band-specific emissivity.
+NDVI e adimensional. Use vermelho e infravermelho na mesma grade e convencao
+radiometrica. Radiancia e reflectancia podem produzir NDVIs diferentes.
 
-## 4. Compute single-channel LST
+## 4. Calcular emissividade das bandas 10 e 11
 
 ```python
-from pylstemp import single_window
-
-lst_single = single_window(
-    brightness_band_10=brightness_10,
-    band_4_red=red,
-    band_5_nir=nir,
-    lst_method="mono-window-2016",
-    emissivity_method="avdan-2016",
-    unit="kelvin",
-)
+emissividade10 = emissivity(ndvi, band=10, emissivity_method="gopinadh-2018")
+emissividade11 = emissivity(ndvi, band=11, emissivity_method="gopinadh-2018")
 ```
 
-The default `mono-window-2016` method uses `lambda=10.895e-6 m`, the midpoint of the Landsat 8/9 TIRS Band 10 range (`10.6-11.19 um`). This avoids using the Band 11 lower wavelength (`11.5 um`) in a Band 10 single-channel workflow.
-Use only `brightness_band_10` with `mono-window-2016`; do not use Band 11 brightness temperature in this workflow.
+`gopinadh-2018` fornece valores por banda. `avdan-2016` tambem esta disponivel,
+com a parametrizacao single-channel da fonte. Emissividade e adimensional.
+As funcoes LST calculam essa etapa internamente; o calculo separado permite
+inspecionar ou exportar a emissividade. Os limiares de NDVI exigem justificativa
+para a convencao radiometrica usada.
 
-## 5. Compute split-window LST
+## 5. Calcular LST single-channel: Avdan
 
 ```python
-from pylstemp import split_window
-
-lst_split = split_window(
-    brightness_band_10=brightness_10,
-    brightness_band_11=brightness_11,
-    band_4_red=red,
-    band_5_nir=nir,
-    lst_method="du-2015",
-    emissivity_method="gopinadh-2018",
-    unit="celsius",
+lst_avdan = single_window(
+    brightness_band_10=bt10, band_4_red=red, band_5_nir=nir,
+    lst_method="mono-window-2016", emissivity_method="avdan-2016",
+    unit="celsius", mask=mascara,
 )
 ```
 
-`split_window(...)` blocks `emissivity_method="avdan-2016"` because Avdan is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` for split-window workflows. `gopinadh-2018` uses Rongali et al.'s linear fractional vegetation cover with `NDVIsoil=0.15` and `NDVIvegetation=0.48`; the FVC is clipped to `0..1` before the linear emissivity mixture.
+O metodo usa BT10 e corrige emissividade. Nao modela explicitamente a atmosfera.
+`unit="kelvin"` entrega LST em K; `unit="celsius"` entrega LST em Celsius.
 
-`lst_method="du-2015"` can use a single scene-level `water_vapor` value, but it is optional; if omitted, the method uses the general Du et al. coefficient range `[0.0, 6.3] g/cm2`.
-When the supplied value falls inside one of Du et al.'s overlapping CWV ranges, the method computes both adjacent estimates and returns their mean.
-`lst_method="jimenez-munoz-2014"` requires `water_vapor` and accepts either a single value or a raster with the same shape as the brightness temperature arrays.
+## 6. Estimar vapor d'agua
+
+```python
+pwv = water_vapor(
+    brightness_band_10=bt10, brightness_band_11=bt11, ndvi_image=ndvi,
+    method="wang-2015", window_size=21, group_count=3, mask=mascara,
+)
+```
+
+Wang retorna **PWV em g/cm2**. Preserve o raster bruto para diagnostico.
+Uma estimativa externa de PWV tambem pode ser usada, com unidade e origem claras.
+
+## 7. Calcular LST single-channel: Jimenez-Munoz
+
+```python
+lst_jimenez_sc = single_window(
+    brightness_band_10=bt10, band_4_red=red, band_5_nir=nir,
+    lst_method="jimenez-munoz-sc-2014", emissivity_method="gopinadh-2018",
+    radiance_band_10=radiancia10, water_vapor=pwv,
+    unit="celsius", mask=mascara,
+)
+```
+
+Este metodo requer radiancia TOA da B10, BT10 correspondente, emissividade e
+PWV. A restricao operacional adotada e **0..3 g/cm2**, pela perda de precisao
+acima de 3 descrita no [artigo](https://doi.org/10.1109/LGRS.2014.2312032).
+PWV escalar fora desse intervalo gera erro; valores raster invalidos ou fora
+dele viram NaN na LST. Nao ha recorte artificial do PWV nem ajuste dos coeficientes.
+B11 e usada para estimar PWV por Wang; a equacao termica SC utiliza apenas B10.
+
+## 8. Calcular LST split-window
 
 ```python
 lst_du = split_window(
-    brightness_band_10=brightness_10,
-    brightness_band_11=brightness_11,
-    band_4_red=red,
-    band_5_nir=nir,
-    lst_method="du-2015",
-    emissivity_method="gopinadh-2018",
-    water_vapor=3.8,
+    brightness_band_10=bt10, brightness_band_11=bt11,
+    band_4_red=red, band_5_nir=nir,
+    lst_method="du-2015", emissivity_method="gopinadh-2018",
+    unit="celsius", mask=mascara,
+)
+mascara_pwv_sw = mascara | (pwv < 0.066) | (pwv > 7.833)
+lst_jimenez_sw = split_window(
+    brightness_band_10=bt10, brightness_band_11=bt11,
+    band_4_red=red, band_5_nir=nir,
+    lst_method="jimenez-munoz-2014", emissivity_method="gopinadh-2018",
+    water_vapor=pwv, unit="celsius", mask=mascara_pwv_sw,
 )
 ```
 
-Use `water_vapor` in `g/cm2` when you have an atmospheric column water vapor estimate and want the method to select the corresponding Du et al. coefficient sub-range.
+Du sem PWV usa seu conjunto geral de coeficientes. Com PWV externo, Du aceita
+escalar ou raster alinhado em 0..6.3 g/cm2. Pixels PWV invalidos viram NaN;
+nao ha estimativa automatica em split_window(). Jimenez SW requer PWV.
+Veja o [workflow de cena Wang -> Du](du-pwv-workflow.md).
+A mascara SW acima usa o intervalo de referencia TIGR3 do estimador Wang
+(0.066..7.833 g/cm2), distinto da restricao SC de 0..3; ela nao certifica acuracia.
+`avdan-2016` e bloqueado no split-window; escolha `gopinadh-2018`.
 
-## 6. Estimate water vapor from Landsat 8 imagery
-
-```python
-from pylstemp import water_vapor
-
-water = water_vapor(
-    brightness_band_10=brightness_10,
-    brightness_band_11=brightness_11,
-    ndvi_image=ndvi_image,
-    method="wang-2015",
-    window_size=21,
-    group_count=3,
-)
-```
-
-`wang-2015` estimates precipitable water vapor from Landsat 8 TIRS bands 10 and 11 using NDVI-based local grouping. The result is a raster and can be passed directly to `jimenez-munoz-2014` for pixel-by-pixel correction.
+## 9. Converter reflectancia TOA, se necessario
 
 ```python
-lst_jimenez = split_window(
-    brightness_band_10=brightness_10,
-    brightness_band_11=brightness_11,
-    band_4_red=red,
-    band_5_nir=nir,
-    lst_method="jimenez-munoz-2014",
-    emissivity_method="gopinadh-2018",
-    water_vapor=water,
-)
+with LandsatScene(pasta) as cena:
+    reflectancia, _, _ = cena.calibrated(janela, optical_quantity="reflectance")
+    rho4 = reflectancia[4]
 ```
 
-## 7. Inspect available families and methods
+Esse modo usa `toa_reflectance`, com correcao solar por SZA ou MTL.
+Reflectancia TOA e adimensional e nao e SR Level-2. O fluxo principal deste
+guia continua em radiancia; nenhum metodo termico acrescentado exige SR.
+
+## 10. Salvar os resultados como imagens
 
 ```python
-from pylstemp import list_algorithms
-
-catalog = list_algorithms()
-print(catalog.keys())
-print(catalog["split_window"].keys())
-print(catalog["water_vapor"].keys())
+produtos = {
+    "ndvi": (ndvi, "dimensionless"),
+    "emissividade10": (emissividade10, "dimensionless"),
+    "emissividade11": (emissividade11, "dimensionless"),
+    "bt10": (bt10, "kelvin"), "bt11": (bt11, "kelvin"),
+    "lst_avdan": (lst_avdan, "celsius"),
+    "lst_jimenez_sc": (lst_jimenez_sc, "celsius"),
+    "lst_du": (lst_du, "celsius"),
+    "lst_jimenez_sw": (lst_jimenez_sw, "celsius"),
+    "pwv": (pwv, "g/cm2"), "reflectancia_b4": (rho4, "dimensionless"),
+}
+with LandsatScene(pasta) as cena:
+    for nome, (imagem, unidade) in produtos.items():
+        cena.write_geotiff(saida / f"{nome}.tif", imagem, window=janela, units=unidade)
 ```
 
-## Notes on invalid pixels
+Os GeoTIFFs conservam coordenadas, unidade e NoData NaN.
 
-- zero values are treated as invalid in the thermal workflow mask
-- `NaN` values are propagated through the calculations
-- manual masks passed to `spectral_index(index="ndvi", ...)` or `brightness(...)` must be boolean
-- `sensor` must be `landsat_8` or `landsat_9`
-- `rad_gain` and `rad_bias` default to the sensor metadata values and can be overridden manually in the brightness temperature function call
-- these radiance values are different from the sensor constants `K1` and `K2`
+## 11. Consultar metodos e requisitos
+
+```python
+catalogo = list_algorithms()
+print(catalogo["single_channel"].keys())
+print(catalogo["split_window"].keys())
+print(catalogo["single_channel"]["jimenez-munoz-sc-2014"]["input_requirements"])
+```
+
+## Executar os exemplos prontos
+
+```bash
+python exemples/fluxo_completo.py CAMINHO_DA_CENA --saida resultados
+```
+
+Ha seis [notebooks por modulo](../exemples/DATA.md). O script gera dez produtos;
+este guia inclui ainda reflectancia opcional. Calibracao Landsat 8/9 usa o MTL;
+transferencia de coeficientes de recuperacao para Landsat 9 e experimental.
+Veja [referencia da API](api-reference.md) e [validacao](validation.md).

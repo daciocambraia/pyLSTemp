@@ -1,4 +1,9 @@
-"""Brightness temperature calculations for Landsat 8 and Landsat 9 thermal bands."""
+"""Legacy DN helpers and thermal registry entry.
+
+Canonical public brightness lives in pylstemp.calibration and defaults to
+TOA radiance [W m-2 sr-1 um-1]. These band-specific compatibility helpers
+continue to accept Level-1 DN; both routes share one numerical Planck inversion.
+"""
 
 from __future__ import annotations
 
@@ -14,8 +19,8 @@ class BrightnessTemperatureLandsat:
     """
     Convert Landsat thermal bands to brightness temperature.
 
-    This class contains the band-specific conversion logic used by the
-    public ``brightness`` dispatcher.
+    This class contains the band-specific conversion logic retained for
+    explicit historical DN calls.
 
     Notes
     -----
@@ -169,7 +174,7 @@ def brightness_band_10(
     Examples
     --------
     >>> from pylstemp import brightness
-    >>> brightness_10 = brightness(band_10, band="band_10", sensor="landsat_8")
+    >>> brightness_10 = brightness(band_10, band="band_10", sensor="landsat_8", input_quantity="dn")
     """
 
     return BrightnessTemperatureLandsat().compute_band_10(
@@ -222,7 +227,7 @@ def brightness_band_11(
     Examples
     --------
     >>> from pylstemp import brightness
-    >>> brightness_11 = brightness(band_11, band="band_11", sensor="landsat_8")
+    >>> brightness_11 = brightness(band_11, band="band_11", sensor="landsat_8", input_quantity="dn")
     """
 
     return BrightnessTemperatureLandsat().compute_band_11(

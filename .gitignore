@@ -10,3 +10,32 @@ venv/
 .venv/
 article/*.pdf
 exemples/data/*.tif
+
+# Local research data and preserved history
+/Antigo/
+/Articles/
+/Imagens/
+/Verificacao/
+/v1.10/
+*.TIF
+*.tif
+*.tar
+*.npz
+/exemples/data/
+
+# Generated example outputs
+/resultados/
+/exemples/resultados/
+
+# Coverage outputs
+.coverage.*
+/htmlcov/
+/coverage.xml
+/coverage.json
+
+# Local credentials and machine files
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

@@ -1,5 +1,75 @@
 # Changelog
 
+## Du raster PWV and explicit scene workflow (2026-10-22)
+
+- Du accepts aligned PWV rasters with per-pixel coefficient selection and inclusive overlap averaging of LST estimates. General/scalar behavior is preserved.
+- Invalid/out-of-domain raster PWV becomes NaN; mismatched shapes are rejected.
+- Added general/mean/raster scene workflow for the alternative Wang -> Du chain, automatic halo, scene-wide NDVI bounds and provenance exports.
+- Added boundary, independent-equation, tiled and real-scene validation. See docs/validation.md for actual results.
+- Original Du/Ren atmospheric estimator remains pending source-equation audit; no ren-2015 key or unverified polynomial added.
+
+
+## Publication structure review (2026-10-05)
+
+- Documented the complete repository tree, all algorithms and calibration helpers.
+- Updated scene validation scripts to cover Jimenez SC and optional B2 inputs.
+- Added publication guidance and tests/tag/distribution checks to the publish workflow.
+- Added contribution and conduct documents to the sdist; no RTE implementation added.
+
+
+## Jimenez single-channel and documentation (2026-10-05)
+
+- Added jimenez-munoz-sc-2014 with explicit Band-10 TOA radiance/PWV and operational PWV screen [0,3].
+- Restored function-by-function image examples and v1.10-style README organization, with links for every algorithm.
+- Added SC to the full workflow and single-channel notebook; corrected Kerr bibliographic attribution.
+
+
+## Image examples and workspace cleanup (2026-10-05)
+
+- Replace synthetic-array usage examples with direct Landsat image reading and connected algorithms.
+- Add a runnable image workflow; simplify the six notebooks and remove the hidden example-input helper.
+- Consolidate current validation docs and preserve historical reports in the local verification archive.
+- Remove exact duplicate verification products by SHA-256 and disposable build/cache files.
+
+## Explicit TOA reflectance API (2026-10-05)
+
+- Remove the redundant public `reflectance` dispatcher and its unused Level-2 selection branch.
+- Use `toa_reflectance` directly for Level-1 TOA reflectance; retained calibration/retrieval equations are unchanged.
+- Remove obsolete dispatcher-specific tests and update imports, help, API docs and release artifacts.
+
+## Radiance workflow and EVI removal (2026-10-05)
+
+- Remove unused EVI implementation, discovery entry, imports and active examples; retain one canonical NDVI.
+- Add metadata-driven TOA radiance conversion; expose TOA reflectance explicitly.
+- Move public brightness to calibration: default input TOA radiance, output TOA BT in K; DN requires input_quantity="dn".
+- Standardize scene/examples/validation workflow on optical radiance and make B2 optional.
+- Document quantity units, prevent double calibration, and compare radiance/reflectance NDVI on both supplied scenes.
+
+## 1.11.0 - 2026-10-04 (updated 2026-10-05)
+
+- Verify retained scope: 619 tests, 106 subtests, 486 real cases and 102 unchanged GeoTIFFs; see docs/ESCOPO_LEVEL1_v1.11.md.
+- Remove Xiaolei implementation and catalog entry; retained emissivity methods are Avdan and Gopinadh. Old Xiaolei calls now raise InvalidMethodRequested.
+- Clarify NDVI radiance/reflectance inputs; retain TOA-based scene calibration and optional SR scaling.
+- Fix undefined NDVI ratios and nonfinite EVI inputs; keep one canonical NDVI catalog entry with legacy import aliases.
+- Add explicit Level-1 TOA / Collection 2 Level-2 SR reflectance conversion with product-level guards.
+- Add actionable public workflow errors, method input metadata and warnings for unused PWV; validate Du scalar PWV.
+- Earlier index-correction stage: revalidate both supplied scenes with 813 tests, 106 subtests and 120 GeoTIFFs; see docs/CORRECOES_INDICES_REFLECTANCIA_v1.11.md.
+- Correct SI units in mono-window; remove invalid upper LST cutoff.
+- Correct Jimenez coefficient and Wang symmetric regression.
+- Resolve Avdan soil constant using Table 2; document remaining source ambiguities.
+- Require physical surface reflectance for Xiaolei; no automatic fixed DN scaling.
+- Add MTL-driven TOA/BT calibration, per-pixel solar angles and C2 QA.
+- Propagate nonfinite values, central NoData and explicit workflow masks.
+- Vectorize Wang in bounded-memory chunks; test against scalar windows.
+- Add independent regressions, calibrated notebooks and scene validation reports.
+- Restore repository-root packaging/CI; use SPDX license metadata.
+
+Migration: Xiaolei has been removed from the selected release scope.
+Use Avdan for single-channel or Gopinadh for single-channel/split-window.
+Earlier numerical corrections still change outputs relative to v1.10.
+See docs/scientific-methods.md.
+
+
 All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.

@@ -5,14 +5,12 @@ from pylstemp.algorithms.thermal import (
     brightness_band_10,
     brightness_band_11,
 )
-from pylstemp.algorithms.spectral_index import EVIAlgorithm, NDVIAlgorithm, evi, ndvi
+from pylstemp.algorithms.spectral_index import NDVIAlgorithm, ndvi
 
 
 class TestDomains(unittest.TestCase):
     def test_spectral_index_family_exports_indices(self):
-        self.assertTrue(callable(evi))
         self.assertTrue(callable(ndvi))
-        self.assertTrue(callable(EVIAlgorithm))
         self.assertTrue(callable(NDVIAlgorithm))
 
     def test_thermal_family_exports_brightness_helpers(self):

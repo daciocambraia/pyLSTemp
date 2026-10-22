@@ -52,7 +52,7 @@ def ndvi(nir, red, mask=None) -> np.ndarray:
 class NDVIAlgorithm:
     """Object wrapper that lets NDVI participate in the shared family discovery."""
 
-    def __call__(self, nir, red, mask=None):
+    def __call__(self, nir=None, red=None, mask=None, *, band_5_nir=None, band_4_red=None):
         """
         Compute NDVI through the registry-compatible algorithm interface.
 
@@ -70,6 +70,10 @@ class NDVIAlgorithm:
         ndarray
             NDVI image.
         """
+        if nir is not None and band_5_nir is not None or red is not None and band_4_red is not None:
+            raise ValueError("ndvi: use nir/red or legacy band_5_nir/band_4_red, not both.")
+        nir = band_5_nir if nir is None else nir
+        red = band_4_red if red is None else red
         return ndvi(nir=nir, red=red, mask=mask)
 
 

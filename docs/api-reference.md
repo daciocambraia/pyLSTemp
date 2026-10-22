@@ -4,11 +4,17 @@
 
 ### `spectral_index(index, **kwargs)`
 
-Computes a spectral index selected by name.
+Computes a spectral index selected by name. NDVI accepts calibrated radiance or
+reflectance; record the input quantity because band-specific conversions can
+change the ratio. The standard scene workflow uses TOA radiance. Raw DN is not generally
+equivalent to calibrated radiance/reflectance. Undefined ratios and any nonfinite input
+become NaN. NDVI uses the exact ratio for valid denominators; `eps=1e-15` is a
+denominator tolerance, not an additive bias.
+Only `spectral_index` is listed in the catalog; legacy `spectral_indices` imports
+share the canonical NDVI implementation.
 Currently supported:
 
 - `index="ndvi"` with `nir`, `red`, and optional `mask`
-- `index="evi"` with `nir`, `red`, `blue`, and optional `mask`
 
 Example:
 
@@ -19,40 +25,62 @@ ndvi_image = spectral_index(
     red=red,
 )
 
-evi_image = spectral_index(
-    index="evi",
-    nir=nir,
-    red=red,
-    blue=blue,
-)
 ```
 
-### `brightness(thermal_band, band, sensor, rad_gain=None, rad_bias=None, mask=None)`
+### `toa_radiance(dn, *, metadata, band, mask=None)`
 
-Computes brightness temperature for the selected Landsat thermal band using `sensor="landsat_8"` or `sensor="landsat_9"`.
-Use `band="band_10"` or `band="band_11"`.
-`rad_gain` corresponds to `RADIANCE_MULT_BAND_X` and `rad_bias` corresponds to `RADIANCE_ADD_BAND_X`.
+Convert Level-1 DN to TOA spectral radiance in **W m-2 sr-1 um-1**.
+Bands 1..11 use their own `RADIANCE_MULT_BAND_x` and `RADIANCE_ADD_BAND_x`
+from the matching MTL. Formula: `L = M_L * DN + A_L`. No solar rescaling.
+Nonfinite values, DN <= 0 and mask=True become NaN; values are not clipped.
+Public import: `from pylstemp import toa_radiance, read_mtl`.
 
-Default values:
-- `landsat_8`, band 10: `rad_gain=0.0003342`, `rad_bias=0.1`
-- `landsat_8`, band 11: `rad_gain=0.0003342`, `rad_bias=0.1`
-- `landsat_9`, band 10: `rad_gain=0.00038`, `rad_bias=0.1`
-- `landsat_9`, band 11: `rad_gain=0.000349`, `rad_bias=0.1`
+### `toa_reflectance(dn, *, metadata, band, mask=None, sun_elevation=None)`
 
-You can override these values in the function call.
+Convert Level-1 optical DN (bands 1..9) to **dimensionless TOA reflectance**:
+`rho = (M_rho * DN + A_rho) / sin(solar elevation)`.
+Elevation is in degrees; use a scalar or an aligned per-pixel array. The MTL
+scene-centre value is the fallback. Negative/above-one output is preserved.
+This does not perform atmospheric correction or produce surface reflectance.
+
+### `brightness(thermal_band, band, sensor=None, rad_gain=None, rad_bias=None, mask=None, *, metadata=None, input_quantity="radiance")`
+
+Canonical implementation: `pylstemp.calibration.brightness`, also exported at
+`pylstemp.brightness` and `pylstemp.api.brightness`. Default input: **TOA radiance
+in W m-2 sr-1 um-1**. Output: **TOA brightness temperature in K**.
+Use band 10/11 or the documented aliases. Matching Level-1 MTL supplies K1/K2;
+`sensor="landsat_8"`/`"landsat_9"` provides fallback constants if MTL is omitted.
+USGS equation: `BT = K2 / log(1 + K1 / L)`. BT is not surface temperature.
+
+Explicit `input_quantity="dn"` keeps the historical DN shortcut. Matching MTL
+provides all coefficients. Without MTL, sensor gain/bias defaults are available
+and `rad_gain`/`rad_bias` overrides are supported. Those arguments are rejected
+for already calibrated radiance or with authoritative MTL. A sensor conflicting
+with the MTL is also rejected. Nonpositive radiance and nonfinite inputs become NaN.
+The legacy thermal-family band helpers still accept DN for compatibility.
 
 ### `emissivity(ndvi_image, band, band_4_red=None, emissivity_method="avdan-2016")`
 
 Computes emissivity for the selected thermal band workflow.
 Use `band="band_10"` or `band="band_11"`.
 The default `avdan-2016` method follows Avdan and Jovanovska's NDVI rules: water (`NDVI < 0`), soil (`0 <= NDVI < 0.2`), mixed pixels (`0.2 <= NDVI <= 0.5`) using fractional vegetation cover and `C=0.005`, and vegetation (`NDVI > 0.5`).
-`avdan-2016` returns the same emissivity for both thermal workflows because the source method is a single-channel Band 10 workflow. For split-window methods that need band-specific emissivity, prefer `gopinadh-2018` or `xiaolei-2014`.
+`avdan-2016` returns the same emissivity for both thermal workflows because the source method is a single-channel Band 10 workflow. For split-window methods that need band-specific emissivity, prefer `gopinadh-2018`.
 
-### `single_window(brightness_band_10, band_4_red, band_5_nir, lst_method="mono-window-2016", emissivity_method="avdan-2016", unit="kelvin")`
+### `single_window(brightness_band_10, band_4_red, band_5_nir, lst_method="mono-window-2016", emissivity_method="avdan-2016", unit="kelvin", *, mask=None, radiance_band_10=None, water_vapor=None)`
 
 Computes land surface temperature using a single-channel method. `brightness_band_10` must be computed beforehand with `brightness(..., band="band_10")`.
 `mono-window-2016` is a Band 10 single-channel workflow; do not pass Band 11 brightness temperature to this method.
 The default `mono-window-2016` implementation uses `lambda=10.895e-6 m`, the midpoint of the Landsat 8/9 TIRS Band 10 range (`10.6-11.19 um`) used in the Avdan and Jovanovska workflow.
+
+`jimenez-munoz-sc-2014` implements the Band-10 single-channel formulation,
+separate from the split-window key `jimenez-munoz-2014`. Supply matching
+`radiance_band_10` in W m-2 sr-1 um-1 and `water_vapor` in g/cm2.
+The operational polynomial PWV range is [0,3]: invalid scalars are rejected;
+nonfinite, negative or >3 raster pixels become NaN. This is a scientific
+screen motivated by the paper, not a claim that accuracy is guaranteed in range.
+No atmospheric function or radiance is silently reconstructed from default sensor constants.
+Both Avdan and Gopinadh emissivity methods are accepted. Avdan LST does not
+accept the new atmospheric keywords because it does not use them.
 
 ### `split_window(brightness_band_10, brightness_band_11, band_4_red, band_5_nir, lst_method, emissivity_method="gopinadh-2018", unit="kelvin", water_vapor=None)`
 
@@ -70,10 +98,10 @@ lst = split_window(
 ```
 
 The default split-window emissivity method is `gopinadh-2018`, because it provides band-specific emissivity for bands 10 and 11 using Rongali et al.'s linear fractional vegetation cover with `NDVIsoil=0.15` and `NDVIvegetation=0.48`. The fractional vegetation cover is clipped to `0..1`; the final emissivity is still computed from the article's linear mixture.
-`avdan-2016` is blocked in `split_window(...)` because it is a single-channel emissivity method. Use `gopinadh-2018` or `xiaolei-2014` instead.
+`avdan-2016` is blocked in `split_window(...)` because it is a single-channel emissivity method. Use `gopinadh-2018` instead.
 
 For `lst_method="du-2015"` or `lst_method="jimenez-munoz-2014"`, `water_vapor` represents atmospheric column water vapor in `g/cm2`.
-For `du-2015`, use a single scene-level value. When `water_vapor=None`, the implementation uses Du et al.'s all-CWV coefficient set for `[0.0, 6.3] g/cm2`.
+For `du-2015`, use a scalar or an aligned raster of exactly the same shape. When `water_vapor=None`, the implementation uses Du et al.'s all-CWV coefficient set for `[0.0, 6.3] g/cm2`.
 When `water_vapor` is provided for `du-2015`, the method selects the matching Du et al. CWV sub-range. If the value falls in an overlap between adjacent ranges, it computes both estimates and returns their mean, following Du et al.'s continuity strategy:
 - `[0.0, 2.5]`
 - `[2.0, 3.5]`
@@ -82,7 +110,9 @@ When `water_vapor` is provided for `du-2015`, the method selects the matching Du
 - `[5.0, 6.3]`
 
 `jimenez-munoz-2014` requires `water_vapor` and accepts either a single scene-level value or a raster with the same shape as the brightness temperature arrays. Use `water_vapor(method="wang-2015", ...)` for pixel-by-pixel water vapor or provide an external estimate.
-Current non-Du/Jimenez split-window methods do not use `water_vapor`.
+Price, Kerr and Sobrino do not use `water_vapor`; supplying it emits a
+`RuntimeWarning` explaining that it is ignored. Du rejects nonfinite/out-of-domain scalars. Raster pixels outside `[0,6.3]`
+or nonfinite become NaN; raster shapes must match, without broadcasting.
 
 ### `water_vapor(brightness_band_10, brightness_band_11, ndvi_image, method="wang-2015", window_size=21, group_count=3)`
 
@@ -102,11 +132,30 @@ water = water_vapor(
 )
 ```
 
-The resulting water vapor raster can be used directly in `split_window(..., lst_method="jimenez-munoz-2014", water_vapor=water)`. For `du-2015`, provide a single scene-level value such as the mean of a water vapor raster if you want to select a specific CWV coefficient sub-range.
+The resulting water vapor raster can be used directly in `split_window(..., lst_method="jimenez-munoz-2014", water_vapor=water)`. `du-2015` also accepts this raster directly. Preserve the estimator domain when preparing PWV. For automatic calibration, halo and provenance, see [the scene workflow](du-pwv-workflow.md).
 
 ### `list_algorithms()`
 
 Returns a catalog of discovered families, algorithm metadata, and original-library credit.
+Each method includes `input_requirements` and `water_vapor_support`.
+There are 12 algorithm entries, including exactly one NDVI.
+
+### Migration: explicit TOA reflectance
+
+Use `toa_reflectance(dn, metadata=mtl, band=4)` for Level-1 optical calibration.
+The former `reflectance(..., kind="toa")` dispatcher has been removed. Its
+Level-2 selection branch was unused by every retained retrieval model.
+The internal `calibration.surface_reflectance` scaling helper remains separate;
+it requires existing Level-2 SR data and does not atmospherically correct Level-1.
+
+## Validation messages
+
+Public workflow errors identify function, method/band/sensor, input problem and
+next action. Existing exception classes remain catchable; original causes are
+chained. Shape errors include field names and actual shapes; boolean masks use
+`True` for invalid pixels. Temperature outputs accept kelvin/celsius; inputs
+remain Kelvin. Calibration errors explicitly distinguish Level-1 from Level-2.
+See [verified examples and scene results](validation.md).
 
 ## Current algorithm families
 
@@ -114,11 +163,11 @@ Returns a catalog of discovered families, algorithm metadata, and original-libra
 
 - `avdan-2016`
 - `gopinadh-2018`
-- `xiaolei-2014`
 
 ### `single_channel`
 
 - `mono-window-2016`
+- `jimenez-munoz-sc-2014`
 
 ### `split_window`
 
@@ -141,7 +190,6 @@ Sensor constants are stored under `pylstemp/sensors/`.
 ### `spectral_index`
 
 - `ndvi`
-- `evi`
 
 ### `radiative_transfer`
 
@@ -150,6 +198,16 @@ Sensor constants are stored under `pylstemp/sensors/`.
 ## Internal organization
 
 - shared public orchestration: `pylstemp/api.py`
+- DN/radiance/reflectance/TOA BT calibration: `pylstemp/calibration.py`
 - algorithm family discovery: `pylstemp/algorithms/__init__.py`
 - algorithm module discovery inside each family: `pylstemp/registry.py`
 - family implementations: `pylstemp/algorithms/*`
+
+### `LandsatScene.calibrated(window=None, *, exclude_water=False, optical_quantity="radiance")`
+
+Returns optical B4/B5 (and B2 when present), thermal BT10/BT11 [K], and the
+boolean invalid-pixel mask. Optical defaults to TOA radiance [W m-2 sr-1 um-1].
+Select `optical_quantity="reflectance"` for TOA reflectance with solar correction.
+B4/B5/B10/B11, matching MTL, QA_PIXEL and QA_RADSAT are required. B2 is optional.
+Both modes share QA and supplied SZA validity masks for controlled comparisons.
+All returned arrays are aligned. Scene inputs are never modified.

@@ -17,17 +17,10 @@ class TestValidation(unittest.TestCase):
                 mask=np.ones((2, 2), dtype=int),
             )
 
-    def test_xiaolei_requires_red_band(self):
-        with self.assertRaises(ValueError):
-            emissivity(
-                np.ones((2, 2)),
-                band="band_10",
-                emissivity_method="xiaolei-2014",
-            )
 
     def test_brightness_rejects_unknown_band(self):
         with self.assertRaisesRegex(ValueError, "band must be"):
-            brightness(np.ones((2, 2)), band="band_12", sensor="landsat_8")
+            brightness(np.ones((2, 2)), band="band_12", sensor="landsat_8", input_quantity="dn")
 
     def test_mask_builder_marks_zero_and_nan(self):
         image = np.array([[1.0, 0.0], [np.nan, 2.0]])

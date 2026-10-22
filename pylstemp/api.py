@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import numpy as np
+import warnings
+
+from .messages import contextual_errors
+from .requirements import describe_inputs, PWV_SUPPORT
 
 from .algorithms import FAMILY_REGISTRIES
 from .algorithms.emissivity import emissivity_registry
 from .algorithms.single_channel import single_channel_registry
 from .algorithms.split_window import split_window_registry
-from .algorithms.thermal import (
-    brightness_band_10,
-    brightness_band_11,
-)
+from .calibration import brightness, normalize_thermal_band as _normalize_thermal_band
 from .algorithms.spectral_index import ndvi as _ndvi
 from .algorithms.spectral_index import spectral_index_registry
 from .algorithms.water_vapor import water_vapor_registry
@@ -20,6 +21,7 @@ from .references import ORIGINAL_LIBRARY_CREDIT
 from .validation import (
     build_mask_from,
     ensure_same_shape,
+    ensure_boolean_mask,
     normalize_temperature_unit,
     to_float_array,
 )
@@ -28,58 +30,22 @@ CELSIUS_SCALER = 273.15
 SINGLE_CHANNEL_EMISSIVITY_METHODS = {"avdan-2016"}
 
 
-def _normalize_thermal_band(band) -> str:
-    """
-    Normalize supported thermal band identifiers.
-
-    Parameters
-    ----------
-    band : str or int
-        Thermal band identifier or alias.
-
-    Returns
-    -------
-    str
-        Canonical band key, either ``"band_10"`` or ``"band_11"``.
-
-    Raises
-    ------
-    ValueError
-        If the band identifier is not supported.
-    """
-
-    aliases = {
-        10: "band_10",
-        "10": "band_10",
-        "band_10": "band_10",
-        "b10": "band_10",
-        11: "band_11",
-        "11": "band_11",
-        "band_11": "band_11",
-        "b11": "band_11",
-    }
-    try:
-        return aliases[band]
-    except KeyError as exc:
-        raise ValueError("band must be 'band_10' or 'band_11'.") from exc
-
-
+@contextual_errors
 def spectral_index(index: str, **kwargs):
     """
     Compute a spectral index selected by name.
 
     This dispatcher routes the request to one of the registered spectral
-    index algorithms, such as NDVI or EVI.
+    index algorithm NDVI.
 
     Parameters
     ----------
     index : str
         Name of the spectral index to compute. Currently supported values
-        include `"ndvi"` and `"evi"`.
+        include `"ndvi"`.
     **kwargs
         Input bands and optional parameters required by the selected index.
-        For `index="ndvi"`, provide `nir` and `red`. For `index="evi"`,
-        provide `nir`, `red`, and `blue`.
+        For `index="ndvi"`, provide `nir` and `red` in the same physical quantity.
 
     Returns
     -------
@@ -89,106 +55,16 @@ def spectral_index(index: str, **kwargs):
     Notes
     -----
     - Input arrays must have the same shape and spatial alignment.
-    - Use reflectance-like optical bands for physically meaningful results.
+    - NDVI accepts calibrated radiance or reflectance; record the input quantity.
     - A boolean `mask` can be passed to mark invalid pixels as `NaN`.
 
     Examples
     --------
     >>> from pylstemp import spectral_index
     >>> ndvi = spectral_index(index="ndvi", nir=nir, red=red)
-    >>> evi = spectral_index(index="evi", nir=nir, red=red, blue=blue)
     """
 
     return spectral_index_registry.create(index)(**kwargs)
-
-
-def brightness(
-    thermal_band,
-    band: str,
-    sensor: str,
-    rad_gain: float | None = None,
-    rad_bias: float | None = None,
-    mask=None,
-) -> np.ndarray:
-    """
-    Compute brightness temperature for a selected Landsat thermal band.
-
-    This function converts a thermal band image to top-of-atmosphere
-    brightness temperature using the selected Landsat sensor constants
-    and radiance rescaling coefficients.
-
-    Parameters
-    ----------
-    thermal_band : array-like
-        Thermal band image to convert. Use the band 10 array when
-        `band="band_10"` and the band 11 array when `band="band_11"`.
-    band : str
-        Thermal band identifier. Supported values are `"band_10"` and
-        `"band_11"`. Short aliases such as `"10"`, `"11"`, `"b10"` and
-        `"b11"` are also accepted.
-    sensor : str
-        Landsat sensor name. Supported values are `"landsat_8"` and
-        `"landsat_9"`.
-    rad_gain : float, optional
-        Radiance multiplicative rescaling factor. This corresponds to
-        `RADIANCE_MULT_BAND_X` in the scene metadata. If omitted, the
-        default value registered for the selected sensor and band is used.
-    rad_bias : float, optional
-        Radiance additive rescaling factor. This corresponds to
-        `RADIANCE_ADD_BAND_X` in the scene metadata. If omitted, the
-        default value registered for the selected sensor and band is used.
-    mask : array-like of bool, optional
-        Boolean mask where True values indicate invalid pixels
-        (e.g., nodata, clouds, shadows, or saturated pixels).
-
-    Returns
-    -------
-    numpy.ndarray
-        Array containing brightness temperature values in Kelvin.
-
-    Notes
-    -----
-    - Input arrays should be radiometrically consistent with the selected
-      Landsat sensor and band.
-    - `rad_gain` and `rad_bias` are different from the thermal constants
-      `K1` and `K2`; `K1` and `K2` are selected internally from the sensor
-      metadata.
-    - It is recommended to apply quality masks before using the result in
-      land surface temperature workflows.
-
-    Examples
-    --------
-    >>> from pylstemp import brightness
-    >>> brightness_10 = brightness(
-    ...     thermal_band=band_10,
-    ...     band="band_10",
-    ...     sensor="landsat_8",
-    ... )
-    >>> brightness_11 = brightness(
-    ...     thermal_band=band_11,
-    ...     band="band_11",
-    ...     sensor="landsat_8",
-    ...     rad_gain=0.0003342,
-    ...     rad_bias=0.1,
-    ... )
-    """
-
-    normalized_band = _normalize_thermal_band(band)
-    if normalized_band == "band_10":
-        return brightness_band_10(
-            thermal_band,
-            sensor=sensor,
-            rad_gain=rad_gain,
-            rad_bias=rad_bias,
-            mask=mask,
-        )
-    return brightness_band_11(
-        thermal_band,
-        sensor=sensor,
-        rad_gain=rad_gain,
-        rad_bias=rad_bias,
-        mask=mask,
-    )
 
 
 def _emissivity_pair(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
@@ -217,6 +93,7 @@ def _emissivity_pair(ndvi_image, band_4_red=None, emissivity_method: str = "avda
     return algorithm(ndvi=ndvi_array, red_band=validated_red_band)
 
 
+@contextual_errors
 def emissivity_band_10(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
     """
     Compute emissivity for the Band 10 thermal workflow.
@@ -244,6 +121,7 @@ def emissivity_band_10(ndvi_image, band_4_red=None, emissivity_method: str = "av
     return emissivity_10
 
 
+@contextual_errors
 def emissivity_band_11(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
     """
     Compute emissivity for the Band 11 thermal workflow.
@@ -271,6 +149,7 @@ def emissivity_band_11(ndvi_image, band_4_red=None, emissivity_method: str = "av
     return emissivity_11
 
 
+@contextual_errors
 def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = "avdan-2016"):
     """
     Compute land surface emissivity for a selected thermal band workflow.
@@ -287,8 +166,8 @@ def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = 
         `"band_11"`. Short aliases such as `"10"`, `"11"`, `"b10"` and
         `"b11"` are also accepted.
     band_4_red : array-like, optional
-        Red band image. Required by methods that estimate soil emissivity
-        from the red band, such as `"xiaolei-2014"`.
+        Optional red band array retained for API compatibility. The currently
+        available emissivity methods use NDVI only; this argument is not required.
     emissivity_method : str, default="avdan-2016"
         Name of the emissivity method to use.
 
@@ -302,7 +181,7 @@ def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = 
     - `avdan-2016` is intended for the single-channel workflow and returns
       the same emissivity for band 10 and band 11.
     - For split-window workflows, prefer band-specific methods such as
-      `"gopinadh-2018"` or `"xiaolei-2014"`.
+      `"gopinadh-2018"`.
     - Input arrays must have the same shape and spatial alignment.
 
     Examples
@@ -330,6 +209,7 @@ def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = 
     )
 
 
+@contextual_errors
 def single_window(
     brightness_band_10,
     band_4_red,
@@ -337,6 +217,7 @@ def single_window(
     lst_method: str = "mono-window-2016",
     emissivity_method: str = "avdan-2016",
     unit: str = "kelvin",
+    *, mask=None, radiance_band_10=None, water_vapor=None,
 ) -> np.ndarray:
     """
     Compute land surface temperature using a single-channel method.
@@ -359,6 +240,13 @@ def single_window(
     unit : {"kelvin", "celsius"}, default="kelvin"
         Output temperature unit.
 
+    radiance_band_10 : array-like, optional
+        Band-10 TOA radiance [W m-2 sr-1 um-1], required for jimenez-munoz-sc-2014.
+        Must correspond to the same band, pixels and calibration as brightness_band_10.
+    water_vapor : float or array-like, optional
+        Required for jimenez-munoz-sc-2014, in g/cm2. Scalar range [0,3];
+        raster pixels outside [0,3] or nonfinite become NaN.
+
     Returns
     -------
     numpy.ndarray
@@ -368,7 +256,9 @@ def single_window(
     -----
     - Input arrays must have the same shape and spatial alignment.
     - Zero and `NaN` values in the brightness image are masked internally.
-    - The default mono-window method is a band 10 workflow.
+    - Both methods are Band-10 workflows.
+    - The polynomial Jimenez SC is screened at PWV <= 3 g/cm2 per the paper.
+    - mono-window-2016 does not accept radiance_band_10 or water_vapor.
 
     Examples
     --------
@@ -392,18 +282,30 @@ def single_window(
         band_5_nir=nir,
     )
 
-    mask = build_mask_from(brightness_10)
+    user_mask = mask
+    mask = build_mask_from(brightness_10) | ~np.isfinite(red) | ~np.isfinite(nir)
+    if user_mask is not None:
+        mask |= ensure_boolean_mask(user_mask, shape=brightness_10.shape)
     ndvi_image = _ndvi(nir=nir, red=red, mask=mask)
     emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 
-    result = single_channel_registry.create(lst_method)(
+    key = single_channel_registry.resolve_key(lst_method)
+    extra = {}
+    if key == "jimenez-munoz-sc-2014":
+        extra = dict(radiance_band_10=radiance_band_10, water_vapor=water_vapor)
+    elif radiance_band_10 is not None or water_vapor is not None:
+        raise ValueError(f"single_window(lst_method={key!r}): radiance_band_10 and "
+                         "water_vapor are only used by jimenez-munoz-sc-2014.")
+    result = single_channel_registry.create(key)(
         emissivity_10=emissivity_10,
         brightness_temperature_10=brightness_10,
         mask=mask,
+        **extra,
     )
     return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
 
 
+@contextual_errors
 def split_window(
     brightness_band_10,
     brightness_band_11,
@@ -413,6 +315,7 @@ def split_window(
     emissivity_method: str = "gopinadh-2018",
     unit: str = "kelvin",
     water_vapor: float | np.ndarray | None = None,
+    *, mask=None,
 ) -> np.ndarray:
     """
     Compute land surface temperature using a split-window method.
@@ -469,11 +372,11 @@ def split_window(
     ... )
     """
     normalized_unit = normalize_temperature_unit(unit)
-    if emissivity_method in SINGLE_CHANNEL_EMISSIVITY_METHODS:
+    if emissivity_registry.resolve_key(emissivity_method) in SINGLE_CHANNEL_EMISSIVITY_METHODS:
         raise ValueError(
             f"'{emissivity_method}' is a single-channel emissivity method and should not be used "
             "with split_window(). Use a band-specific emissivity method such as "
-            "'gopinadh-2018' or 'xiaolei-2014'."
+            "'gopinadh-2018'."
         )
 
     brightness_10 = to_float_array("brightness_band_10", brightness_band_10)
@@ -487,7 +390,10 @@ def split_window(
         band_5_nir=nir,
     )
 
-    mask = build_mask_from(brightness_10)
+    user_mask = mask
+    mask = build_mask_from(brightness_10, brightness_11) | ~np.isfinite(red) | ~np.isfinite(nir)
+    if user_mask is not None:
+        mask |= ensure_boolean_mask(user_mask, shape=brightness_10.shape)
     ndvi_image = _ndvi(nir=nir, red=red, mask=mask)
     emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
     emissivity_11 = emissivity_band_11(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
@@ -498,7 +404,15 @@ def split_window(
             "and band 11 emissivity."
         )
 
-    result = split_window_registry.create(lst_method)(
+    algorithm = split_window_registry.create(lst_method)
+    method_key = split_window_registry.resolve_key(lst_method)
+    if water_vapor is not None and method_key in {"price-1984", "kerr-1992", "sobrino-1993"}:
+        warnings.warn(
+            f"split_window(lst_method='{method_key}'): water_vapor is not used by this equation; "
+            "the supplied value will be ignored. Use 'du-2015' (scalar/raster) or "
+            "'jimenez-munoz-2014' (scalar/raster) to use PWV explicitly.",
+            RuntimeWarning, stacklevel=2)
+    result = algorithm(
         emissivity_10=emissivity_10,
         emissivity_11=emissivity_11,
         brightness_temperature_10=brightness_10,
@@ -510,6 +424,7 @@ def split_window(
     return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
 
 
+@contextual_errors
 def water_vapor(
     brightness_band_10,
     brightness_band_11,
@@ -517,6 +432,7 @@ def water_vapor(
     method: str = "wang-2015",
     window_size: int = 21,
     group_count: int = 3,
+    *, mask=None, ndvi_range=None, chunk_rows=8,
 ) -> np.ndarray:
     """
     Estimate precipitable water vapor using the selected method.
@@ -554,7 +470,8 @@ def water_vapor(
     - Larger windows may produce smoother estimates; smaller windows are more
       locally sensitive.
     - The resulting raster can be passed to `split_window(...,
-      lst_method="jimenez-munoz-2014", water_vapor=...)`.
+      lst_method="jimenez-munoz-2014", water_vapor=...)` or Du with
+      `lst_method="du-2015"`. Du masks PWV pixels outside [0, 6.3].
 
     Examples
     --------
@@ -573,6 +490,7 @@ def water_vapor(
         ndvi_image=ndvi_image,
         window_size=window_size,
         group_count=group_count,
+        mask=mask, ndvi_range=ndvi_range, chunk_rows=chunk_rows,
     )
 
 
@@ -591,7 +509,7 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
     >>> from pylstemp import list_algorithms
     >>> catalog = list_algorithms()
     >>> catalog["spectral_index"].keys()
-    dict_keys(['evi', 'ndvi'])
+    dict_keys(['ndvi'])
     """
     catalog = {"credit": {"original_library": ORIGINAL_LIBRARY_CREDIT}}
 
@@ -601,6 +519,15 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
                 "name": metadata.name,
                 "reference": metadata.reference,
                 "citation": metadata.citation,
+                "input_requirements": describe_inputs(family_name, key),
+                "water_vapor_support": PWV_SUPPORT.get(key, "Not an atmospheric PWV-dependent LST method."),
+                "scientific_status": (
+                    "Legacy AVHRR coefficients; unvalidated Landsat adaptation"
+                    if key in {"price-1984", "kerr-1992", "sobrino-1993"} else
+                    "Landsat-8 formulation; Landsat-9 transfer experimental; no ground-truth validation"
+                    if family_name in {"single_channel", "split_window", "water_vapor", "emissivity"} else
+                    "See docs/scientific-methods.md for calibration and input contracts"
+                ),
             }
             for key, metadata in registry.describe().items()
         }
