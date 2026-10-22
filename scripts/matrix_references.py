@@ -90,13 +90,20 @@ def temperature(method,t10,t11,n,e10,e11,pwv=None,mask=None,radiance=None):
             value=t10+1.378*delta+.183*delta**2-.268
             value+=(54.3-2.238*w)*(1-(e10+e11)/2)+(-129.2+16.4*w)*(e10-e11)
         else:
-            coeffs=[DU_ALL] if pwv is None else [c for (lo,hi),c in DU if lo<=float(pwv)<=hi]
-            if not coeffs: raise ValueError("Du CWV outside table domain")
             m=(t10+t11)/2
             q=(2-e10-e11)/(e10+e11)
             z=4*(e10-e11)/(e10+e11)**2
             features=np.stack([np.ones(t10.shape),m,q*m,z*m,delta/2,q*delta/2,z*delta/2,delta**2])
-            value=np.mean([np.tensordot(c,features,axes=1) for c in coeffs],axis=0)
+            if pwv is None:
+                value=np.tensordot(DU_ALL,features,axes=1)
+            else:
+                # Pixel loop is deliberately independent of production selection.
+                w=np.broadcast_to(np.asarray(pwv,dtype=float),t10.shape)
+                value=np.full(t10.shape,np.nan)
+                for index in np.ndindex(t10.shape):
+                    matches=[c for (lo,hi),c in DU if lo<=w[index]<=hi]
+                    if matches:
+                        value[index]=sum(np.dot(c,features[(slice(None),)+index]) for c in matches)/len(matches)
     return np.where(invalid|~np.isfinite(value)|(value<=0),np.nan,value)
 
 def check(actual,expected,atol=1e-9):

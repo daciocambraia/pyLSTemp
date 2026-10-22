@@ -142,8 +142,7 @@ def run_roi(scene,dest,index,core,bounds):
                     reject=None
                     if emi=="avdan-2016":reject=ValueError
                     elif lst=="jimenez-munoz-2014" and pwv is None:reject=ValueError
-                    elif lst=="du-2015" and mode=="wang_raster":reject=ValueError
-                    elif lst=="du-2015" and pwv is not None and not 0<=pwv<=6.3:reject=ValueError
+                    elif lst=="du-2015" and pwv is not None and np.ndim(pwv)==0 and not 0<=pwv<=6.3:reject=ValueError
                     expected=None
                     if reject is None:
                         e10,e11=ref.emissivity(emi,n,red)

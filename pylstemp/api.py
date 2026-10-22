@@ -409,7 +409,7 @@ def split_window(
     if water_vapor is not None and method_key in {"price-1984", "kerr-1992", "sobrino-1993"}:
         warnings.warn(
             f"split_window(lst_method='{method_key}'): water_vapor is not used by this equation; "
-            "the supplied value will be ignored. Use 'du-2015' (scalar) or "
+            "the supplied value will be ignored. Use 'du-2015' (scalar/raster) or "
             "'jimenez-munoz-2014' (scalar/raster) to use PWV explicitly.",
             RuntimeWarning, stacklevel=2)
     result = algorithm(
@@ -470,7 +470,8 @@ def water_vapor(
     - Larger windows may produce smoother estimates; smaller windows are more
       locally sensitive.
     - The resulting raster can be passed to `split_window(...,
-      lst_method="jimenez-munoz-2014", water_vapor=...)`.
+      lst_method="jimenez-munoz-2014", water_vapor=...)` or Du with
+      `lst_method="du-2015"`. Du masks PWV pixels outside [0, 6.3].
 
     Examples
     --------

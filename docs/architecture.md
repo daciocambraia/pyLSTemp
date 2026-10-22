@@ -41,6 +41,7 @@ docs/
   api-reference.md
   architecture.md
   comparacao_ndvi_v1.11.png
+  du-pwv-workflow.md
   extending.md
   index.md
   installation.md
@@ -109,9 +110,11 @@ pylstemp/
   scene.py
   utils.py
   validation.py
+  workflows.py
 scripts/
   matrix_references.py
   validate_all_models.py
+  validate_du_pwv.py
   validate_matrix_products.py
   validate_module_matrix.py
   validate_scenes.py
@@ -124,6 +127,7 @@ tests/
   test_credits.py
   test_documentation.py
   test_domains.py
+  test_du_pwv.py
   test_indices_messages_reflectance.py
   test_jimenez_single.py
   test_module_matrix.py
@@ -235,7 +239,7 @@ flowchart LR
     SC --> TIFF
 ```
 
-PWV e requerido por Jimenez SC/SW; Du o aceita como escalar opcional.
+PWV e requerido por Jimenez SC/SW; Du o aceita como escalar ou raster opcional.
 O fluxo Avdan utiliza BT e emissividade. A alternativa reflectancia TOA deve
 ser explicitamente selecionada. Consulte os [contratos cientificos](scientific-methods.md).
 
@@ -253,3 +257,7 @@ A CI executa testes e build em Linux/Windows para Python 3.9/3.11/3.14.
 O workflow publish.yml, acionado por release publicada, confere a versao da tag,
 executa testes, constroi os pacotes e valida-os antes de enviar ao PyPI.
 Veja [preparacao para publicacao](publication.md).
+
+A camada `pylstemp/workflows.py` oferece `du_from_scene`, `scene_ndvi_range` e
+`DuSceneResult`, com modos explicitos e exportacao rastreavel. Veja
+[workflow Du/PWV](du-pwv-workflow.md).

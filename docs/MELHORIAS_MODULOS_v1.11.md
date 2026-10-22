@@ -27,8 +27,9 @@ Resultados extremos positivos sao preservados para avaliacao, sem corte arbitrar
 ## Processamento de cenas grandes
 
 Os exemplos atuais leem imagens e demonstram as funcoes em recortes pequenos.
-Uma evolucao util e um fluxo publico por blocos, com halo e grupos globais de
-NDVI para Wang. Os verificadores ja usam blocos; o leitor Pillow pode manter
+O workflow Du ja permite janelas com halo e grupos globais de NDVI para Wang.
+Uma evolucao util e a orquestracao completa de cenas grandes com exportacao
+incremental. Os verificadores usam blocos; o leitor Pillow pode manter
 uma banda inteira em memoria. Nao misturar recortes locais de PWV como se fossem
 uma recuperacao unica da cena sem atender a esses requisitos.
 

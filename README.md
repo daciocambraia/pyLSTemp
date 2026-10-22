@@ -71,6 +71,11 @@ Esse recorte central de ate 256 x 256 pixels permite experimentar rapidamente.
 `calibrated` le DN, usa o MTL e aplica QA. As funcoes LST calculam NDVI e
 emissividade internamente. O arquivo exportado preserva a grade do recorte.
 
+Du tambem aceita PWV raster alinhado, com selecao de coeficientes por pixel.
+O [workflow de cena Wang -> Du](docs/du-pwv-workflow.md) oferece modos geral,
+media e raster, halo automatico e exportacao com proveniencia. A estimativa
+atmosferica original Du/Ren continua pendente de auditoria das equacoes.
+
 O [guia de uso](docs/usage.md) apresenta cada funcao separadamente, incluindo
 DN -> radiancia -> BT e o novo single-channel Jimenez-Munoz com PWV.
 

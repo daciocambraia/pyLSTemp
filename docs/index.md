@@ -12,5 +12,7 @@
 10. [Preparacao para publicacao](publication.md)
 
 Exemplos executaveis: [exemples/DATA.md](../exemples/DATA.md).
-Relatorios de etapas anteriores e seus dados ficam no historico local
-`Verificacao/v1.11.0/`, incluindo `arquivo_documentacao/`.
+Relatorios detalhados e dados de verificacao ficam no arquivo local
+`Verificacao/`, fora do repositorio.
+
+- [Du/PWV: workflow e limites](du-pwv-workflow.md)

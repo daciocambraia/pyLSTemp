@@ -1,5 +1,14 @@
 # Changelog
 
+## Du raster PWV and explicit scene workflow (2026-10-22)
+
+- Du accepts aligned PWV rasters with per-pixel coefficient selection and inclusive overlap averaging of LST estimates. General/scalar behavior is preserved.
+- Invalid/out-of-domain raster PWV becomes NaN; mismatched shapes are rejected.
+- Added general/mean/raster scene workflow for the alternative Wang -> Du chain, automatic halo, scene-wide NDVI bounds and provenance exports.
+- Added boundary, independent-equation, tiled and real-scene validation. See docs/validation.md for actual results.
+- Original Du/Ren atmospheric estimator remains pending source-equation audit; no ren-2015 key or unverified polynomial added.
+
+
 ## Publication structure review (2026-10-05)
 
 - Documented the complete repository tree, all algorithms and calibration helpers.

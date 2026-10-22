@@ -101,7 +101,7 @@ The default split-window emissivity method is `gopinadh-2018`, because it provid
 `avdan-2016` is blocked in `split_window(...)` because it is a single-channel emissivity method. Use `gopinadh-2018` instead.
 
 For `lst_method="du-2015"` or `lst_method="jimenez-munoz-2014"`, `water_vapor` represents atmospheric column water vapor in `g/cm2`.
-For `du-2015`, use a single scene-level value. When `water_vapor=None`, the implementation uses Du et al.'s all-CWV coefficient set for `[0.0, 6.3] g/cm2`.
+For `du-2015`, use a scalar or an aligned raster of exactly the same shape. When `water_vapor=None`, the implementation uses Du et al.'s all-CWV coefficient set for `[0.0, 6.3] g/cm2`.
 When `water_vapor` is provided for `du-2015`, the method selects the matching Du et al. CWV sub-range. If the value falls in an overlap between adjacent ranges, it computes both estimates and returns their mean, following Du et al.'s continuity strategy:
 - `[0.0, 2.5]`
 - `[2.0, 3.5]`
@@ -111,8 +111,8 @@ When `water_vapor` is provided for `du-2015`, the method selects the matching Du
 
 `jimenez-munoz-2014` requires `water_vapor` and accepts either a single scene-level value or a raster with the same shape as the brightness temperature arrays. Use `water_vapor(method="wang-2015", ...)` for pixel-by-pixel water vapor or provide an external estimate.
 Price, Kerr and Sobrino do not use `water_vapor`; supplying it emits a
-`RuntimeWarning` explaining that it is ignored. Du rejects raster PWV with an
-actionable `ValueError` and requires a finite scalar in `[0,6.3] g/cm2`.
+`RuntimeWarning` explaining that it is ignored. Du rejects nonfinite/out-of-domain scalars. Raster pixels outside `[0,6.3]`
+or nonfinite become NaN; raster shapes must match, without broadcasting.
 
 ### `water_vapor(brightness_band_10, brightness_band_11, ndvi_image, method="wang-2015", window_size=21, group_count=3)`
 
@@ -132,7 +132,7 @@ water = water_vapor(
 )
 ```
 
-The resulting water vapor raster can be used directly in `split_window(..., lst_method="jimenez-munoz-2014", water_vapor=water)`. For `du-2015`, provide a single scene-level value such as the mean of a water vapor raster if you want to select a specific CWV coefficient sub-range.
+The resulting water vapor raster can be used directly in `split_window(..., lst_method="jimenez-munoz-2014", water_vapor=water)`. `du-2015` also accepts this raster directly. Preserve the estimator domain when preparing PWV. For automatic calibration, halo and provenance, see [the scene workflow](du-pwv-workflow.md).
 
 ### `list_algorithms()`
 

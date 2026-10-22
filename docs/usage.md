@@ -142,7 +142,9 @@ lst_jimenez_sw = split_window(
 ```
 
 Du sem PWV usa seu conjunto geral de coeficientes. Com PWV externo, Du aceita
-um escalar em 0..6.3 g/cm2. Jimenez SW requer escalar ou raster de PWV.
+escalar ou raster alinhado em 0..6.3 g/cm2. Pixels PWV invalidos viram NaN;
+nao ha estimativa automatica em split_window(). Jimenez SW requer PWV.
+Veja o [workflow de cena Wang -> Du](du-pwv-workflow.md).
 A mascara SW acima usa o intervalo de referencia TIGR3 do estimador Wang
 (0.066..7.833 g/cm2), distinto da restricao SC de 0..3; ela nao certifica acuracia.
 `avdan-2016` e bloqueado no split-window; escolha `gopinadh-2018`.

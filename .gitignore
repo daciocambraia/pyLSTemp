@@ -26,3 +26,16 @@ exemples/data/*.tif
 # Generated example outputs
 /resultados/
 /exemples/resultados/
+
+# Coverage outputs
+.coverage.*
+/htmlcov/
+/coverage.xml
+/coverage.json
+
+# Local credentials and machine files
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

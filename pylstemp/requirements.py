@@ -17,7 +17,7 @@ INPUT_HELP = {
 
 PWV_SUPPORT = {
     "jimenez-munoz-sc-2014": "Required scalar or aligned raster [0,3] g/cm2. Invalid/out-of-range raster pixels become NaN; scalar out of range is rejected.",
-    "du-2015": "Optional finite scalar in [0,6.3] g/cm2; raster unsupported. None uses all-CWV coefficients.",
+    "du-2015": "Optional scalar or aligned raster [0,6.3] g/cm2. Invalid raster pixels become NaN; invalid scalars raise. None uses all-CWV coefficients.",
     "jimenez-munoz-2014": "Required finite nonnegative scalar or aligned raster in g/cm2; invalid raster pixels become NaN.",
     "price-1984": "Not used; supplying water_vapor emits a RuntimeWarning.",
     "kerr-1992": "Not used; supplying water_vapor emits a RuntimeWarning.",

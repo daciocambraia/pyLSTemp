@@ -73,7 +73,7 @@ class CanonicalAndMessages(unittest.TestCase):
           (lambda:brightness(self.t,12,"landsat_8", input_quantity="dn"),ValueError,"band must be"),
           (lambda:emissivity(self.red,12,emissivity_method="gopinadh-2018"),ValueError,"band must be"),
           (lambda:single_window(self.t,self.red,self.nir,mask=np.zeros(self.t.shape,int)),InvalidMaskError,"single_window"),
-          (lambda:split_window(self.t,self.t-2,self.red,self.nir,lst_method="du-2015",water_vapor=np.full(self.t.shape,2.)),ValueError,"scalar"),
+          (lambda:split_window(self.t,self.t-2,self.red,self.nir,lst_method="du-2015",water_vapor=np.full((1,1),2.)),InputShapesNotEqual,"same shape"),
           (lambda:water_vapor(self.t,self.t-2,self.red,window_size=20),ValueError,"water_vapor")]
         for call,error,phrase in cases:
             with self.subTest(phrase=phrase),self.assertRaisesRegex(error,phrase):call()
@@ -102,7 +102,7 @@ class CanonicalAndMessages(unittest.TestCase):
             self.assertTrue(any("will be ignored" in str(m.message) and method in str(m.message) for m in messages))
 
     def test_du_checks_pwv_type_and_range_before_conversion(self):
-        for value in ([-1],np.ones(self.t.shape),-1,np.nan,np.inf,6.30001):
+        for value in (-1,np.nan,np.inf,6.30001):
             with self.subTest(value=repr(value)),self.assertRaisesRegex(ValueError,"du-2015"):
                 split_window(self.t,self.t-2,self.red,self.nir,lst_method="du-2015",water_vapor=value)
 

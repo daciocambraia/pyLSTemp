@@ -48,9 +48,6 @@ def temperature_case(kind,lst,emi,unit,pwv_mode,mask_mode,dtype):
                 if lst=="jimenez-munoz-2014" and pwv is None:
                     with self.assertRaisesRegex(ValueError,"requires water_vapor"):call()
                     return
-                if lst=="du-2015" and pwv_mode=="raster":
-                    with self.assertRaisesRegex(ValueError, 'scalar'):call()
-                    return
             else:
                 radiance=774.8853/np.expm1(1321.0789/t10)
                 if lst=="jimenez-munoz-sc-2014":
