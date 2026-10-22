@@ -180,7 +180,6 @@ escala SR Level-2 ja existente e fica fora do fluxo padrao Level-1.
 - [Metodos cientificos e migracao](docs/scientific-methods.md)
 - [Validacao atual](docs/validation.md)
 - [Referencias bibliograficas](docs/references.md)
-- [Preparacao para publicacao](docs/publication.md)
 
 ## Validacao e limites cientificos
 
@@ -197,12 +196,12 @@ detalham esses limites e as decisoes sobre as fontes.
 ```bash
 python -m pip install -e ".[dev,examples]"
 python -c "import pylstemp; print(pylstemp.__file__)"
-python -m pytest
 python -m build
 ```
 
-Resultados de verificacao ficam em `Verificacao/`; imagens, relatorios locais
-e resultados historicos nao sao distribuidos com a biblioteca.
+Testes cientificos, verificadores de cenas e relatorios ficam no arquivo local
+`Verificacao/`, fora do Git e dos pacotes. A CI publica confere instalacao,
+importacao e empacotamento em Windows e Linux.
 
 ## Creditos
 

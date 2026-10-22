@@ -39,3 +39,7 @@ exemples/data/*.tif
 !.env.example
 .DS_Store
 Thumbs.db
+
+# Local verification code is kept under Verificacao/
+/tests/
+/scripts/

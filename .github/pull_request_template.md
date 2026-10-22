@@ -4,7 +4,7 @@ Describe the main change in a few lines.
 
 ## Checklist
 
-- [ ] Tests added or updated
+- [ ] Local verification completed and results summarized
 - [ ] Documentation updated when needed
 - [ ] References reviewed if formulas changed
 - [ ] Changelog updated when appropriate
