@@ -7,6 +7,7 @@ from .du_2015 import SplitWindowDu2015LST
 from .jimenez_munoz_2014 import SplitWindowJimenezMunoz2014LST
 from .kerr_1992 import SplitWindowKerr1992LST
 from .price_1984 import SplitWindowPrice1984LST
+from .rozenstein_2014 import SplitWindowRozenstein2014LST
 from .sobrino_1993 import SplitWindowSobrino1993LST
 
 split_window_registry = discover_algorithms(__name__, "split_window")
@@ -20,6 +21,7 @@ __all__ = [
     "SplitWindowKerr1992LST",
     "SplitWindowPrice1984LST",
     "SplitWindowSobrino1993LST",
+    "SplitWindowRozenstein2014LST",
     "default_algorithms",
     "split_window_registry",
 ]

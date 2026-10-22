@@ -1,6 +1,6 @@
 # Du com PWV raster e workflow de cena
 
-Entrega de 22/10/2026 para v1.11.0. O catalogo continua com 12 algoritmos.
+Entrega de 22/10/2026 para v1.11.0. Este workflow nao acrescenta uma entrada independente ao catalogo.
 
 `split_window(..., lst_method="du-2015", water_vapor=None)` preserva os
 coeficientes gerais. PWV escalar continua exigindo valor finito em [0,6.3]

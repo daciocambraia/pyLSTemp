@@ -1,5 +1,13 @@
 # Changelog
 
+## Source-checked image methods (2026-10-22)
+
+- Added rozenstein-2014 with explicit atmospheric profiles, published fit intervals and PWV domain [0.5,3].
+- Added prepared-emissivity SW API and Sobrino TM6/parameterized 2008 functions without assigning unsupported TIRS constants.
+- Added reusable Chavez DOS/COST scene parameters, masks and an image-based example.
+- Scientific tests, articles and real-scene outputs remain local; Ren remains pending access to primary equations.
+
+
 ## Public repository cleanup (2026-10-22)
 
 - Moved scientific tests, scene validators and internal reports to the ignored local verification archive.

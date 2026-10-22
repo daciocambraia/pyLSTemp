@@ -16,6 +16,7 @@ INPUT_HELP = {
 }
 
 PWV_SUPPORT = {
+    "rozenstein-2014": "Required PWV scalar/aligned raster [0.5,3] g/cm2, explicit atmospheric_profile and preselected temperature_range. Invalid raster pixels become NaN.",
     "jimenez-munoz-sc-2014": "Required scalar or aligned raster [0,3] g/cm2. Invalid/out-of-range raster pixels become NaN; scalar out of range is rejected.",
     "du-2015": "Optional scalar or aligned raster [0,6.3] g/cm2. Invalid raster pixels become NaN; invalid scalars raise. None uses all-CWV coefficients.",
     "jimenez-munoz-2014": "Required finite nonnegative scalar or aligned raster in g/cm2; invalid raster pixels become NaN.",

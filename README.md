@@ -108,7 +108,7 @@ from pylstemp.scene import LandsatScene
 
 ## Algoritmos e artigos
 
-O catalogo tem **12 entradas**. Os links abaixo apontam para os trabalhos
+O catalogo tem **13 entradas**. Os links abaixo apontam para os trabalhos
 originais ou, no caso da calibracao, para as equacoes oficiais do USGS.
 
 | Modulo | Metodo | Referencia |
@@ -124,6 +124,7 @@ originais ou, no caso da calibracao, para as equacoes oficiais do USGS.
 | Split-window | `sobrino-1993` | [Sobrino et al. (1993)](https://doi.org/10.1007/BF02524225) |
 | Split-window | `kerr-1992` | [Kerr, Lagouarde e Imbernon (1992)](https://doi.org/10.1016/0034-4257(92)90078-X) |
 | Split-window | `price-1984` | [Price (1984)](https://doi.org/10.1029/JD089iD05p07231) |
+| Split-window | `rozenstein-2014` | [Rozenstein et al. (2014)](https://doi.org/10.3390/s140405768) |
 | Vapor d'agua | `wang-2015` | [Wang et al. (2015)](https://doi.org/10.1080/2150704X.2015.1089363) |
 
 Jimenez **SC** usa B10, sua radiancia e PWV; Jimenez **SW** usa B10/B11 e PWV.
@@ -131,6 +132,10 @@ No SC adotamos uma restricao operacional de **0..3 g/cm2**: escalar fora desse
 intervalo gera erro; pixels de PWV raster invalidos ou fora dele produzem NaN.
 Essa restricao responde a perda de precisao do ajuste polinomial descrita no artigo.
 Com PWV estimado por Wang, o fluxo SC ainda utiliza B11 nessa etapa atmosferica.
+
+Os [metodos adicionais](docs/image-only-methods.md) incluem Rozenstein,
+Sobrino 2004/2008 e Chavez DOS/COST, com dominios e adaptacoes explicitos.
+Ren/MSWCVR continua pendente de acesso as equacoes primarias.
 
 ## Exemplos executaveis
 

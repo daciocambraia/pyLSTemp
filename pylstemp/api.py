@@ -315,7 +315,7 @@ def split_window(
     emissivity_method: str = "gopinadh-2018",
     unit: str = "kelvin",
     water_vapor: float | np.ndarray | None = None,
-    *, mask=None,
+    *, mask=None, atmospheric_profile=None, temperature_range="0-60",
 ) -> np.ndarray:
     """
     Compute land surface temperature using a split-window method.
@@ -412,6 +412,11 @@ def split_window(
             "the supplied value will be ignored. Use 'du-2015' (scalar/raster) or "
             "'jimenez-munoz-2014' (scalar/raster) to use PWV explicitly.",
             RuntimeWarning, stacklevel=2)
+    extra = {}
+    if method_key == "rozenstein-2014":
+        extra = dict(atmospheric_profile=atmospheric_profile, temperature_range=temperature_range)
+    elif atmospheric_profile is not None or temperature_range != "0-60":
+        raise ValueError("Atmospheric profile and temperature_range apply only to rozenstein-2014.")
     result = algorithm(
         emissivity_10=emissivity_10,
         emissivity_11=emissivity_11,
@@ -420,6 +425,7 @@ def split_window(
         ndvi=ndvi_image,
         mask=mask,
         water_vapor=water_vapor,
+        **extra,
     )
     return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
 
@@ -533,3 +539,40 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
         }
 
     return catalog
+
+
+@contextual_errors
+def split_window_from_emissivity(brightness_band_10, brightness_band_11,
+                                 emissivity_10, emissivity_11, *, lst_method,
+                                 water_vapor=None, mask=None, unit="kelvin",
+                                 ndvi_image=None, atmospheric_profile=None,
+                                 temperature_range="0-60"):
+    """Run SW with a prepared band-specific emissivity pair.
+
+    All four input arrays must have identical shapes and aligned grids.
+    This entry point permits explicit Sobrino endmembers without treating
+    TOA radiance as red surface reflectance. The caller records sensor,
+    emissivity band provenance and optical convention.
+    """
+    values = {name: to_float_array(name,value) for name,value in
+              (("brightness_temperature_10",brightness_band_10),
+               ("brightness_temperature_11",brightness_band_11),
+               ("emissivity_10",emissivity_10),("emissivity_11",emissivity_11))}
+    ensure_same_shape(**values)
+    shape=values["brightness_temperature_10"].shape
+    valid_mask=np.zeros(shape,bool) if mask is None else ensure_boolean_mask(mask,shape=shape)
+    key=split_window_registry.resolve_key(lst_method)
+    extra={}
+    if key=="rozenstein-2014":
+        extra=dict(atmospheric_profile=atmospheric_profile,temperature_range=temperature_range)
+    elif atmospheric_profile is not None or temperature_range!="0-60":
+        raise ValueError("Atmospheric profile and temperature_range apply only to rozenstein-2014.")
+    if key=="kerr-1992":
+        ndvi_image=to_float_array("ndvi_image",ndvi_image)
+        ensure_same_shape(ndvi_image=ndvi_image,**values)
+    if water_vapor is not None and key in {"price-1984","kerr-1992","sobrino-1993"}:
+        warnings.warn("water_vapor is ignored by this legacy equation.",RuntimeWarning,stacklevel=2)
+    normalized_unit=normalize_temperature_unit(unit)
+    result=split_window_registry.create(key)(**values,mask=valid_mask,
+             water_vapor=water_vapor,ndvi=ndvi_image,**extra)
+    return result if normalized_unit=="kelvin" else result-CELSIUS_SCALER
