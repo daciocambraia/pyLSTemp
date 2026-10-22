@@ -1,13 +1,67 @@
 # Metodos adicionais baseados na imagem
 
-Esta implementacao entrega Rozenstein (2014), funcoes de emissividade de
-Sobrino (2004/2008) e correcao optica DOS/COST de Chavez (1996).
-O catalogo passa a 13 algoritmos registrados: Rozenstein e a nova entrada de
-LST. As funcoes parametrizadas de emissividade e correcao optica nao sao
-contadas como algoritmos calibrados de Landsat 8/9 independentes.
-Ren/MSWCVR continua pendente: o PDF e as imagens das equacoes nao puderam ser
-obtidos do editor (HTTP 403), apesar do texto HTML acessivel. Nao ha chave
-`ren-2015`, coeficientes inferidos nem substituicao oculta por Wang.
+Esta implementacao entrega Ren/MSWCVR (2015), Rozenstein (2014), funcoes de
+emissividade de Sobrino (2004/2008) e correcao optica DOS/COST de Chavez (1996).
+O catalogo tem 13 algoritmos registrados. As funcoes parametrizadas de
+emissividade e correcao optica nao contam como algoritmos calibrados
+independentes de Landsat 8/9.
+
+## Ren 2015 MSWCVR
+
+`water_vapor(bt10, bt11, red=red, nir=nir, method="ren-2015", window_size=33)` estima
+PWV em g/cm2. As Eqs.1b/1c (p.1724) e 2 (p.1726) foram conferidas no PDF
+original fornecido pelo usuario. Para i=B10 e j=B11, usando medias locais:
+
+```text
+Rji = sum((BT10 - media10)*(BT11 - media11)) / sum((BT10 - media10)^2)
+Rij = sum((BT10 - media10)*(BT11 - media11)) / sum((BT11 - media11)^2)
+chi_squared = Rji * Rij
+PWV = -9.674 * Rji^2 + 0.653 * Rji + 9.087
+```
+
+Adota-se a aproximacao de razao de emissividades igual a 1. A Eq.2 determina
+a ordem dos coeficientes; nao se usa a ordem contraditoria do texto de Du
+para reconstruir essa regressao. O intercepto e 9.087, conforme a equacao,
+mesmo que a anotacao da Figura 2 o apresente arredondado como 9.088.
+
+O filtro da secao 4.2 exclui amostras fora da media NDVI local +/-1.5 desvios
+padrao populacionais. As medias termicas sao calculadas sobre as amostras
+retidas. Nao ha grupos NDVI globais, filtro termico de Wang ou media simetrica
+das duas regressoes. O uso de medias, entre as alternativas discutidas no
+artigo, e fixo nesta implementacao. NDVI precisa estar finito em [-1,1].
+`ndvi_filter=False` permite explicitamente o nucleo apenas termico; nesse
+caso NDVI nao e exigido nem participa da selecao.
+
+O artigo recomenda n=10 no suporte TIRS nativo de 100 m, aproximadamente
+1 km. A API isolada usa janela centrada impar de 11 pixels por padrao.
+`du_from_scene(..., pwv_method="ren-2015")` usa 33 pixels por padrao,
+aproximadamente 1 km na grade usual de entrega Landsat de 30 m. Sao
+adaptacoes explicitas, sem reconstituir o suporte nativo: pixels termicos
+reamostrados nao sao observacoes atmosfericas independentes de 30 m.
+Para outras grades, forneca `window_size` de acordo com o suporte desejado.
+
+Escolhas operacionais adicionais: `min_samples=10`, `quality_threshold=0.95`
+e rejeicao de variancia nao distinguivel de zero a 64 eps, relativos ao
+quadrado da media termica. O artigo cita 0.95 na discussao de ATSR2 e observa
+valores altos em seus resultados; isso nao estabelece um limiar universal
+obrigatorio para TIRS. Esses controles sao declarados, sem atribui-los como
+prescricao de Ren. As duas variancias precisam ser positivas e a covariancia
+positiva. PWV aceito deve estar em [0.06,6.3] g/cm2, dominio dos 946 perfis
+TIGR usados na calibracao. Sem suporte, baixa qualidade, dominio excedido ou
+pixel central invalido, a saida fica NaN, sem clipping nem preenchimento.
+Nas bordas, apenas amostras existentes sao utilizadas.
+
+`return_diagnostics=True` retorna um dicionario de arrays alinhados:
+`water_vapor` (aceito), `raw_water_vapor` (antes dos filtros de qualidade e
+dominio, mas depois dos requisitos de calculabilidade), `ratio`,
+`chi_squared`, `sample_count` (apos filtro NDVI) e `invalid_mask`.
+`chunk_rows` limita temporarios; blocos espaciais precisam de halo de
+`window_size // 2`. A configuracao padrao de Wang permanece inalterada.
+
+Ren fornece PWV, nao LST. Sua combinacao com Du e emissividade Rongali e uma
+cadeia declarada; estas escolhas de suporte e emissividade nao representam
+reproducao integral de todas as etapas experimentais de um unico artigo.
+As verificacoes numericas nao substituem validacao com observacoes externas.
 
 ## Rozenstein 2014
 
@@ -35,7 +89,7 @@ A conversao opcional para Celsius ocorre depois da equacao em kelvin.
 
 ### Sobrino 2004: TM5 banda 6
 
-`sobrino_2004_tm6(ndvi, mask=...)` implementa a Eq.13 para a classe mista
+`sobrino_2004_tm6(red=red, nir=nir, mask=...)` implementa a Eq.13 para a classe mista
 0.2<=NDVI<=0.5: epsilon=0.004*Pv+0.986, com Pv quadratico (Eq.9).
 Para NDVI>0.5, usa 0.99, conforme a classe de vegetacao descrita no artigo.
 NDVI<0.2 fica NaN: nao foi inventada uma relacao solo/vermelho ausente na
@@ -44,7 +98,7 @@ Essas constantes sao especificas de TM6, sem calibracao para B10/B11.
 
 ### Sobrino 2008: funcoes por banda
 
-`sobrino_2008(ndvi, soil_emissivity=..., vegetation_emissivity=...)` usa a
+`sobrino_2008(red=red, nir=nir, soil_emissivity=..., vegetation_emissivity=...)` usa a
 formulacao simplificada da Eq.9, pp.317--318. Os dois endmembers sao
 obrigatorios, escalares ou rasters alinhados, e precisam de justificativa para
 a banda. A FVC e quadratica entre 0.2 e 0.5 e limitada a 0/1 fora dos extremos.
@@ -61,7 +115,7 @@ ou parametrizacao propria; NDVI nao identifica essas classes universalmente.
 
 `split_window_from_emissivity(bt10, bt11, e10, e11, lst_method=..., ...)`
 permite usar os pares preparados sem recalcular a emissividade dentro da API.
-Para Kerr, fornecer `ndvi_image`; para Rozenstein, fornecer o perfil.
+Para Kerr, fornecer `red`/`nir` para NDVI interno (ou NDVI preparado); para Rozenstein, fornecer o perfil.
 As quatro entradas devem ter a mesma forma e a mesma grade espacial.
 
 ## Chavez 1996: DOS e COST

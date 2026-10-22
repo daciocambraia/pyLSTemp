@@ -2,30 +2,15 @@
 
 ## Public functions
 
-### `spectral_index(index, **kwargs)`
+### Internal NDVI
 
-Computes a spectral index selected by name. NDVI accepts calibrated radiance or
-reflectance; record the input quantity because band-specific conversions can
-change the ratio. The standard scene workflow uses TOA radiance. Raw DN is not generally
-equivalent to calibrated radiance/reflectance. Undefined ratios and any nonfinite input
-become NaN. NDVI uses the exact ratio for valid denominators; `eps=1e-15` is a
-denominator tolerance, not an additive bias.
-Only `spectral_index` is listed in the catalog; legacy `spectral_indices` imports
-share the canonical NDVI implementation.
-Currently supported:
-
-- `index="ndvi"` with `nir`, `red`, and optional `mask`
-
-Example:
-
-```python
-ndvi_image = spectral_index(
-    index="ndvi",
-    nir=nir,
-    red=red,
-)
-
-```
+NDVI is calculated by one shared internal helper wherever required. There
+is no public spectral-index dispatcher or separately registered NDVI method.
+Supply aligned `red` and `nir` optical bands to emissivity/PWV functions.
+Use the same radiometric convention for both bands. Masks use True=invalid.
+Prepared NDVI remains an alternative input for numerical reuse; do not mix
+it with `red`/`nir`. Undefined ratios and nonfinite inputs become NaN;
+1e-15 is a denominator tolerance, not an additive bias.
 
 ### `toa_radiance(dn, *, metadata, band, mask=None)`
 
@@ -59,9 +44,10 @@ for already calibrated radiance or with authoritative MTL. A sensor conflicting
 with the MTL is also rejected. Nonpositive radiance and nonfinite inputs become NaN.
 The legacy thermal-family band helpers still accept DN for compatibility.
 
-### `emissivity(ndvi_image, band, band_4_red=None, emissivity_method="avdan-2016")`
+### `emissivity(ndvi_image=None, band=10, band_4_red=None, emissivity_method="avdan-2016", *, red=None, nir=None, mask=None)`
 
-Computes emissivity for the selected thermal band workflow.
+Computes emissivity from `red` and `nir`, with internal NDVI. A prepared
+`ndvi_image` remains accepted instead of optical bands.
 Use `band="band_10"` or `band="band_11"`.
 The default `avdan-2016` method follows Avdan and Jovanovska's NDVI rules: water (`NDVI < 0`), soil (`0 <= NDVI < 0.2`), mixed pixels (`0.2 <= NDVI <= 0.5`) using fractional vegetation cover and `C=0.005`, and vegetation (`NDVI > 0.5`).
 `avdan-2016` returns the same emissivity for both thermal workflows because the source method is a single-channel Band 10 workflow. For split-window methods that need band-specific emissivity, prefer `gopinadh-2018`.
@@ -82,7 +68,7 @@ No atmospheric function or radiance is silently reconstructed from default senso
 Both Avdan and Gopinadh emissivity methods are accepted. Avdan LST does not
 accept the new atmospheric keywords because it does not use them.
 
-### `split_window(brightness_band_10, brightness_band_11, band_4_red, band_5_nir, lst_method, emissivity_method="gopinadh-2018", unit="kelvin", water_vapor=None)`
+### `split_window(brightness_band_10, brightness_band_11, band_4_red, band_5_nir, lst_method, emissivity_method="gopinadh-2018", unit="kelvin", water_vapor=None, *, mask=None, atmospheric_profile=None, temperature_range="0-60")`
 
 Computes land surface temperature using a split-window method. `brightness_band_10` and `brightness_band_11` must be computed beforehand with `brightness(..., band="band_10")` and `brightness(..., band="band_11")`.
 Example: use `lst_method="du-2015"` for the practical Du et al. split-window workflow.
@@ -103,6 +89,7 @@ The default split-window emissivity method is `gopinadh-2018`, because it provid
 For `lst_method="du-2015"` or `lst_method="jimenez-munoz-2014"`, `water_vapor` represents atmospheric column water vapor in `g/cm2`.
 For `du-2015`, use a scalar or an aligned raster of exactly the same shape. When `water_vapor=None`, the implementation uses Du et al.'s all-CWV coefficient set for `[0.0, 6.3] g/cm2`.
 When `water_vapor` is provided for `du-2015`, the method selects the matching Du et al. CWV sub-range. If the value falls in an overlap between adjacent ranges, it computes both estimates and returns their mean, following Du et al.'s continuity strategy:
+
 - `[0.0, 2.5]`
 - `[2.0, 3.5]`
 - `[3.0, 4.5]`
@@ -114,31 +101,45 @@ Price, Kerr and Sobrino do not use `water_vapor`; supplying it emits a
 `RuntimeWarning` explaining that it is ignored. Du rejects nonfinite/out-of-domain scalars. Raster pixels outside `[0,6.3]`
 or nonfinite become NaN; raster shapes must match, without broadcasting.
 
-### `water_vapor(brightness_band_10, brightness_band_11, ndvi_image, method="wang-2015", window_size=21, group_count=3)`
+### `water_vapor(brightness_band_10, brightness_band_11, ndvi_image=None, method="wang-2015", window_size=None, group_count=3, *, red=None, nir=None, mask=None, ndvi_range=None, chunk_rows=8, min_samples=10, quality_threshold=0.95, ndvi_filter=True, return_diagnostics=False)`
 
-Estimates precipitable water vapor (`PWV`) in `g/cm2` using the selected method.
-Currently supported:
+Returns aligned PWV [g/cm2] from TOA brightness temperatures in kelvin.
+`window_size=None` selects the method-specific default:
 
-- `method="wang-2015"`: NDVI-based split-window covariance-variance ratio method from Wang et al. (2015)
+- `wang-2015` (default): window 21, three scene-level NDVI groups; requires
+  red/nir (or prepared NDVI). Supply full-scene `ndvi_range` when processing spatial tiles.
+- `ren-2015`: window 11, local NDVI +/-1.5 sigma screen, forward covariance/
+  variance regression and domain [0.06,6.3]. On a 30-m delivery grid choose
+  `window_size=33` for about 1 km support; the scene workflow selects 33.
 
-This method uses Landsat 8 TIRS brightness temperatures for bands 10 and 11 plus NDVI. It returns a water vapor array with the same shape as the input images. The default Wang 2015 configuration uses a 21 by 21 moving template, the nearest centered-window equivalent to the article's 20 by 20 template, and 3 scene-level NDVI groups.
+Masks are boolean, True=invalid. Inputs must be aligned 2-D arrays. Windows
+are centered, odd and at least three pixels wide. Ren-specific options are
+`min_samples`, `quality_threshold`, `ndvi_filter` and `return_diagnostics`;
+changed Ren controls are rejected for Wang. Ren rejects `ndvi_range` and
+nondefault `group_count`, since it has no global NDVI groups.
+Ren `ndvi_filter=False` explicitly permits thermal-only operation without
+NDVI. Its sample minimum and quality threshold are operational choices,
+not universal TIRS prescriptions from the article.
+
+Normally the return value is a PWV array; for Ren, `return_diagnostics=True`
+returns aligned arrays keyed by `water_vapor`, `raw_water_vapor`, `ratio`,
+`chi_squared`, `sample_count` and `invalid_mask`. Rejected PWV is NaN.
+See [source equations and support](image-only-methods.md#ren-2015-mswcvr).
 
 ```python
-water = water_vapor(
-    brightness_band_10=brightness_10,
-    brightness_band_11=brightness_11,
-    ndvi_image=ndvi_image,
-    method="wang-2015",
-)
+water = water_vapor(brightness_10, brightness_11, red=red, nir=nir,
+                    method="ren-2015", window_size=33)
 ```
 
-The resulting water vapor raster can be used directly in `split_window(..., lst_method="jimenez-munoz-2014", water_vapor=water)`. `du-2015` also accepts this raster directly. Preserve the estimator domain when preparing PWV. For automatic calibration, halo and provenance, see [the scene workflow](du-pwv-workflow.md).
+Provide accepted PWV to Du or Jimenez, respecting each LST method's own
+domain. For calibration, halo, exports and provenance, see
+[the scene workflow](du-pwv-workflow.md).
 
 ### `list_algorithms()`
 
 Returns a catalog of discovered families, algorithm metadata, and original-library credit.
 Each method includes `input_requirements` and `water_vapor_support`.
-There are 12 algorithm entries, including exactly one NDVI.
+There are 13 registered algorithms. NDVI is an internal helper, outside the catalog.
 
 ### Migration: explicit TOA reflectance
 
@@ -176,20 +177,18 @@ See [verified examples and scene results](validation.md).
 - `kerr-1992`
 - `price-1984`
 - `sobrino-1993`
+- `rozenstein-2014`
 
 ### `water_vapor`
 
 - `wang-2015`
+- `ren-2015`
 
 ### `thermal`
 
 - `brightness`
 
 Sensor constants are stored under `pylstemp/sensors/`.
-
-### `spectral_index`
-
-- `ndvi`
 
 ### `radiative_transfer`
 
@@ -221,15 +220,17 @@ requires a selected published profile and PWV in [0.5,3] g/cm2. See
 [domains, equations and adaptations](image-only-methods.md).
 
 `split_window_from_emissivity(bt10, bt11, e10, e11, *, lst_method,
-water_vapor=None, mask=None, unit="kelvin", ndvi_image=None,
+water_vapor=None, mask=None, unit="kelvin", ndvi_image=None, red=None, nir=None,
 atmospheric_profile=None, temperature_range="0-60")` accepts prepared,
-aligned band emissivities. `ndvi_image` is required for Kerr.
+aligned band emissivities. Kerr requires red/nir for internal NDVI, or a prepared `ndvi_image`.
 
-`sobrino_2004_tm6(ndvi, *, mask=None)` is specific to TM5 band 6, with
+`sobrino_2004_tm6(ndvi=None, *, red=None, nir=None, mask=None)` is specific to TM5 band 6, with
 unresolved bare-soil classes returned as NaN.
 
-`sobrino_2008(ndvi, *, soil_emissivity, vegetation_emissivity,
-variant="simplified", ...)` requires band-specific endmembers. Full mode
+`sobrino_2008(ndvi=None, *, red=None, nir=None, soil_emissivity, vegetation_emissivity,
+variant="simplified", red_surface=None, soil_red_coefficients=None,
+cavity_factor=0.55, vegetation_cavity=0.005, ndvi_soil=0.2,
+ndvi_vegetation=0.5, mask=None)` requires band-specific endmembers. Full mode
 also needs `red_surface` and `soil_red_coefficients=(a,b)`; do not pass TOA
 radiance or TOA reflectance as surface reflectance.
 

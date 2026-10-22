@@ -11,7 +11,6 @@ Example families:
 - `pylstemp/algorithms/split_window/`
 - `pylstemp/algorithms/thermal/` (compatibility; canonical BT is in calibration)
 - `pylstemp/algorithms/water_vapor/`
-- `pylstemp/algorithms/spectral_index/`
 - `pylstemp/algorithms/radiative_transfer/` (reserved; no RTE is implemented)
 
 ### Steps
@@ -72,7 +71,6 @@ Because `pylstemp/algorithms/__init__.py` discovers families automatically, the 
 
 You only need to touch `pylstemp/api.py` if the new family needs a dedicated top-level public function such as:
 
-- `spectral_index(...)`
 - `brightness(...)`
 - `emissivity(...)`
 - `single_window(...)`
@@ -85,3 +83,6 @@ Sensor-specific constants that should not be duplicated across algorithms can li
 For the current thermal workflow, keep DN-to-radiance/reflectance and radiance-to-BT conversions in `calibration`.
 Public `brightness(...)` defaults to radiance; LST workflows receive BT in kelvin.
 The `single_window(...)` and `split_window(...)` public functions should stay focused on LST computation from precomputed brightness temperature arrays.
+
+NDVI is shared internally through `utils._compute_ndvi` and `_resolve_ndvi`;
+reuse these helpers instead of adding another index implementation or registry.

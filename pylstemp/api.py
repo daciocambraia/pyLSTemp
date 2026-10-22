@@ -13,8 +13,7 @@ from .algorithms.emissivity import emissivity_registry
 from .algorithms.single_channel import single_channel_registry
 from .algorithms.split_window import split_window_registry
 from .calibration import brightness, normalize_thermal_band as _normalize_thermal_band
-from .algorithms.spectral_index import ndvi as _ndvi
-from .algorithms.spectral_index import spectral_index_registry
+from .utils import _compute_ndvi as _ndvi, _resolve_ndvi
 from .algorithms.water_vapor import water_vapor_registry
 from .exceptions import InputShapesNotEqual
 from .references import ORIGINAL_LIBRARY_CREDIT
@@ -28,43 +27,6 @@ from .validation import (
 
 CELSIUS_SCALER = 273.15
 SINGLE_CHANNEL_EMISSIVITY_METHODS = {"avdan-2016"}
-
-
-@contextual_errors
-def spectral_index(index: str, **kwargs):
-    """
-    Compute a spectral index selected by name.
-
-    This dispatcher routes the request to one of the registered spectral
-    index algorithm NDVI.
-
-    Parameters
-    ----------
-    index : str
-        Name of the spectral index to compute. Currently supported values
-        include `"ndvi"`.
-    **kwargs
-        Input bands and optional parameters required by the selected index.
-        For `index="ndvi"`, provide `nir` and `red` in the same physical quantity.
-
-    Returns
-    -------
-    numpy.ndarray
-        Array containing the computed spectral index values.
-
-    Notes
-    -----
-    - Input arrays must have the same shape and spatial alignment.
-    - NDVI accepts calibrated radiance or reflectance; record the input quantity.
-    - A boolean `mask` can be passed to mark invalid pixels as `NaN`.
-
-    Examples
-    --------
-    >>> from pylstemp import spectral_index
-    >>> ndvi = spectral_index(index="ndvi", nir=nir, red=red)
-    """
-
-    return spectral_index_registry.create(index)(**kwargs)
 
 
 def _emissivity_pair(ndvi_image, band_4_red=None, emissivity_method: str = "avdan-2016"):
@@ -150,63 +112,21 @@ def emissivity_band_11(ndvi_image, band_4_red=None, emissivity_method: str = "av
 
 
 @contextual_errors
-def emissivity(ndvi_image, band: str, band_4_red=None, emissivity_method: str = "avdan-2016"):
+def emissivity(ndvi_image=None, band=10, band_4_red=None,
+               emissivity_method="avdan-2016", *, red=None, nir=None, mask=None):
+    """Compute emissivity from optical red/nir, with internal NDVI.
+
+    Prefer emissivity(red=red, nir=nir, band=10, ...). An explicitly prepared
+    ndvi_image remains accepted instead of bands for numerical reuse.
+    The bands must have identical shapes and the same radiometric convention.
+    mask=True marks invalid pixels. Avdan is single-channel; Gopinadh supplies
+    band-specific emissivities. band_4_red is retained for prepared-NDVI calls.
     """
-    Compute land surface emissivity for a selected thermal band workflow.
-
-    This function computes emissivity from a precomputed NDVI image using
-    one of the registered emissivity methods.
-
-    Parameters
-    ----------
-    ndvi_image : array-like
-        NDVI image used by the emissivity method.
-    band : str
-        Thermal workflow band. Supported values are `"band_10"` and
-        `"band_11"`. Short aliases such as `"10"`, `"11"`, `"b10"` and
-        `"b11"` are also accepted.
-    band_4_red : array-like, optional
-        Optional red band array retained for API compatibility. The currently
-        available emissivity methods use NDVI only; this argument is not required.
-    emissivity_method : str, default="avdan-2016"
-        Name of the emissivity method to use.
-
-    Returns
-    -------
-    numpy.ndarray
-        Emissivity array for the selected thermal band workflow.
-
-    Notes
-    -----
-    - `avdan-2016` is intended for the single-channel workflow and returns
-      the same emissivity for band 10 and band 11.
-    - For split-window workflows, prefer band-specific methods such as
-      `"gopinadh-2018"`.
-    - Input arrays must have the same shape and spatial alignment.
-
-    Examples
-    --------
-    >>> from pylstemp import emissivity
-    >>> emissivity_10 = emissivity(
-    ...     ndvi_image,
-    ...     band="band_10",
-    ...     band_4_red=red,
-    ...     emissivity_method="avdan-2016",
-    ... )
-    """
-
+    ndvi_image = _resolve_ndvi(ndvi_image, red=red, nir=nir, mask=mask)
     normalized_band = _normalize_thermal_band(band)
-    if normalized_band == "band_10":
-        return emissivity_band_10(
-            ndvi_image,
-            band_4_red=band_4_red,
-            emissivity_method=emissivity_method,
-        )
-    return emissivity_band_11(
-        ndvi_image,
-        band_4_red=band_4_red,
-        emissivity_method=emissivity_method,
-    )
+    pair = _emissivity_pair(ndvi_image, band_4_red=band_4_red,
+                            emissivity_method=emissivity_method)
+    return pair[0 if normalized_band == "band_10" else 1]
 
 
 @contextual_errors
@@ -395,8 +315,8 @@ def split_window(
     if user_mask is not None:
         mask |= ensure_boolean_mask(user_mask, shape=brightness_10.shape)
     ndvi_image = _ndvi(nir=nir, red=red, mask=mask)
-    emissivity_10 = emissivity_band_10(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
-    emissivity_11 = emissivity_band_11(ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
+    emissivity_10, emissivity_11 = _emissivity_pair(
+        ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
 
     if brightness_11 is None or emissivity_11 is None:
         raise InputShapesNotEqual(
@@ -434,70 +354,43 @@ def split_window(
 def water_vapor(
     brightness_band_10,
     brightness_band_11,
-    ndvi_image,
+    ndvi_image=None,
     method: str = "wang-2015",
-    window_size: int = 21,
+    window_size: int | None = None,
     group_count: int = 3,
-    *, mask=None, ndvi_range=None, chunk_rows=8,
-) -> np.ndarray:
+    *, red=None, nir=None, mask=None, ndvi_range=None, chunk_rows=8,
+    min_samples=10, quality_threshold=.95, ndvi_filter=True, return_diagnostics=False,
+) -> np.ndarray | dict[str, np.ndarray]:
+    """Estimate scene-derived PWV [g/cm2] using Wang or Ren.
+
+    Wang keeps its 21-pixel default and global NDVI grouping. Ren defaults
+    to 11 pixels, local NDVI filtering and mean-centered Eq.1b/2; use 33
+    pixels for about 1 km support on Landsat's resampled 30-m grid.
+    Ren-only controls: min_samples, quality_threshold, ndvi_filter,
+    return_diagnostics. Ren diagnostics return a dictionary of aligned arrays.
+    Supply red/nir to compute NDVI internally. A prepared ndvi_image may
+    be supplied instead; never mix the two input forms.
+    No PWV is estimated implicitly by split_window().
     """
-    Estimate precipitable water vapor using the selected method.
+    key = water_vapor_registry.resolve_key(method)
+    if key == "wang-2015" or ndvi_filter or ndvi_image is not None or red is not None or nir is not None:
+        ndvi_image = _resolve_ndvi(ndvi_image, red=red, nir=nir, mask=mask)
+    if key == "ren-2015":
+        if ndvi_range is not None or group_count != 3:
+            raise ValueError("Ren uses local NDVI screening, not Wang group_count/ndvi_range.")
+        return water_vapor_registry.create(key)(
+            brightness_band_10=brightness_band_10,brightness_band_11=brightness_band_11,
+            ndvi_image=ndvi_image,window_size=11 if window_size is None else window_size,
+            mask=mask,chunk_rows=chunk_rows,min_samples=min_samples,
+            quality_threshold=quality_threshold,ndvi_filter=ndvi_filter,
+            return_diagnostics=return_diagnostics)
+    if min_samples != 10 or quality_threshold != .95 or not ndvi_filter or return_diagnostics:
+        raise ValueError("min_samples, quality_threshold, ndvi_filter and diagnostics apply to Ren only.")
+    return water_vapor_registry.create(key)(
+        brightness_band_10=brightness_band_10,brightness_band_11=brightness_band_11,
+        ndvi_image=ndvi_image,window_size=21 if window_size is None else window_size,
+        group_count=group_count,mask=mask,ndvi_range=ndvi_range,chunk_rows=chunk_rows)
 
-    Currently, this dispatcher supports the Wang et al. (2015) NDVI-based
-    method for estimating precipitable water vapor from Landsat TIRS
-    brightness temperature bands.
-
-    Parameters
-    ----------
-    brightness_band_10 : array-like
-        Brightness temperature image for thermal band 10.
-    brightness_band_11 : array-like
-        Brightness temperature image for thermal band 11.
-    ndvi_image : array-like
-        NDVI image spatially aligned with the brightness temperature arrays.
-    method : str, default="wang-2015"
-        Water vapor retrieval method.
-    window_size : int, default=21
-        Moving-window size in pixels. Must be an odd integer greater than or
-        equal to 3. Wang et al. (2015) use a 20 by 20 pixel template; the
-        default `21` keeps a centered moving window while approximating the
-        article template.
-    group_count : int, default=3
-        Number of NDVI-based local groups used by the Wang et al. method.
-
-    Returns
-    -------
-    numpy.ndarray
-        Estimated precipitable water vapor image in g/cm2.
-
-    Notes
-    -----
-    - Input arrays must have the same shape and spatial alignment.
-    - Larger windows may produce smoother estimates; smaller windows are more
-      locally sensitive.
-    - The resulting raster can be passed to `split_window(...,
-      lst_method="jimenez-munoz-2014", water_vapor=...)` or Du with
-      `lst_method="du-2015"`. Du masks PWV pixels outside [0, 6.3].
-
-    Examples
-    --------
-    >>> from pylstemp import water_vapor
-    >>> water = water_vapor(
-    ...     brightness_band_10=brightness_10,
-    ...     brightness_band_11=brightness_11,
-    ...     ndvi_image=ndvi,
-    ...     method="wang-2015",
-    ... )
-    """
-
-    return water_vapor_registry.create(method)(
-        brightness_band_10=brightness_band_10,
-        brightness_band_11=brightness_band_11,
-        ndvi_image=ndvi_image,
-        window_size=window_size,
-        group_count=group_count,
-        mask=mask, ndvi_range=ndvi_range, chunk_rows=chunk_rows,
-    )
 
 
 def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
@@ -514,8 +407,8 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
     --------
     >>> from pylstemp import list_algorithms
     >>> catalog = list_algorithms()
-    >>> catalog["spectral_index"].keys()
-    dict_keys(['ndvi'])
+    >>> "du-2015" in catalog["split_window"]
+    True
     """
     catalog = {"credit": {"original_library": ORIGINAL_LIBRARY_CREDIT}}
 
@@ -545,7 +438,7 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
 def split_window_from_emissivity(brightness_band_10, brightness_band_11,
                                  emissivity_10, emissivity_11, *, lst_method,
                                  water_vapor=None, mask=None, unit="kelvin",
-                                 ndvi_image=None, atmospheric_profile=None,
+                                 ndvi_image=None, red=None, nir=None, atmospheric_profile=None,
                                  temperature_range="0-60"):
     """Run SW with a prepared band-specific emissivity pair.
 
@@ -568,7 +461,7 @@ def split_window_from_emissivity(brightness_band_10, brightness_band_11,
     elif atmospheric_profile is not None or temperature_range!="0-60":
         raise ValueError("Atmospheric profile and temperature_range apply only to rozenstein-2014.")
     if key=="kerr-1992":
-        ndvi_image=to_float_array("ndvi_image",ndvi_image)
+        ndvi_image=_resolve_ndvi(ndvi_image,red=red,nir=nir,mask=valid_mask)
         ensure_same_shape(ndvi_image=ndvi_image,**values)
     if water_vapor is not None and key in {"price-1984","kerr-1992","sobrino-1993"}:
         warnings.warn("water_vapor is ignored by this legacy equation.",RuntimeWarning,stacklevel=2)

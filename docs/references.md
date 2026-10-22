@@ -7,9 +7,9 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 - Original project: <https://github.com/pylandtemp/pylandtemp>
 - Original author: Oladimeji Mudele
 
-## Vegetation
+## Internal vegetation calculation
 
-- `ndvi`
+- Internal NDVI, shared by retained workflows (not a public algorithm)
   Rouse, J. W., Haas, R. H., Schell, J. A., and Deering, D. W. Monitoring vegetation systems in the Great Plains with ERTS. NASA SP-351, 1974.
 ## Thermal
 
@@ -55,6 +55,9 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 - `wang-2015`
   Wang, M., He, G., Zhang, Z., Wang, G., and Long, T. NDVI-based split-window algorithm for precipitable water vapour retrieval from Landsat-8 TIRS data over land area. Remote Sensing Letters, 2015.
 
+- `ren-2015`
+  Ren, H., Du, C., Liu, R., Qin, Q., Yan, G., Li, Z.-L., Meng, J. (2015). Atmospheric water vapor retrieval from Landsat 8 thermal infrared images. JGR Atmospheres, 120, 1723-1738. [Article](https://doi.org/10.1002/2014JD022619). Eqs.1b/1c, p.1724; Eq.2, p.1726; local NDVI filtering, Section 4.2. Verified against the supplied PDF.
+
 ## Radiative transfer
 
 This family is currently reserved for future methods.
@@ -75,4 +78,3 @@ Links for all current algorithms are also listed in the [README](../README.md#al
 - Sobrino, J.A., Jimenez-Munoz, J.C., Paolini, L. (2004). Land surface temperature retrieval from LANDSAT TM 5. Remote Sensing of Environment, 90, 434-440. [Artigo](https://doi.org/10.1016/j.rse.2004.02.003). Secao 3, Eqs.8--13. Constantes de TM6.
 - Sobrino, J.A., et al. (2008). Land Surface Emissivity Retrieval From Different VNIR and TIR Sensors. IEEE TGRS, 46, 316-327. [Artigo](https://doi.org/10.1109/TGRS.2007.904834). Eqs.5--9. Endmembers devem corresponder a banda.
 - Chavez, P.S., Jr. (1996). Image-Based Atmospheric Corrections - Revisited and Improved. PE&RS, 62, 1025-1036. [Artigo](https://static1.1.sqspcdn.com/static/f/891472/15133582/1321370214637/Chavez_P.S._1996.pdf). Eq.2 e discussoes DOS/COST, pp.1027--1029.
-- Ren, H., et al. (2015). Atmospheric water vapor retrieval from Landsat 8 thermal infrared images. JGR Atmospheres, 120, 1723-1738. [Artigo](https://doi.org/10.1002/2014JD022619). Candidato ainda nao implementado: equacoes nao verificadas integralmente.
