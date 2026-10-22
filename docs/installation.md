@@ -21,7 +21,6 @@ Os pacotes locais preparados ficam em dist/.
 
 ```bash
 python -m pip install -e ".[dev,examples]"
-python -m pytest
 python -m build
 ```
 

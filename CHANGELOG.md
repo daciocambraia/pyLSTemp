@@ -1,5 +1,12 @@
 # Changelog
 
+## Public repository cleanup (2026-10-22)
+
+- Moved scientific tests, scene validators and internal reports to the ignored local verification archive.
+- Kept public API, examples, scientific contracts and validation status in the repository.
+- CI and release workflows now check installation, imports and packaging without requiring local tests.
+
+
 ## Du raster PWV and explicit scene workflow (2026-10-22)
 
 - Du accepts aligned PWV rasters with per-pixel coefficient selection and inclusive overlap averaging of LST estimates. General/scalar behavior is preserved.
