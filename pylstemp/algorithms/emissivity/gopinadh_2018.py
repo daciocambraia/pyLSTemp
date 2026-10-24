@@ -18,6 +18,10 @@ class ComputeEmissivityGopinadh2018(BaseEmissivityAlgorithm):
 
     Notes
     -----
+    - Adopt the source Step-1 TOA-radiance interpretation for optical NDVI.
+      Another convention is an explicit adaptation, not an equivalent input.
+    - NDVIsoil/vegetation were derived for the source study scene; transfer
+      to other scenes is operational, not a universal threshold calibration.
     - This method returns separate emissivity arrays for Band 10 and Band 11.
     - It is suitable for split-window workflows that require both thermal
       emissivity channels.

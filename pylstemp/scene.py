@@ -115,6 +115,16 @@ class LandsatScene:
 
     def write_geotiff(self, path, array, *, window=None, units=""):
         """Write float32 GeoTIFF, preserving projection and shifted origin."""
+        array = np.asarray(array)
+        core = (0, self.shape[0], 0, self.shape[1]) if window is None else tuple(window)
+        if len(core) != 4 or any(isinstance(v, (bool, np.bool_)) or
+                not isinstance(v, (int, np.integer)) for v in core):
+            raise ValueError("Export window must contain four integer bounds.")
+        r0, r1, c0, c1 = core
+        if not (0 <= r0 < r1 <= self.shape[0] and 0 <= c0 < c1 <= self.shape[1]):
+            raise ValueError("Export window lies outside scene.")
+        if array.ndim != 2 or array.shape != (r1-r0, c1-c0):
+            raise ValueError("Export array shape must match the scene or specified window.")
         if self.backend == "rasterio":
             from rasterio.windows import Window, transform
             import rasterio

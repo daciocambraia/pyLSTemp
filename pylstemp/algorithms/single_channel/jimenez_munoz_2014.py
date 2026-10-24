@@ -22,7 +22,7 @@ class SingleChannelJimenezMunoz2014LST(BaseTemperatureAlgorithm):
     def __call__(self, **kwargs):
         """Require brightness_temperature_10, emissivity_10, radiance_band_10, water_vapor."""
         if kwargs.get("radiance_band_10") is None or kwargs.get("water_vapor") is None:
-            raise ValueError("'jimenez-munoz-sc-2014' requires radiance_band_10 "
+            raise ValueError("'jimenez-munoz-2014-sc' requires radiance_band_10 "
                              "[W m-2 sr-1 um-1] and water_vapor [g/cm2]. "
                              "Use toa_radiance(..., metadata=..., band=10) and water_vapor(...).")
         tb = to_float_array("brightness_temperature_10", kwargs.get("brightness_temperature_10"))
@@ -34,7 +34,7 @@ class SingleChannelJimenezMunoz2014LST(BaseTemperatureAlgorithm):
         w = to_float_array("water_vapor", kwargs["water_vapor"])
         if w.ndim == 0:
             if not np.isfinite(w) or not 0 <= w <= 3:
-                raise ValueError("jimenez-munoz-sc-2014: scalar water_vapor must be finite "
+                raise ValueError("jimenez-munoz-2014-sc: scalar water_vapor must be finite "
                                  "and within [0,3] g/cm2; above 3 the polynomial SC approach "
                                  "loses accuracy. Use split_window or atmospheric parameters.")
         else:
@@ -49,7 +49,7 @@ class SingleChannelJimenezMunoz2014LST(BaseTemperatureAlgorithm):
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="jimenez-munoz-sc-2014", factory=SingleChannelJimenezMunoz2014LST,
+    key="jimenez-munoz-2014-sc", aliases=("jimenez-munoz-sc-2014",), factory=SingleChannelJimenezMunoz2014LST,
     name="Jimenez-Munoz 2014 single-channel LST", reference="Jimenez-Munoz et al. (2014)",
     citation="Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. "
              "Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. "

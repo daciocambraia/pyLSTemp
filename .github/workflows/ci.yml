@@ -35,3 +35,5 @@ jobs:
           python -I -c "import pylstemp; from pylstemp.scene import LandsatScene;
           from pylstemp.workflows import du_from_scene, scene_ndvi_range;
           print(pylstemp.__version__); print(pylstemp.list_algorithms())"
+      - name: Scientific regression against installed wheel
+        run: python -I -m unittest discover -s tests -v

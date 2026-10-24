@@ -104,7 +104,7 @@ Uma estimativa externa de PWV tambem pode ser usada, com unidade e origem claras
 ```python
 lst_jimenez_sc = single_window(
     brightness_band_10=bt10, band_4_red=red, band_5_nir=nir,
-    lst_method="jimenez-munoz-sc-2014", emissivity_method="gopinadh-2018",
+    lst_method="jimenez-munoz-2014-sc", emissivity_method="gopinadh-2018",
     radiance_band_10=radiancia10, water_vapor=pwv,
     unit="celsius", mask=mascara,
 )
@@ -130,7 +130,7 @@ mascara_pwv_sw = mascara | (pwv < 0.066) | (pwv > 7.833)
 lst_jimenez_sw = split_window(
     brightness_band_10=bt10, brightness_band_11=bt11,
     band_4_red=red, band_5_nir=nir,
-    lst_method="jimenez-munoz-2014", emissivity_method="gopinadh-2018",
+    lst_method="jimenez-munoz-2014-sw", emissivity_method="gopinadh-2018",
     water_vapor=pwv, unit="celsius", mask=mascara_pwv_sw,
 )
 ```
@@ -181,20 +181,15 @@ Os GeoTIFFs conservam coordenadas, unidade e NoData NaN.
 catalogo = list_algorithms()
 print(catalogo["single_channel"].keys())
 print(catalogo["split_window"].keys())
-print(catalogo["single_channel"]["jimenez-munoz-sc-2014"]["input_requirements"])
+print(catalogo["single_channel"]["jimenez-munoz-2014-sc"]["input_requirements"])
 ```
 
-## Executar os exemplos prontos
+## Exemplos por metodo
 
-```bash
-python exemples/fluxo_completo.py CAMINHO_DA_CENA --saida resultados
-```
-
-Ha cinco [notebooks por modulo](../exemples/DATA.md). O script gera nove produtos;
-este guia inclui ainda reflectancia opcional. Calibracao Landsat 8/9 usa o MTL;
-transferencia de coeficientes de recuperacao para Landsat 9 e experimental.
-Veja [referencia da API](api-reference.md) e [validacao](validation.md).
-
+Veja o [indice de notebooks](../exemple/README.md). Cada metodo possui seu
+proprio notebook, com introducao, entradas necessarias, funcao geral,
+parametros e uso com imagens. Calibracao Landsat8/9 usa o MTL;
+transferencia de coeficientes de recuperacao para Landsat9 e experimental.
 
 ## PWV por Ren/MSWCVR
 

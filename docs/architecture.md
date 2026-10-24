@@ -1,14 +1,15 @@
 # Arquitetura
 
-A biblioteca tem 13 algoritmos registrados, separados por familia. Calibracao,
+O catalogo apresenta 17 seletores por familia, incluindo Sobrino e Chavez. Calibracao,
 leitura de cenas e workflows sao funcoes auxiliares, sem duplicar o catalogo.
 
 | Pasta | Conteudo | Distribuicao |
 |---|---|---|
 | `pylstemp/` | API, calibracao, cenas, workflows e algoritmos | Git, wheel e sdist |
 | `docs/` | Uso, API, contratos cientificos e referencias | Git e sdist |
-| `exemples/` | Notebooks e script de uso com imagens | Git e sdist |
+| `exemple/` | Um notebook por metodo e um indice de entradas/uso | Git e sdist |
 | `.github/` | CI, publicacao e templates de contribuicao | Git |
+| `tests/` | Regressao essencial sintetica e independente | Git e sdist; CI contra o wheel |
 | `Verificacao/` | Testes, verificadores, dados e relatorios locais | Fora do Git e dos pacotes |
 
 ## Estrutura publica
@@ -34,19 +35,30 @@ v1.11/
     image-only-methods.md
     index.md
     installation.md
+    method-cards.md
     references.md
     scientific-methods.md
     usage.md
     validation.md
-  exemples/
+  exemple/
+    avdan_2016_emissivity.ipynb
+    avdan_2016_lst.ipynb
     brightness.ipynb
-    DATA.md
-    emissivity.ipynb
-    fluxo_completo.py
-    metodos_imagem.py
-    single_window.ipynb
-    split_window.ipynb
-    water_vapor.ipynb
+    chavez_cost.ipynb
+    chavez_dos.ipynb
+    du_2015.ipynb
+    gopinadh_2018.ipynb
+    jimenez_munoz_2014_sc.ipynb
+    jimenez_munoz_2014_sw.ipynb
+    kerr_1992.ipynb
+    price_1984.ipynb
+    README.md
+    ren_2015.ipynb
+    rozenstein_2014.ipynb
+    sobrino_1993.ipynb
+    sobrino_2004_tm6.ipynb
+    sobrino_2008.ipynb
+    wang_2015.ipynb
   pylstemp/
     algorithms/
       emissivity/
@@ -54,8 +66,6 @@ v1.11/
         avdan_2016.py
         base.py
         gopinadh_2018.py
-      radiative_transfer/  # familia reservada; sem algoritmo implementado
-        __init__.py
       single_channel/
         __init__.py
         base.py
@@ -83,20 +93,25 @@ v1.11/
       __init__.py
       landsat.py
     __init__.py
-    api.py  # API publica, sem dispatcher de indices
+    api.py
     calibration.py
-    emissivity_models.py  # Sobrino 2004/2008; NDVI interno
+    emissivity_models.py
     exceptions.py
     messages.py
     metadata.py
-    optical.py  # Chavez DOS/COST
+    method_cards.json
+    optical.py
+    provenance.py
     references.py
     registry.py
     requirements.py
     scene.py
-    utils.py  # NDVI interno compartilhado e auxiliares numericos
+    utils.py
     validation.py
     workflows.py
+  tests/
+    test_scientific_regression.py
+    test_unified_api.py
   .gitattributes
   .gitignore
   CHANGELOG.md
@@ -116,17 +131,19 @@ da cena. `scene.py` le bandas alinhadas, aplica QA e exporta GeoTIFFs.
 `workflows.py` conecta essas etapas para Du com modos PWV explicitos e estimadores Wang/Ren.
 
 Cada algoritmo declara `ALGORITHM_SPEC`; o registro descobre os modulos por
-familia e alimenta `list_algorithms()`. NDVI e um calculo interno compartilhado
+familia e alimenta `list_algorithms()`, complementado pelos seletores Sobrino/Chavez
+com metadados das mesmas fichas cientificas. NDVI e um calculo interno compartilhado
 em `utils.py`, sem dispatcher publico, familia ou entrada no catalogo.
-`radiative_transfer` reserva a familia RTE, ainda sem algoritmo implementado.
 Esses modulos fazem parte dos contratos da biblioteca.
 
-A CI publica verifica instalacao, importacao e empacotamento. A suite cientifica
-completa e os verificadores de cenas sao executados no ambiente local.
+A CI publica verifica instalacao, importacao, empacotamento e regressao cientifica
+essencial contra o wheel instalado. A suite completa e os verificadores de cenas
+sao executados no ambiente local. `provenance.py` registra a execucao e os
+contratos de `method_cards.json`, sem expor uma nova funcao publica para NDVI.
 
 Veja [API](api-reference.md), [extensao](extending.md),
 [workflow Du/PWV](du-pwv-workflow.md) e [estado da validacao](validation.md).
 
-`emissivity_models.py` expoe Sobrino 2004/2008 sem atribuir constantes
+`emissivity_models.py` implementa internamente Sobrino 2004/2008 sem atribuir constantes
 espectrais nao verificadas a TIRS. `optical.py` separa ajuste de haze e
 aplicacao DOS/COST, permitindo reutilizar parametros entre blocos.

@@ -2,7 +2,7 @@
 
 Esta implementacao entrega Ren/MSWCVR (2015), Rozenstein (2014), funcoes de
 emissividade de Sobrino (2004/2008) e correcao optica DOS/COST de Chavez (1996).
-O catalogo tem 13 algoritmos registrados. As funcoes parametrizadas de
+O catalogo tem 17 seletores por familia. Os metodos parametrizados de
 emissividade e correcao optica nao contam como algoritmos calibrados
 independentes de Landsat 8/9.
 
@@ -89,19 +89,23 @@ A conversao opcional para Celsius ocorre depois da equacao em kelvin.
 
 ### Sobrino 2004: TM5 banda 6
 
-`sobrino_2004_tm6(red=red, nir=nir, mask=...)` implementa a Eq.13 para a classe mista
+`emissivity(red=red, nir=nir, method="sobrino-2004-tm6", band=6, mask=...)` implementa a Eq.13 para a classe mista
 0.2<=NDVI<=0.5: epsilon=0.004*Pv+0.986, com Pv quadratico (Eq.9).
 Para NDVI>0.5, usa 0.99, conforme a classe de vegetacao descrita no artigo.
 NDVI<0.2 fica NaN: nao foi inventada uma relacao solo/vermelho ausente na
 Eq.13. A mascara deve excluir classes inadequadas, incluindo agua e neve.
 Essas constantes sao especificas de TM6, sem calibracao para B10/B11.
+A secao 4, p.436, calcula NDVI de reflectividades TOA ou de superficie,
+preferindo superficie. Radiancia nao e uma entrada equivalente estabelecida.
 
 ### Sobrino 2008: funcoes por banda
 
-`sobrino_2008(red=red, nir=nir, soil_emissivity=..., vegetation_emissivity=...)` usa a
+`emissivity(red=red, nir=nir, method="sobrino-2008", soil_emissivity=..., vegetation_emissivity=...)` usa a
 formulacao simplificada da Eq.9, pp.317--318. Os dois endmembers sao
 obrigatorios, escalares ou rasters alinhados, e precisam de justificativa para
-a banda. A FVC e quadratica entre 0.2 e 0.5 e limitada a 0/1 fora dos extremos.
+a banda. A convencao optica e os limiares usados no NDVI tambem precisam de
+justificativa; a variante simplificada nao estabelece equivalencia entre
+radiancia e reflectancia. A FVC e quadratica entre 0.2 e 0.5 e limitada a 0/1 fora dos extremos.
 
 `variant="full"` implementa Eqs.5--8 com relacao de solo `a+b*rho_red` e
 cavidade na classe mista. Requer `red_surface` e
@@ -113,16 +117,17 @@ Valores fora do dominio fisico viram NaN; nao sao truncados.
 A aplicabilidade a solos minerais, agua, neve e areas urbanas requer mascara
 ou parametrizacao propria; NDVI nao identifica essas classes universalmente.
 
-`split_window_from_emissivity(bt10, bt11, e10, e11, lst_method=..., ...)`
+`split_window(bt10, bt11, emissivity_10=e10, emissivity_11=e11, lst_method=..., ...)`
 permite usar os pares preparados sem recalcular a emissividade dentro da API.
-Para Kerr, fornecer `red`/`nir` para NDVI interno (ou NDVI preparado); para Rozenstein, fornecer o perfil.
+Para Kerr, fornecer `band_4_red`/`band_5_nir` para NDVI interno (ou NDVI preparado); para Rozenstein, fornecer o perfil.
 As quatro entradas devem ter a mesma forma e a mesma grade espacial.
 
 ## Chavez 1996: DOS e COST
 
-`fit_chavez(rho_toa, sun_elevation=..., method="dos" ou "cost", mask=...)`
-retorna parametros reutilizaveis. `chavez_reflectance(rho_toa,
-parameters=parametros, mask=...)` aplica a correcao a imagem ou blocos.
+`optical_correction(rho_toa, sun_elevation=..., method="chavez-dos" ou
+"chavez-cost", mask=..., return_diagnostics=True)` retorna a reflectancia
+corrigida e parametros reutilizaveis. A mesma funcao com `parameters=parametros`
+reaplica o ajuste a blocos, omitindo as opcoes de ajuste e mantendo o metodo.
 A entrada e reflectancia TOA ja corrigida pelo angulo solar, com um unico
 angulo solar da cena, e nao DN/radiancia ou um produto SR.
 
@@ -145,18 +150,10 @@ Chavez avaliou imagens TM; o uso OLI/OLI-2 aqui e um cenario experimental,
 sem importar seus coeficientes TM de transmitancia por banda. A aproximacao
 COST nao equivale a LaSRC/SR operacional nem corrige a atmosfera termica.
 
-## Exemplo e verificacao
+## Exemplos por metodo
 
-```bash
-python exemples/metodos_imagem.py CAMINHO_DA_CENA --perfil midlatitude-summer --saida resultados/metodos
-```
-
-O exemplo usa um recorte central 128x128, halo de Wang e limites NDVI globais.
-Seu ajuste Chavez pertence ao **recorte**, sem ser apresentado como ajuste da
-cena inteira. O PWV de Wang usa NDVI em radiancia, mantido fixo neste contraste.
-Sobrino 2008 Eq.9 usa os endmembers TIRS da implementacao existente Rongali
-2018, declarados como parametros: esta combinacao nao e calibracao nova nem
-reproducao integral de um artigo. A funcao TM6 nao e aplicada a essas cenas.
-
-A suite cientifica e os produtos ficam localmente em `Verificacao/`, fora do
-Git. Veja [estado da validacao](validation.md) e [fontes](references.md).
+A pasta [exemple](../exemple/README.md) separa Ren, Rozenstein, Sobrino2004,
+Sobrino2008, Chavez DOS e Chavez COST em notebooks independentes. Cada um
+explica as entradas, a funcao geral, os parametros e os limites do metodo.
+Os antigos scripts de comparacao e seus resultados continuam no arquivo
+local de verificacao. Veja [validacao](validation.md) e [fontes](references.md).

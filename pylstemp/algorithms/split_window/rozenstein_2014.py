@@ -66,7 +66,8 @@ class SplitWindowRozenstein2014LST(SplitWindowParentLST):
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="rozenstein-2014", factory=SplitWindowRozenstein2014LST,
+    key="rozenstein-2014",
+    factory=SplitWindowRozenstein2014LST,
     name="Rozenstein 2014 split-window LST", reference="Rozenstein et al. (2014)",
     citation="Rozenstein, O., Qin, Z., Derimian, Y., Karnieli, A. (2014). Derivation of Land Surface Temperature for Landsat-8 TIRS Using a Split Window Algorithm. Sensors 14, 5768-5780. https://doi.org/10.3390/s140405768",
 )

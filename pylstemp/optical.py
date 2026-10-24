@@ -15,7 +15,7 @@ class ChavezParameters:
     valid_samples: int
 
 
-def fit_chavez(toa_reflectance, *, sun_elevation, method="cost", percentile=.01,
+def _fit_chavez(toa_reflectance, *, sun_elevation, method="cost", percentile=.01,
                assumed_dark_surface=.01, mask=None):
     """Fit haze in solar-angle-corrected TOA reflectance units, not DN.
 
@@ -47,7 +47,7 @@ def fit_chavez(toa_reflectance, *, sun_elevation, method="cost", percentile=.01,
                             float(percentile),int(samples.size))
 
 
-def chavez_reflectance(toa_reflectance, *, parameters, mask=None):
+def _chavez_reflectance(toa_reflectance, *, parameters, mask=None):
     """Apply scene-fitted DOS/COST; return an approximate corrected scenario.
 
     Using rho_TOA = pi*L*d^2/(ESUN*cos(theta_z)), subtracting the DOS haze
@@ -57,7 +57,7 @@ def chavez_reflectance(toa_reflectance, *, parameters, mask=None):
     The model assumes ONE scene solar angle, matching the fit parameters.
     """
     if not isinstance(parameters,ChavezParameters):
-        raise ValueError("Use parameters returned by fit_chavez.")
+        raise ValueError("Use parameters returned by optical_correction(return_diagnostics=True).")
     p=parameters
     if (p.method not in {"dos","cost"} or not np.isfinite(p.sun_elevation)
         or not 0 < p.sun_elevation <= 90 or not np.isfinite(p.dark_reflectance)
@@ -71,3 +71,43 @@ def chavez_reflectance(toa_reflectance, *, parameters, mask=None):
     if p.method == "cost":
         result=result/np.sin(np.deg2rad(p.sun_elevation))
     return np.where(invalid | (result < 0) | (result > 1),np.nan,result)
+
+
+from .messages import contextual_errors
+
+
+@contextual_errors
+def optical_correction(toa_reflectance, *, method="chavez-cost", sun_elevation=None,
+                       mask=None, parameters=None, percentile=None,
+                       assumed_dark_surface=None, return_diagnostics=False):
+    """Correct TOA reflectance using a selected optical method.
+
+    method: chavez-dos or chavez-cost. Fit on the full valid scene with one
+    sun_elevation [degrees, (0,90]]; defaults: percentile .01, dark surface .01.
+    return_diagnostics=True returns reflectance and reusable parameters.
+    For tiles supply parameters and omit fitting options; their method must
+    match. Invalid corrected reflectance outside [0,1] becomes NaN, not clipped.
+    Chavez is a TM-derived approximation, not validated OLI/LaSRC equivalence.
+    """
+    if not isinstance(method,str) or method.strip().lower() not in {"chavez-dos","chavez-cost"}:
+        raise ValueError("method must be chavez-dos or chavez-cost.")
+    if not isinstance(return_diagnostics,(bool,np.bool_)):
+        raise ValueError("return_diagnostics must be boolean.")
+    key=method.strip().lower().removeprefix("chavez-")
+    if parameters is None:
+        if sun_elevation is None:
+            raise ValueError("Provide sun_elevation when fitting optical correction.")
+        parameters=_fit_chavez(toa_reflectance,sun_elevation=sun_elevation,
+            method=key,percentile=.01 if percentile is None else percentile,
+            assumed_dark_surface=.01 if assumed_dark_surface is None else assumed_dark_surface,
+            mask=mask)
+    else:
+        if any(value is not None for value in (sun_elevation,percentile,assumed_dark_surface)):
+            raise ValueError("Reusable parameters cannot be combined with fitting options.")
+        if not isinstance(parameters,ChavezParameters) or parameters.method!=key:
+            raise ValueError("Reusable parameters must match the selected Chavez method.")
+    corrected=_chavez_reflectance(toa_reflectance,parameters=parameters,mask=mask)
+    if return_diagnostics:
+        return dict(reflectance=corrected,parameters=parameters,method="chavez-"+key,
+                    units="dimensionless",invalid_mask=~np.isfinite(corrected))
+    return corrected

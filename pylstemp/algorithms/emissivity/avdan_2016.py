@@ -19,6 +19,9 @@ class ComputeEmissivityAvdan2016(BaseEmissivityAlgorithm):
 
     Notes
     -----
+    - The source discusses fixed global NDVI thresholds for surface
+      reflectivities; it does not uniquely specify the scene optical input
+      quantity. Radiance/TOA use is an adaptation requiring justification.
     - The same emissivity array is returned for Band 10 and Band 11 only to
       keep the public emissivity dispatcher consistent.
     - For split-window methods, prefer emissivity methods that estimate

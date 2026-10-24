@@ -9,7 +9,7 @@ __pycache__/
 venv/
 .venv/
 article/*.pdf
-exemples/data/*.tif
+exemple/dados/*.tif
 
 # Local research data and preserved history
 /Antigo/
@@ -21,11 +21,11 @@ exemples/data/*.tif
 *.tif
 *.tar
 *.npz
-/exemples/data/
+/exemple/dados/
 
 # Generated example outputs
 /resultados/
-/exemples/resultados/
+/exemple/resultados/
 
 # Coverage outputs
 .coverage.*
@@ -40,6 +40,5 @@ exemples/data/*.tif
 .DS_Store
 Thumbs.db
 
-# Local verification code is kept under Verificacao/
-/tests/
+# Large local verification code is kept under Verificacao/
 /scripts/

@@ -1,8 +1,8 @@
 include README.md CHANGELOG.md LICENSE CREDITS.md CONTRIBUTING.md CODE_OF_CONDUCT.md
 recursive-include docs *.md *.png
-recursive-include exemples *.ipynb *.py *.md
+recursive-include exemple *.ipynb *.md
 
 prune Verificacao
-prune tests
+recursive-include tests *.py
 prune scripts
 global-exclude __pycache__ *.py[cod]

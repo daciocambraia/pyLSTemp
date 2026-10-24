@@ -6,6 +6,7 @@ Thanks for considering a contribution to `pyLSTemp`.
 
 ```bash
 python -m pip install -e ".[dev,examples]"
+python -m unittest discover -s tests -v
 python -m build
 python -m twine check dist/*
 ```
@@ -21,7 +22,7 @@ python -m twine check dist/*
 
 Before opening a pull request:
 
-1. check installation, imports and package builds; run the scientific suite when available locally
+1. run the essential scientific regression suite, installation/import checks and package builds; run applicable local scene checks
 2. update docs when behavior or public API changes
 3. explain the scientific or technical rationale for formula changes
 4. keep changes focused and reviewable
@@ -33,6 +34,8 @@ Before opening a pull request:
 - keep public APIs stable unless there is a strong reason to change them
 
 
-The full scientific test suite and scene validators are maintained locally under
-`Verificacao/` and are not included in public clones or distributions. Public CI
-checks installation, imports and packaging; it does not run the local suite.
+The essential `tests/` suite uses independent synthetic equations without private
+articles or imagery. CI executes it against the installed wheel using
+`python -I -m unittest discover -s tests -v`. The full local scientific suite,
+scene validators, datasets and reports stay under `Verificacao/` outside Git
+and distributions. Source changes require updating the reviewed method cards.
