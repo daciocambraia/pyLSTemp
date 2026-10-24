@@ -11,7 +11,6 @@ Example families:
 - `pylstemp/algorithms/split_window/`
 - `pylstemp/algorithms/thermal/` (compatibility; canonical BT is in calibration)
 - `pylstemp/algorithms/water_vapor/`
-- `pylstemp/algorithms/radiative_transfer/` (reserved; no RTE is implemented)
 
 ### Steps
 
@@ -86,3 +85,9 @@ The `single_window(...)` and `split_window(...)` public functions should stay fo
 
 NDVI is shared internally through `utils._compute_ndvi` and `_resolve_ndvi`;
 reuse these helpers instead of adding another index implementation or registry.
+
+Sobrino and Chavez are function-dispatched methods with reviewed metadata from
+`method_cards.json`. They appear in `list_algorithms()` without registering an
+incompatible two-band factory. Keep one public family function; method-specific
+implementations stay private. Update the complete notebook and synthetic
+regression when adding an accepted selector or option.

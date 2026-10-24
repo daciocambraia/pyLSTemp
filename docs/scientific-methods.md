@@ -20,13 +20,51 @@ Near-surface air temperature is not a ground-truth substitute for skin temperatu
 - TOA BT: K2 / log(1 + K1 / L), in kelvin. brightness defaults to radiance; DN requires input_quantity="dn".
 - All four thermal coefficients come from the scene MTL in the scene reader.
 - C2 Level-2 SR_B* scaling is 0.0000275 * DN - 0.2. This scaling does not atmospherically correct Level-1.
-- Registered emissivity methods are Avdan and Gopinadh; standalone Sobrino functions are also available; Xiaolei was removed because its additional SR requirement is outside the selected release scope.
+- The emissivity dispatcher includes Avdan, Gopinadh and Sobrino2004/2008; Xiaolei was removed because its additional SR requirement is outside the selected release scope.
 - QA excludes fill, dilated cloud, high-confidence cirrus/cloud/shadow/snow, selected optical saturation and terrain occlusion.
 - Wang and Ren scene PWV workflows operate over land; exclude QA water. Cloud masking is an initial quality screen, not complete atmospheric correction.
 
 Sources: [USGS Level-1 calibration](https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product),
 [USGS C2 QA](https://www.usgs.gov/landsat-missions/landsat-collection-2-quality-assessment-bands),
 [USGS Level-2 scale factors](https://www.usgs.gov/faqs/how-do-i-use-a-scale-factor-landsat-level-2-science-products).
+
+## Optical conventions: source audit (2026-10-22)
+
+Internal NDVI removes a public calculation step; it does not make radiance,
+TOA reflectance and surface reflectance interchangeable. Source thresholds
+must be assessed together with the optical quantity and study conditions.
+The original PDFs were checked for the following decisions:
+
+| Parametrization | Source location | Optical decision and remaining condition |
+|---|---|---|
+| Avdan 2016 | p.3, Sections 2.3.1-2.3.3, Eqs.3-6; p.4, Table 2 | The scene input quantity is not uniquely specified. The discussion links fixed global 0.2/0.5 endmembers to surface reflectivities and states that TOA thresholds depend on atmospheric conditions. Radiance/TOA use is an adaptation, not established equivalence. |
+| Rongali 2018 (`gopinadh-2018`) | PDF pp.5-6, Steps 1/3-5, Eqs.3/5-7, Table 2; p.8 | Adopt Step 1, which includes optical TOA radiance, before NDVI. The 0.15/0.48 endpoints are study-scene averages; transferring them is explicit, not a universal calibration. The workflow figure alone does not establish a different optical quantity. |
+| Sobrino 2004 TM6 | p.436, Sections 3/4, Eqs.9/13/14 | Section 4 constructs NDVI from TOA reflectivities as a first approximation and prefers surface reflectivities. Radiance is not established as equivalent. The function retains only the implemented mixed/vegetation classes and TM6 constants. |
+| Sobrino 2008 | pp.317-318, Eqs.5-9 | Thresholds and endmembers require sensor/band and optical-convention justification. Full mode additionally requires surface red reflectance with compatible soil coefficients. Simplifying the mixture does not prove radiance/reflectance equivalence. |
+| Wang 2015 | Section 2.3, Eqs.2-4, Figure 3 | The inspected description specifies NDVI groups, thermal sample selection and emissivity ratios, without explicitly fixing the optical radiometric quantity. Keep this uncertainty visible. |
+| Ren 2015 | Section 4.2, local NDVI filter | The local +/-1.5 sigma criterion is specified; its optical radiometric quantity is not explicitly fixed in the inspected description. Record the operational quantity; thermal-only mode remains separate. |
+
+These findings do not justify changing every workflow to one optical quantity.
+The current scene radiance default is an operational convention, not proof
+that all downstream parametrizations were calibrated in radiance. Rouse's
+NDVI definition does not establish the validity of thresholds in later papers.
+No optical conversion, coefficient or numerical formula was changed by this
+source-contract update. Surface-reflectance input must come from an identified
+surface product or declared correction, not from relabelling Level-1 data.
+
+`list_algorithms()` now includes `source_sensor`, `source_location`,
+`optical_input_contract` and `source_review_status`. A recorded source decision,
+a passing numerical test and successful scene execution are distinct evidence.
+All 13 registered methods and seven standalone conversion/variant entries now have
+[reviewed source cards](method-cards.md), including equations, coefficient branches,
+source locations, domains, sensor origin and explicit adaptations. Numerical tests
+and empirical accuracy remain separate evidence states.
+Sobrino and Chavez are selected through the family dispatchers and included in the catalog.
+
+The low-level API receives arrays and cannot infer their radiometric units.
+The caller must supply compatible calibrated quantities and preserve their
+provenance. This limitation is documented rather than silently relabelling
+unknown arrays or inventing an automatic atmospheric correction.
 
 ## Explicit source decisions
 
@@ -39,6 +77,12 @@ fraction for mixed pixels and C=0.005 in that mixed class. This gives mixed endp
 these are explicit consequences of the adopted piecewise parameterization, not smoothed
 away as an undocumented change. Negative NDVI alone is an empirical water proxy,
 not a universal land-cover classifier. Do not use these constants as universal emissivities.
+The source has an additional class inconsistency: the vegetation branch of
+Eq.6 prints soil emissivity plus C, while the prose and Table 2 assign 0.973.
+The implementation adopts the prose/Table-2 vegetation value; it does not
+claim literal reproduction of both conflicting definitions. Table-1 thermal
+constant labels and illustrative gains are not substituted for the matching
+scene MTL calibration.
 Mono-window uses wavelength 10.895e-6 metres and rho=1.438e-2 metre kelvin.
 The correction uses absolute temperature, even though source prose mentions Celsius.
 
@@ -149,7 +193,7 @@ See [current verification report](validation.md).
 
 ## Jimenez-Munoz single-channel addition (2026-10-05)
 
-`jimenez-munoz-sc-2014` uses Eqs. (1), (2), (4), (6) of the 2014 paper.
+`jimenez-munoz-2014-sc` uses Eqs. (1), (2), (4), (6) of the 2014 paper.
 For Band 10, b_gamma=1324 K. The rows of C multiply [w^2,w,1]:
 (0.04019,0.02916,1.01523), (-0.38333,-1.50294,0.20324),
 (0.00918,1.36072,-0.27514). They are distinct from SW Table I.
@@ -174,7 +218,53 @@ retain their previously documented limitations.
 ## Additional source-checked methods (2026-10-22)
 
 The catalog includes Rozenstein 2014 LST and Ren 2015 PWV. Sobrino 2004/2008
-emissivity functions and Chavez DOS/COST optical correction are standalone
-helpers with explicit band/domain requirements. They do not replace the
+emissivity and Chavez DOS/COST optical correction use family dispatchers
+with explicit band/domain requirements. They do not replace the
 historical Sobrino 1993 AVHRR temperature adaptation or silently calibrate
 TM coefficients for TIRS. See [additional methods](image-only-methods.md).
+
+## Completed source audit and reproducibility
+
+The [20 method cards](method-cards.md) accompany the installed package. Price
+retains the explicitly documented inverse-emissivity adaptation, rather than
+claiming literal reproduction of the conflicting printed factor. Kerr's .11/.72
+endpoints specifically require atmospherically corrected NDVI in its source
+(p.205); using radiance/TOA NDVI or transferring its AVHRR coefficients remains
+an adaptation. No coefficients were changed merely to obtain plausible LST.
+
+For array calls, `optical_quantity` declares radiance, TOA reflectance
+(`reflectance`/`toa_reflectance`) or surface reflectance. It does not convert
+between them or validate scene endpoints. The default `None` is recorded as
+undeclared in optional diagnostics. `return_diagnostics=True` preserves NDVI
+and emissivities alongside the LST result, with the optical contract.
+
+`du_from_scene(..., diagnostics=True)` additionally retains calibrated optical
+bands and BT. Its provenance records the installed source/card digest, NumPy
+and Python versions, MTL coefficients and checksum, grid, mask checksum, QA
+policy, selected method cards and parameters. `hash_inputs=True` adds complete
+SHA256 checksums of imagery; otherwise imagery size/mtime are only identifiers,
+not proof of content identity. Default numerical results are unchanged.
+
+Wang scene-bound scanning now applies the caller's whole-scene mask as well as
+QA and thermal validity. Reuse those bounds and a consistent mask for all tiles.
+GeoTIFF export rejects arrays whose shape differs from the specified output
+window, preventing silent origin/extent mismatch.
+
+Calibration auxiliaries were also checked against the official USGS
+[Collection 2 QA bit tables](https://www.usgs.gov/landsat-missions/landsat-collection-2-quality-assessment-bands)
+and [Level-2 product scaling](https://www.usgs.gov/landsat-missions/landsat-collection-2-level-2-science-products).
+`surface_reflectance` scales an existing SR product; it does not perform its
+atmospheric correction or replace product QA/range screening. QA_RADSAT B2/B4/B5
+and terrain-occlusion bits form the documented conservative scene mask; they
+are not thermal saturation bits.
+
+## Unified family interface
+
+`emissivity(..., method=...)` selects Avdan, Rongali or Sobrino. Chavez DOS/COST
+uses `optical_correction(..., method=...)`, which returns an array or diagnostics
+with reusable parameters. Both appear in the 17-selector catalog. Their source
+conditions and coefficient choices are unchanged. `split_window` accepts
+calibrated optical bands or a prepared band-specific emissivity pair, with
+conflicting/unused input routes rejected. The empty reserved family was removed.
+See the [per-method notebooks](../exemple/README.md) for all
+parameters, units and options.

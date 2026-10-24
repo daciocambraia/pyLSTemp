@@ -23,13 +23,13 @@ This rebuild keeps the conversion methods tied to the references listed by the o
   Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016.
   This is a Band 10 single-channel workflow. The implementation uses `lambda=10.895e-6 m`, calculated as the midpoint of the Landsat 8/9 TIRS Band 10 range (`10.6-11.19 um`).
 
-- `jimenez-munoz-sc-2014`
+- `jimenez-munoz-2014-sc`
   Jimenez-Munoz et al. (2014). Band-10 SC: Eqs. 1, 2, 4 and 6.
   [Article](https://doi.org/10.1109/LGRS.2014.2312032).
 
 ## Split-window temperature algorithms
 
-- `jimenez-munoz-2014`
+- `jimenez-munoz-2014-sw`
   Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. IEEE Geoscience and Remote Sensing Letters, 2014.
 - `du-2015`
   Du, C., Ren, H., Qin, Q., Meng, J., and Zhao, S. A practical split-window algorithm for estimating land surface temperature from Landsat 8 data. Remote Sensing, 2015.
@@ -57,10 +57,6 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 
 - `ren-2015`
   Ren, H., Du, C., Liu, R., Qin, Q., Yan, G., Li, Z.-L., Meng, J. (2015). Atmospheric water vapor retrieval from Landsat 8 thermal infrared images. JGR Atmospheres, 120, 1723-1738. [Article](https://doi.org/10.1002/2014JD022619). Eqs.1b/1c, p.1724; Eq.2, p.1726; local NDVI filtering, Section 4.2. Verified against the supplied PDF.
-
-## Radiative transfer
-
-This family is currently reserved for future methods.
 
 ## Historical method removed from the current release
 

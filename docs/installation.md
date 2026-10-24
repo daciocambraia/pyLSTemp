@@ -2,7 +2,7 @@
 
 ## Requisitos
 
-Python 3.9+ e pip. Os exemplos de imagens usam rasterio, Pillow e matplotlib.
+Python 3.9+ e pip. Os exemplos de imagens usam rasterio e Pillow.
 
 ## Instalar esta versao local
 
@@ -28,4 +28,4 @@ python -m build
 
 Use uma pasta Landsat 8/9 Level-1 por cena com B4, B5, B10, B11, MTL,
 QA_PIXEL e QA_RADSAT, mantendo os nomes originais e a mesma grade.
-Veja [dados dos exemplos](../exemples/DATA.md) e [guia de uso](usage.md).
+Veja [dados dos exemplos](../exemple/README.md) e [guia de uso](usage.md).

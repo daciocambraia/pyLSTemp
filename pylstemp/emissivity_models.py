@@ -15,13 +15,16 @@ def _inputs(ndvi, mask, ndvi_soil, ndvi_vegetation):
     return n, fvc, invalid
 
 
-def sobrino_2004_tm6(ndvi=None, *, red=None, nir=None, mask=None):
+def _sobrino_2004_tm6(ndvi=None, *, red=None, nir=None, mask=None):
     """TM5 band-6 Eq.13 for mixed pixels, and 0.99 for full vegetation.
 
     Bare soil (NDVI<0.2), water, snow and undefined inputs are NOT inferred
     from Eq.13: they are NaN. Constants are not calibrated for Landsat 8/9.
     Pass red/nir for internal NDVI, with a suitable land mask; NDVI alone
     cannot identify water or snow. A prepared ndvi remains an alternative.
+    Source Section 4 constructs NDVI from TOA/surface reflectivities,
+    preferring surface reflectivities; radiance inputs are not established
+    equivalents. The numerical arrays cannot prove their radiometric units.
     """
     ndvi = _resolve_ndvi(ndvi, red=red, nir=nir, mask=mask)
     n, fvc, invalid = _inputs(ndvi, mask, .2, .5)
@@ -30,13 +33,15 @@ def sobrino_2004_tm6(ndvi=None, *, red=None, nir=None, mask=None):
     return np.where(invalid, np.nan, result)
 
 
-def sobrino_2008(ndvi=None, *, red=None, nir=None, soil_emissivity, vegetation_emissivity,
+def _sobrino_2008(ndvi=None, *, red=None, nir=None, soil_emissivity, vegetation_emissivity,
                  variant="simplified", red_surface=None, soil_red_coefficients=None,
                  cavity_factor=.55, vegetation_cavity=.005,
                  ndvi_soil=.2, ndvi_vegetation=.5, mask=None):
     """NDVI thresholds: simplified Eq.9, or full Eqs.5--8 with cavity.
 
     Pass red/nir for internal NDVI, or an explicitly prepared ndvi.
+    Declare their radiometric convention and justify the chosen thresholds;
+    the simplified relation does not establish radiance/reflectance equivalence.
     Endmembers must be provided per spectral band, with their provenance.
     Full mode requires calibrated SURFACE red reflectance and (a,b) for the
     soil relationship a+b*rho_red. No TM/AVHRR constants are assigned to TIRS.

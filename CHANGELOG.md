@@ -1,5 +1,37 @@
 # Changelog
 
+## Consistent Jimenez-Munoz SC/SW selectors (2026-10-23)
+
+- Use jimenez-munoz-2014-sw and jimenez-munoz-2014-sc, placing SC/SW after the year in both selectors. Update catalog, source cards, examples and documentation.
+- Keep jimenez-munoz-2014 (SW) and jimenez-munoz-sc-2014 (SC) as compatibility aliases. Other method names, equations, coefficients and units are unchanged.
+
+## Examples per method (2026-10-22)
+
+- Replace aggregate/family guides and comparison scripts with 17 focused notebooks in exemple/, one for each method selector.
+- Present a short introduction, required inputs, general call and parameter details before each image example.
+- Preserve superseded examples in the local verification archive; keep equations and the public API unchanged.
+
+## Unified family API (2026-10-22)
+
+- Accept prepared band emissivities in split_window; remove the separate public entry point.
+- Select Sobrino with emissivity(method=...) and Chavez with optical_correction(method=...), including reusable fitting parameters.
+- Include all 17 method selectors in the catalog and remove the empty reserved family.
+- Add a complete image-based notebook with parameter, unit, option and configuration details.
+
+## Methodological audit completion (2026-10-22)
+
+- Ship 20 reviewed method cards with source locations, coefficients, domains and explicit sensor/optical adaptations.
+- Add optional LST/intermediate diagnostics and reproducible scene provenance, with optional complete imagery hashes.
+- Apply caller masks to the Wang global NDVI scan; reject GeoTIFF output-window shape mismatches.
+- Run independent synthetic scientific regressions against the installed wheel in CI; retain the complete scene suite and private data locally.
+
+
+## Optical source contracts (2026-10-22)
+
+- Record method-specific optical decisions from the supplied original Avdan, Rongali, Wang, Ren and Sobrino PDFs. Preserve unresolved conventions and scene-specific threshold transfers explicitly.
+- Add source sensor, source location, optical input contract and review status to catalog metadata. Correct input-help text that could imply optical quantities are interchangeable.
+- Preserve retrieval formulas, coefficients, default scene calibration and internal NDVI; no universal optical conversion is introduced.
+
 ## Internal NDVI and simpler public API (2026-10-22)
 
 - Remove the public spectral-index dispatcher, its registry and legacy namespaces; use a single internal NDVI helper. The catalog has 13 algorithms.
@@ -47,7 +79,7 @@
 
 ## Jimenez single-channel and documentation (2026-10-05)
 
-- Added jimenez-munoz-sc-2014 with explicit Band-10 TOA radiance/PWV and operational PWV screen [0,3].
+- Added jimenez-munoz-2014-sc with explicit Band-10 TOA radiance/PWV and operational PWV screen [0,3].
 - Restored function-by-function image examples and v1.10-style README organization, with links for every algorithm.
 - Added SC to the full workflow and single-channel notebook; corrected Kerr bibliographic attribution.
 

@@ -128,3 +128,15 @@ com observacoes externas. Janela reamostrada, controles operacionais e
 emissividade Rongali sao escolhas registradas, sem alegar reproducao integral
 do experimento original. Transferir coeficientes Landsat 8 para Landsat 9
 permanece experimental. Veja [validacao](validation.md) e [fontes](references.md).
+
+## Intermediarios e rastreabilidade opcionais
+
+Use `du_from_scene(scene, diagnostics=True)` para manter as bandas opticas
+calibradas, BT10/BT11, NDVI interno e emissividades em `result.intermediates`.
+`result.export(scene, pasta)` grava esses sete GeoTIFFs com a mesma janela,
+projecao e origem da LST. Sem essa opcao, os produtos anteriores sao preservados.
+O JSON inclui coeficientes MTL, grade, versoes, hash do codigo e das fichas,
+politica QA, mascara e condicoes dos metodos selecionados. `hash_inputs=True`
+registra tambem SHA256 de todas as imagens; por padrao, tamanho/data identificam
+os arquivos de imagem sem comprovar identidade do conteudo. A conferencia do
+MTL por SHA256 e sempre feita. Artigos e dados locais nao sao publicados.

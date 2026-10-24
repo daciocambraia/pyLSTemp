@@ -67,7 +67,7 @@ class SplitWindowJimenezMunoz2014LST(SplitWindowParentLST):
         water_vapor = kwargs.get("water_vapor")
         if water_vapor is None:
             raise ValueError(
-                "'jimenez-munoz-2014' requires water_vapor in g/cm2. "
+                "'jimenez-munoz-2014-sw' requires water_vapor in g/cm2. "
                 "Use water_vapor(...) or provide an external estimate."
             )
 
@@ -108,7 +108,8 @@ class SplitWindowJimenezMunoz2014LST(SplitWindowParentLST):
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="jimenez-munoz-2014",
+    key="jimenez-munoz-2014-sw",
+    aliases=("jimenez-munoz-2014",),
     factory=SplitWindowJimenezMunoz2014LST,
     name="Jimenez-Munoz 2014 split-window LST",
     reference="Jimenez-Munoz et al. (2014)",

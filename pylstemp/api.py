@@ -1,4 +1,4 @@
-"""Stable public API for the package."""
+"""Family-oriented public API for the package."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import numpy as np
 import warnings
 
 from .messages import contextual_errors
-from .requirements import describe_inputs, PWV_SUPPORT
+from .requirements import describe_inputs, describe_source_contract, PWV_SUPPORT
 
 from .algorithms import FAMILY_REGISTRIES
 from .algorithms.emissivity import emissivity_registry
@@ -15,7 +15,6 @@ from .algorithms.split_window import split_window_registry
 from .calibration import brightness, normalize_thermal_band as _normalize_thermal_band
 from .utils import _compute_ndvi as _ndvi, _resolve_ndvi
 from .algorithms.water_vapor import water_vapor_registry
-from .exceptions import InputShapesNotEqual
 from .references import ORIGINAL_LIBRARY_CREDIT
 from .validation import (
     build_mask_from,
@@ -112,20 +111,57 @@ def emissivity_band_11(ndvi_image, band_4_red=None, emissivity_method: str = "av
 
 
 @contextual_errors
-def emissivity(ndvi_image=None, band=10, band_4_red=None,
-               emissivity_method="avdan-2016", *, red=None, nir=None, mask=None):
-    """Compute emissivity from optical red/nir, with internal NDVI.
+def emissivity(ndvi_image=None, band=None, band_4_red=None, emissivity_method=None,
+               *, method=None, red=None, nir=None, mask=None, variant=None,
+               soil_emissivity=None, vegetation_emissivity=None, red_surface=None,
+               soil_red_coefficients=None, cavity_factor=None, vegetation_cavity=None,
+               ndvi_soil=None, ndvi_vegetation=None):
+    """Estimate emissivity with one method selector and internal NDVI.
 
-    Prefer emissivity(red=red, nir=nir, band=10, ...). An explicitly prepared
-    ndvi_image remains accepted instead of bands for numerical reuse.
-    The bands must have identical shapes and the same radiometric convention.
-    mask=True marks invalid pixels. Avdan is single-channel; Gopinadh supplies
-    band-specific emissivities. band_4_red is retained for prepared-NDVI calls.
+    method: avdan-2016 (default), gopinadh-2018, sobrino-2004-tm6 or
+    sobrino-2008. band defaults to 6 for TM6, 10 otherwise. Sobrino 2008
+    requires band-compatible soil/vegetation emissivities; variant is
+    simplified (default) or full. Full also requires red_surface and (a,b).
+    Emissivity is dimensionless. NDVI and masks must share the input grid.
+    emissivity_method is a compatibility keyword; do not combine with method.
     """
-    ndvi_image = _resolve_ndvi(ndvi_image, red=red, nir=nir, mask=mask)
-    normalized_band = _normalize_thermal_band(band)
-    pair = _emissivity_pair(ndvi_image, band_4_red=band_4_red,
-                            emissivity_method=emissivity_method)
+    if method is not None and emissivity_method is not None:
+        raise ValueError("Use method only; do not combine it with emissivity_method.")
+    selected = method if method is not None else emissivity_method
+    key = emissivity_registry.resolve_key("avdan-2016" if selected is None else selected)
+    n = _resolve_ndvi(ndvi_image, red=red, nir=nir, mask=mask)
+    options = dict(variant=variant, soil_emissivity=soil_emissivity,
+        vegetation_emissivity=vegetation_emissivity, red_surface=red_surface,
+        soil_red_coefficients=soil_red_coefficients, cavity_factor=cavity_factor,
+        vegetation_cavity=vegetation_cavity, ndvi_soil=ndvi_soil,
+        ndvi_vegetation=ndvi_vegetation)
+    if band_4_red is not None:
+        ensure_same_shape(ndvi=n, band_4_red=to_float_array("band_4_red", band_4_red))
+    if key == "sobrino-2004-tm6":
+        if band not in (None, 6, "6", "b6", "band_6") or isinstance(band, (bool, np.bool_)):
+            raise ValueError("sobrino-2004-tm6 is calibrated for Landsat5 TM band6, not TIRS10/11.")
+        if any(v is not None for v in options.values()) or band_4_red is not None:
+            raise ValueError("TM6 does not use Sobrino2008 options or band_4_red.")
+        from .emissivity_models import _sobrino_2004_tm6
+        return _sobrino_2004_tm6(n, mask=mask)
+    if key == "sobrino-2008":
+        if band is not None and (isinstance(band,(bool,np.bool_)) or
+                not isinstance(band,(int,np.integer)) or band < 1):
+            raise ValueError("For Sobrino2008, band must be a positive integer identifying the supplied endmembers.")
+        if band_4_red is not None:
+            raise ValueError("Use red_surface for the full Sobrino2008 soil relation.")
+        if soil_emissivity is None or vegetation_emissivity is None:
+            raise ValueError("sobrino-2008 requires band-compatible soil_emissivity and vegetation_emissivity.")
+        if variant != "full" and any(v is not None for v in
+                (cavity_factor, vegetation_cavity)):
+            raise ValueError("Cavity controls require Sobrino2008 variant='full'.")
+        from .emissivity_models import _sobrino_2008
+        supplied = {k:v for k,v in options.items() if v is not None}
+        return _sobrino_2008(n, mask=mask, **supplied)
+    if any(v is not None for v in options.values()):
+        raise ValueError("Sobrino2008 parameters apply only to method='sobrino-2008'.")
+    normalized_band = _normalize_thermal_band(10 if band is None else band)
+    pair = _emissivity_pair(n, band_4_red=band_4_red, emissivity_method=key)
     return pair[0 if normalized_band == "band_10" else 1]
 
 
@@ -138,7 +174,8 @@ def single_window(
     emissivity_method: str = "avdan-2016",
     unit: str = "kelvin",
     *, mask=None, radiance_band_10=None, water_vapor=None,
-) -> np.ndarray:
+    return_diagnostics=False, optical_quantity=None,
+) -> np.ndarray | dict:
     """
     Compute land surface temperature using a single-channel method.
 
@@ -161,10 +198,10 @@ def single_window(
         Output temperature unit.
 
     radiance_band_10 : array-like, optional
-        Band-10 TOA radiance [W m-2 sr-1 um-1], required for jimenez-munoz-sc-2014.
+        Band-10 TOA radiance [W m-2 sr-1 um-1], required for jimenez-munoz-2014-sc.
         Must correspond to the same band, pixels and calibration as brightness_band_10.
     water_vapor : float or array-like, optional
-        Required for jimenez-munoz-sc-2014, in g/cm2. Scalar range [0,3];
+        Required for jimenez-munoz-2014-sc, in g/cm2. Scalar range [0,3];
         raster pixels outside [0,3] or nonfinite become NaN.
 
     Returns
@@ -191,6 +228,10 @@ def single_window(
     ...     unit="celsius",
     ... )
     """
+    from .provenance import optical_contract
+    optical_contract(emissivity_method, optical_quantity)
+    if not isinstance(return_diagnostics, (bool, np.bool_)):
+        raise ValueError("return_diagnostics must be boolean.")
     normalized_unit = normalize_temperature_unit(unit)
 
     brightness_10 = to_float_array("brightness_band_10", brightness_band_10)
@@ -211,143 +252,105 @@ def single_window(
 
     key = single_channel_registry.resolve_key(lst_method)
     extra = {}
-    if key == "jimenez-munoz-sc-2014":
+    if key == "jimenez-munoz-2014-sc":
         extra = dict(radiance_band_10=radiance_band_10, water_vapor=water_vapor)
     elif radiance_band_10 is not None or water_vapor is not None:
         raise ValueError(f"single_window(lst_method={key!r}): radiance_band_10 and "
-                         "water_vapor are only used by jimenez-munoz-sc-2014.")
+                         "water_vapor are only used by jimenez-munoz-2014-sc.")
     result = single_channel_registry.create(key)(
         emissivity_10=emissivity_10,
         brightness_temperature_10=brightness_10,
         mask=mask,
         **extra,
     )
-    return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
+    output = result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
+    if return_diagnostics:
+        from .provenance import optical_contract
+        return dict(lst=output, ndvi=ndvi_image, emissivity_10=emissivity_10,
+                    invalid_mask=~np.isfinite(output), units=normalized_unit,
+                    optical_contract=optical_contract(emissivity_method, optical_quantity))
+    return output
 
 
 @contextual_errors
-def split_window(
-    brightness_band_10,
-    brightness_band_11,
-    band_4_red,
-    band_5_nir,
-    lst_method: str,
-    emissivity_method: str = "gopinadh-2018",
-    unit: str = "kelvin",
-    water_vapor: float | np.ndarray | None = None,
-    *, mask=None, atmospheric_profile=None, temperature_range="0-60",
-) -> np.ndarray:
+def split_window(brightness_band_10, brightness_band_11, band_4_red=None,
+                 band_5_nir=None, lst_method=None, emissivity_method=None,
+                 unit="kelvin", water_vapor=None, *, emissivity_10=None,
+                 emissivity_11=None, ndvi_image=None, mask=None,
+                 atmospheric_profile=None, temperature_range="0-60",
+                 return_diagnostics=False, optical_quantity=None):
+    """Compute SW LST from BT10/BT11 [K] and ONE emissivity input route.
+
+    Provide calibrated red/nir to estimate band-specific emissivity with
+    gopinadh-2018 (default), OR provide emissivity_10 and emissivity_11.
+    Kerr additionally needs red/nir or prepared ndvi_image with either route.
+    Prepared emissivity with optical bands is accepted only for Kerr NDVI;
+    emissivity_method cannot be combined with prepared emissivities.
+    PWV is g/cm2; unit selects kelvin/celsius. Diagnostics preserve NDVI,
+    emissivities and source conditions; NDVI is None if unused/unavailable.
     """
-    Compute land surface temperature using a split-window method.
-
-    This workflow expects brightness temperature for thermal bands 10 and 11
-    to be computed beforehand with `brightness(...)`.
-
-    Parameters
-    ----------
-    brightness_band_10 : array-like
-        Brightness temperature image for thermal band 10, in Kelvin.
-    brightness_band_11 : array-like
-        Brightness temperature image for thermal band 11, in Kelvin.
-    band_4_red : array-like
-        Red band image used to compute NDVI internally.
-    band_5_nir : array-like
-        Near-infrared band image used to compute NDVI internally.
-    lst_method : str
-        Split-window LST method to use, such as `"du-2015"`,
-        `"jimenez-munoz-2014"`, `"sobrino-1993"`, `"kerr-1992"`, or
-        `"price-1984"`.
-    emissivity_method : str, default="gopinadh-2018"
-        Emissivity method used before LST computation.
-    unit : {"kelvin", "celsius"}, default="kelvin"
-        Output temperature unit.
-    water_vapor : float or array-like, optional
-        Atmospheric column water vapor in g/cm2. Required by
-        `"jimenez-munoz-2014"` and optional for `"du-2015"`.
-
-    Returns
-    -------
-    numpy.ndarray
-        Land surface temperature image in the requested unit.
-
-    Notes
-    -----
-    - Input arrays must have the same shape and spatial alignment.
-    - `avdan-2016` is blocked for split-window workflows because it is a
-      single-channel emissivity method.
-    - `water_vapor` can be a single scene-level value or a raster, depending
-      on the selected method.
-
-    Examples
-    --------
-    >>> from pylstemp import split_window
-    >>> lst = split_window(
-    ...     brightness_band_10=brightness_10,
-    ...     brightness_band_11=brightness_11,
-    ...     band_4_red=red,
-    ...     band_5_nir=nir,
-    ...     lst_method="du-2015",
-    ...     emissivity_method="gopinadh-2018",
-    ...     unit="celsius",
-    ... )
-    """
+    from .provenance import optical_contract
+    optical_contract("gopinadh-2018", optical_quantity)
+    if not isinstance(return_diagnostics, (bool, np.bool_)):
+        raise ValueError("return_diagnostics must be boolean.")
     normalized_unit = normalize_temperature_unit(unit)
-    if emissivity_registry.resolve_key(emissivity_method) in SINGLE_CHANNEL_EMISSIVITY_METHODS:
-        raise ValueError(
-            f"'{emissivity_method}' is a single-channel emissivity method and should not be used "
-            "with split_window(). Use a band-specific emissivity method such as "
-            "'gopinadh-2018'."
-        )
-
-    brightness_10 = to_float_array("brightness_band_10", brightness_band_10)
-    brightness_11 = to_float_array("brightness_band_11", brightness_band_11)
-    red = to_float_array("band_4_red", band_4_red)
-    nir = to_float_array("band_5_nir", band_5_nir)
-    ensure_same_shape(
-        brightness_band_10=brightness_10,
-        brightness_band_11=brightness_11,
-        band_4_red=red,
-        band_5_nir=nir,
-    )
-
-    user_mask = mask
-    mask = build_mask_from(brightness_10, brightness_11) | ~np.isfinite(red) | ~np.isfinite(nir)
-    if user_mask is not None:
-        mask |= ensure_boolean_mask(user_mask, shape=brightness_10.shape)
-    ndvi_image = _ndvi(nir=nir, red=red, mask=mask)
-    emissivity_10, emissivity_11 = _emissivity_pair(
-        ndvi_image, band_4_red=red, emissivity_method=emissivity_method)
-
-    if brightness_11 is None or emissivity_11 is None:
-        raise InputShapesNotEqual(
-            "Split-window computation requires both band 11 brightness temperature "
-            "and band 11 emissivity."
-        )
-
-    algorithm = split_window_registry.create(lst_method)
-    method_key = split_window_registry.resolve_key(lst_method)
-    if water_vapor is not None and method_key in {"price-1984", "kerr-1992", "sobrino-1993"}:
-        warnings.warn(
-            f"split_window(lst_method='{method_key}'): water_vapor is not used by this equation; "
-            "the supplied value will be ignored. Use 'du-2015' (scalar/raster) or "
-            "'jimenez-munoz-2014' (scalar/raster) to use PWV explicitly.",
-            RuntimeWarning, stacklevel=2)
+    key = split_window_registry.resolve_key(lst_method)
+    algorithm = split_window_registry.create(key)
+    t10 = to_float_array("brightness_band_10", brightness_band_10)
+    t11 = to_float_array("brightness_band_11", brightness_band_11)
+    ensure_same_shape(brightness_band_10=t10, brightness_band_11=t11)
+    invalid = build_mask_from(t10, t11)
+    if mask is not None:
+        invalid |= ensure_boolean_mask(mask, shape=t10.shape)
+    prepared = emissivity_10 is not None or emissivity_11 is not None
+    if prepared:
+        if emissivity_10 is None or emissivity_11 is None:
+            raise ValueError("Supply both emissivity_10 and emissivity_11.")
+        if emissivity_method is not None:
+            raise ValueError("Prepared emissivities cannot be combined with emissivity_method.")
+        if key != "kerr-1992" and any(v is not None for v in (band_4_red, band_5_nir, ndvi_image)):
+            raise ValueError("Prepared emissivities do not use optical/NDVI inputs except for Kerr.")
+        e10 = to_float_array("emissivity_10", emissivity_10)
+        e11 = to_float_array("emissivity_11", emissivity_11)
+        ensure_same_shape(brightness_band_10=t10, emissivity_10=e10, emissivity_11=e11)
+        n = None
+        if key == "kerr-1992":
+            n = _resolve_ndvi(ndvi_image, red=band_4_red, nir=band_5_nir, mask=invalid)
+            ensure_same_shape(brightness_band_10=t10, ndvi_image=n)
+        contract = optical_contract("kerr-1992" if key == "kerr-1992" else "prepared-emissivity", optical_quantity)
+        contract["emissivity_source"] = "caller supplied; band/sensor provenance required"
+    else:
+        if band_4_red is None or band_5_nir is None:
+            raise ValueError("Supply red/nir bands or a prepared emissivity pair.")
+        if ndvi_image is not None:
+            raise ValueError("NDVI is computed internally from red/nir; do not supply ndvi_image too.")
+        method = "gopinadh-2018" if emissivity_method is None else emissivity_method
+        method = emissivity_registry.resolve_key(method)
+        if method in SINGLE_CHANNEL_EMISSIVITY_METHODS:
+            raise ValueError(f"'{method}' is a single-channel emissivity method and cannot be used with split_window().")
+        red = to_float_array("band_4_red", band_4_red)
+        nir = to_float_array("band_5_nir", band_5_nir)
+        ensure_same_shape(brightness_band_10=t10, band_4_red=red, band_5_nir=nir)
+        invalid |= ~np.isfinite(red) | ~np.isfinite(nir)
+        n = _ndvi(nir=nir, red=red, mask=invalid)
+        e10, e11 = _emissivity_pair(n, band_4_red=red, emissivity_method=method)
+        contract = optical_contract("kerr-1992" if key == "kerr-1992" else method, optical_quantity)
+    if water_vapor is not None and key in {"price-1984", "kerr-1992", "sobrino-1993"}:
+        warnings.warn(f"split_window(lst_method='{key}'): water_vapor is not used by this equation; the supplied value will be ignored.", RuntimeWarning, stacklevel=2)
     extra = {}
-    if method_key == "rozenstein-2014":
+    if key == "rozenstein-2014":
         extra = dict(atmospheric_profile=atmospheric_profile, temperature_range=temperature_range)
     elif atmospheric_profile is not None or temperature_range != "0-60":
         raise ValueError("Atmospheric profile and temperature_range apply only to rozenstein-2014.")
-    result = algorithm(
-        emissivity_10=emissivity_10,
-        emissivity_11=emissivity_11,
-        brightness_temperature_10=brightness_10,
-        brightness_temperature_11=brightness_11,
-        ndvi=ndvi_image,
-        mask=mask,
-        water_vapor=water_vapor,
-        **extra,
-    )
-    return result if normalized_unit == "kelvin" else result - CELSIUS_SCALER
+    result = algorithm(brightness_temperature_10=t10, brightness_temperature_11=t11,
+        emissivity_10=e10, emissivity_11=e11, ndvi=n, mask=invalid,
+        water_vapor=water_vapor, **extra)
+    output = result if normalized_unit == "kelvin" else result-CELSIUS_SCALER
+    if return_diagnostics:
+        return dict(lst=output, ndvi=n, emissivity_10=e10, emissivity_11=e11,
+                    invalid_mask=~np.isfinite(output), units=normalized_unit,
+                    optical_contract=contract)
+    return output
 
 
 @contextual_errors
@@ -393,15 +396,16 @@ def water_vapor(
 
 
 
-def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
+def list_algorithms() -> dict:
     """
-    Return metadata for all registered algorithm families and methods.
+    Return metadata for all available family-dispatched methods.
 
     Returns
     -------
     dict
         Catalog containing each algorithm family, method key, display name,
-        reference, citation, and original-library credit.
+        reference, citation, source conditions, optical convention and
+        original-library credit. Source-review status is distinct from tests.
 
     Examples
     --------
@@ -418,6 +422,7 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
                 "name": metadata.name,
                 "reference": metadata.reference,
                 "citation": metadata.citation,
+                **describe_source_contract(family_name, key),
                 "input_requirements": describe_inputs(family_name, key),
                 "water_vapor_support": PWV_SUPPORT.get(key, "Not an atmospheric PWV-dependent LST method."),
                 "scientific_status": (
@@ -431,41 +436,25 @@ def list_algorithms() -> dict[str, dict[str, dict[str, str]]]:
             for key, metadata in registry.describe().items()
         }
 
+    # Function-dispatched models share the reviewed source cards; no numerical
+    # implementation or coefficient table is duplicated in the catalog.
+    from .provenance import _cards
+    cards = {card["method"]: card for card in _cards()}
+    for family, key, source in (("emissivity", "sobrino-2004-tm6", "sobrino-2004-tm6"),
+            ("emissivity", "sobrino-2008", "sobrino-2008-simplified"),
+            ("optical_correction", "chavez-dos", "chavez-dos"),
+            ("optical_correction", "chavez-cost", "chavez-cost")):
+        card = cards[source]
+        item = dict(name=key, reference=card["reference"], citation=card["reference"],
+            source_sensor=card["sensor"], source_location=card["source_location"],
+            optical_input_contract=card["optical_contract"],
+            source_review_status=card["source_review_status"],
+            input_requirements=card["inputs"], scientific_status=card["decisions"],
+            water_vapor_support="Not used")
+        if key == "sobrino-2008":
+            item["variants"] = ["simplified", "full"]
+            item["variant_input_requirements"] = {variant: cards["sobrino-2008-"+variant]["inputs"] for variant in item["variants"]}
+            item["variant_source_locations"] = {variant: cards["sobrino-2008-"+variant]["source_location"] for variant in item["variants"]}
+        catalog.setdefault(family, {})[key] = item
+
     return catalog
-
-
-@contextual_errors
-def split_window_from_emissivity(brightness_band_10, brightness_band_11,
-                                 emissivity_10, emissivity_11, *, lst_method,
-                                 water_vapor=None, mask=None, unit="kelvin",
-                                 ndvi_image=None, red=None, nir=None, atmospheric_profile=None,
-                                 temperature_range="0-60"):
-    """Run SW with a prepared band-specific emissivity pair.
-
-    All four input arrays must have identical shapes and aligned grids.
-    This entry point permits explicit Sobrino endmembers without treating
-    TOA radiance as red surface reflectance. The caller records sensor,
-    emissivity band provenance and optical convention.
-    """
-    values = {name: to_float_array(name,value) for name,value in
-              (("brightness_temperature_10",brightness_band_10),
-               ("brightness_temperature_11",brightness_band_11),
-               ("emissivity_10",emissivity_10),("emissivity_11",emissivity_11))}
-    ensure_same_shape(**values)
-    shape=values["brightness_temperature_10"].shape
-    valid_mask=np.zeros(shape,bool) if mask is None else ensure_boolean_mask(mask,shape=shape)
-    key=split_window_registry.resolve_key(lst_method)
-    extra={}
-    if key=="rozenstein-2014":
-        extra=dict(atmospheric_profile=atmospheric_profile,temperature_range=temperature_range)
-    elif atmospheric_profile is not None or temperature_range!="0-60":
-        raise ValueError("Atmospheric profile and temperature_range apply only to rozenstein-2014.")
-    if key=="kerr-1992":
-        ndvi_image=_resolve_ndvi(ndvi_image,red=red,nir=nir,mask=valid_mask)
-        ensure_same_shape(ndvi_image=ndvi_image,**values)
-    if water_vapor is not None and key in {"price-1984","kerr-1992","sobrino-1993"}:
-        warnings.warn("water_vapor is ignored by this legacy equation.",RuntimeWarning,stacklevel=2)
-    normalized_unit=normalize_temperature_unit(unit)
-    result=split_window_registry.create(key)(**values,mask=valid_mask,
-             water_vapor=water_vapor,ndvi=ndvi_image,**extra)
-    return result if normalized_unit=="kelvin" else result-CELSIUS_SCALER

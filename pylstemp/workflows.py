@@ -18,6 +18,7 @@ class DuSceneResult:
     provenance: dict
     window: tuple
     pwv_diagnostics: object = None
+    intermediates: object = None
 
     def export(self, scene, folder):
         """Export LST, PWV, rejection masks and a JSON provenance sidecar."""
@@ -38,22 +39,32 @@ class DuSceneResult:
                              ("sample_count","pixel_count")):
                 scene.write_geotiff(dest / ("pwv_"+key+".tif"),
                     self.pwv_diagnostics[key],window=self.window,units=unit)
+        if self.intermediates is not None:
+            for name, value in self.intermediates.items():
+                units = "K" if name.startswith("bt") else (
+                    "W m-2 sr-1 um-1" if name.startswith("optical_") and
+                    self.provenance["optical_quantity"] == "radiance" else "dimensionless")
+                scene.write_geotiff(dest / (name + ".tif"), value,
+                                    window=self.window, units=units)
         (dest / "provenance.json").write_text(
             json.dumps(self.provenance, indent=2, allow_nan=False), encoding="utf8")
 
 
-def scene_ndvi_range(scene, *, optical_quantity="radiance", block_rows=256):
+def scene_ndvi_range(scene, *, optical_quantity="radiance", block_rows=256, mask=None):
     """Scan all scene land pixels; reuse these bounds for every Wang tile."""
     if isinstance(block_rows, bool) or not isinstance(block_rows, int) or block_rows < 1:
         raise ValueError("block_rows must be a positive integer.")
+    user_mask = None if mask is None else ensure_boolean_mask(mask, shape=scene.shape)
     lower, upper = np.inf, -np.inf
     height, width = scene.shape
     for row in range(0, height, block_rows):
-        optical, thermal, mask = scene.calibrated(
+        optical, thermal, invalid = scene.calibrated(
             (row, min(row + block_rows, height), 0, width),
             exclude_water=True, optical_quantity=optical_quantity)
-        mask = mask | ~np.isfinite(thermal[10]) | ~np.isfinite(thermal[11])
-        ndvi = _compute_ndvi( nir=optical[5], red=optical[4], mask=mask)
+        invalid = invalid | ~np.isfinite(thermal[10]) | ~np.isfinite(thermal[11])
+        if user_mask is not None:
+            invalid = invalid | user_mask[row:min(row + block_rows, height)]
+        ndvi = _compute_ndvi(nir=optical[5], red=optical[4], mask=invalid)
         valid = ndvi[np.isfinite(ndvi)]
         if valid.size:
             lower, upper = min(lower, float(valid.min())), max(upper, float(valid.max()))
@@ -65,7 +76,8 @@ def scene_ndvi_range(scene, *, optical_quantity="radiance", block_rows=256):
 def du_from_scene(scene, *, window=None, pwv_mode="general", pwv_method="wang-2015",
                   emissivity_method="gopinadh-2018", optical_quantity="radiance",
                   unit="kelvin", window_size=None, group_count=3, chunk_rows=8,
-                  ndvi_range=None, mask=None, pwv_options=None):
+                  ndvi_range=None, mask=None, pwv_options=None,
+                  diagnostics=False, hash_inputs=False):
     """Compute Du with general, mean or raster PWV, explicitly selecting Wang/Ren.
 
     Wang uses global scene NDVI bounds and a 21-pixel default. Ren uses local
@@ -76,6 +88,9 @@ def du_from_scene(scene, *, window=None, pwv_mode="general", pwv_method="wang-20
     mask must span the whole scene so halo samples are excluded consistently.
     Ren pwv_options may set min_samples, quality_threshold and ndvi_filter.
     """
+    if not isinstance(diagnostics, (bool, np.bool_)) or not isinstance(hash_inputs, (bool, np.bool_)):
+        raise ValueError("diagnostics and hash_inputs must be boolean.")
+    save_intermediates = diagnostics
     if pwv_mode not in {"general", "mean", "raster"}:
         raise ValueError("pwv_mode must be general, mean or raster.")
     if pwv_method not in {"wang-2015","ren-2015"}:
@@ -94,6 +109,8 @@ def du_from_scene(scene, *, window=None, pwv_mode="general", pwv_method="wang-20
     lower_domain = .06 if pwv_method == "ren-2015" else .066
     height, width = scene.shape
     core = (0, height, 0, width) if window is None else tuple(window)
+    if len(core) != 4 or any(isinstance(v, (bool, np.bool_)) or not isinstance(v, (int, np.integer)) for v in core):
+        raise ValueError("Output window must contain four integer bounds.")
     r0, r1, c0, c1 = core
     if not (0 <= r0 < r1 <= height and 0 <= c0 < c1 <= width):
         raise ValueError("Output window lies outside scene.")
@@ -111,12 +128,17 @@ def du_from_scene(scene, *, window=None, pwv_mode="general", pwv_method="wang-20
     raw = pwv = supplied = diagnostics = None
     if pwv_mode != "general":
         if pwv_method == "wang-2015":
-            bounds_source = "caller_full_scene" if ndvi_range is not None else "scene_scan"
-            if ndvi_range is None:
-                ndvi_range = scene_ndvi_range(scene, optical_quantity=optical_quantity)
-            raw = water_vapor(thermal[10], thermal[11], red=optical[4], nir=optical[5], method=pwv_method,
-                              mask=invalid, window_size=window_size, group_count=group_count,
-                              chunk_rows=chunk_rows, ndvi_range=ndvi_range)[select]
+            if not np.any(~invalid):
+                # No estimator is run and no artificial NDVI bounds are invented.
+                bounds_source = "no_valid_halo_samples"
+                raw = np.full((r1-r0, c1-c0), np.nan)
+            else:
+                bounds_source = "caller_full_scene" if ndvi_range is not None else "scene_scan"
+                if ndvi_range is None:
+                    ndvi_range = scene_ndvi_range(scene, optical_quantity=optical_quantity, mask=user_mask)
+                raw = water_vapor(thermal[10], thermal[11], red=optical[4], nir=optical[5], method=pwv_method,
+                                  mask=invalid, window_size=window_size, group_count=group_count,
+                                  chunk_rows=chunk_rows, ndvi_range=ndvi_range)[select]
             accepted = raw
         else:
             result = water_vapor(thermal[10], thermal[11], red=optical[4], nir=optical[5], method=pwv_method,
@@ -136,7 +158,14 @@ def du_from_scene(scene, *, window=None, pwv_mode="general", pwv_method="wang-20
     lst = split_window(thermal[10][select], thermal[11][select],
                        optical[4][select], optical[5][select], lst_method="du-2015",
                        emissivity_method=emissivity_method, unit=unit,
-                       water_vapor=supplied, mask=invalid[select])
+                       water_vapor=supplied, mask=invalid[select],
+                       return_diagnostics=save_intermediates, optical_quantity=optical_quantity)
+    intermediates = None
+    if save_intermediates:
+        intermediates = {name: lst[name] for name in ("ndvi", "emissivity_10", "emissivity_11")}
+        intermediates.update(optical_red=optical[4][select], optical_nir=optical[5][select],
+                             bt10=thermal[10][select], bt11=thermal[11][select])
+        lst = lst["lst"]
     from . import __version__
     from .validation import normalize_temperature_unit
     provenance = dict(version=__version__, product_id=scene.product_id,
@@ -161,4 +190,9 @@ def du_from_scene(scene, *, window=None, pwv_mode="general", pwv_method="wang-20
         user_mask_supplied=mask is not None,
         water_excluded=pwv_mode != "general",
         scientific_status="Implementation checks only; no field accuracy validation. Landsat 9 transfer experimental.")
-    return DuSceneResult(lst, pwv, raw, ~np.isfinite(lst), provenance, core, diagnostics)
+    from .provenance import scene_provenance
+    provenance.update(scene_provenance(scene, emissivity_method=emissivity_method,
+        optical_quantity=optical_quantity, mask=user_mask, hash_inputs=hash_inputs,
+        pwv_method=None if pwv_mode == "general" else pwv_method))
+    provenance["intermediate_outputs"] = [] if intermediates is None else list(intermediates)
+    return DuSceneResult(lst, pwv, raw, ~np.isfinite(lst), provenance, core, diagnostics, intermediates)
