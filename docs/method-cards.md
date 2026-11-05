@@ -9,7 +9,7 @@ Os mesmos registros acompanham o pacote em [method_cards.json](../pylstemp/metho
 A regressao essencial esta em [tests/test_scientific_regression.py](../tests/test_scientific_regression.py).
 Os PDFs e imagens de verificacao permanecem no arquivo local.
 
-## avdan-2016
+## emissivity / avdan-2016
 
 Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016.
 
@@ -41,7 +41,7 @@ Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface te
 
 SHA256 da fonte local: `8f299fee5025be73f9b5d6a6c912b6a7fbadc3907e51f0f44d9a59ec4c2124aa`.
 
-## rongali-2018
+## emissivity / rongali-2018
 
 Rongali, G., et al. Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data. Journal of Geovisualization and Spatial Analysis, 2018.
 
@@ -75,7 +75,7 @@ Rongali, G., et al. Split-window algorithm for retrieval of land surface tempera
 
 SHA256 da fonte local: `b4b54e4e4fb6e5fb734e0b7cdfe55548b7983363adfe3b89ac2a95c3a0f3c6e8`.
 
-## jimenez-munoz-2014-sc
+## single_channel / jimenez-munoz-2014
 
 Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. IEEE Geoscience and Remote Sensing Letters 11(10), 1840-1843, 2014. https://doi.org/10.1109/LGRS.2014.2312032
 
@@ -121,7 +121,7 @@ Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J
 
 SHA256 da fonte local: `90d022db854f27d61c4ceb597a4f07b6f2d61079ff5ee2828eaebe02a59ce00c`.
 
-## mono-window-2016
+## single_channel / avdan-2016
 
 Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016.
 
@@ -151,7 +151,7 @@ Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface te
 
 SHA256 da fonte local: `8f299fee5025be73f9b5d6a6c912b6a7fbadc3907e51f0f44d9a59ec4c2124aa`.
 
-## du-2015
+## split_window / du-2015
 
 Du, C., Ren, H., Qin, Q., Meng, J., and Zhao, S. A practical split-window algorithm for estimating land surface temperature from Landsat 8 data. Remote Sensing, 2015.
 
@@ -263,7 +263,7 @@ Du, C., Ren, H., Qin, Q., Meng, J., and Zhao, S. A practical split-window algori
 
 SHA256 da fonte local: `60c7702be839f8b3bb066ef888fa65f20670208dd80be02921ad4b95c245da2f`.
 
-## jimenez-munoz-2014-sw
+## split_window / jimenez-munoz-2014
 
 Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. IEEE Geoscience and Remote Sensing Letters, 2014.
 
@@ -302,7 +302,7 @@ Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J
 
 SHA256 da fonte local: `90d022db854f27d61c4ceb597a4f07b6f2d61079ff5ee2828eaebe02a59ce00c`.
 
-## kerr-1992
+## split_window / kerr-1992
 
 Kerr, Y. H., Lagouarde, J. P., and Imbernon, J. Accurate land surface temperature retrieval from AVHRR data with use of an improved split window algorithm. Remote Sensing of Environment, 1992. This implementation interpolates the bare-soil and vegetation coefficients reported in Table 1 using the article's linear NDVI cover with NDVIbs=0.11 and NDVIv=0.72, cited from Begue (1991).
 
@@ -344,7 +344,7 @@ Kerr, Y. H., Lagouarde, J. P., and Imbernon, J. Accurate land surface temperatur
 
 SHA256 da fonte local: `1843f18fc14d660fac0c713a5e49693935815e36175071bd09f2b809e0545d3b`.
 
-## price-1984
+## split_window / price-1984
 
 Price, J. C. Land surface temperature measurements from the split window channels of the NOAA advanced very high-resolution radiometer. Journal of Geophysical Research, 1984. This implementation applies the Price split-window structure as a Landsat Band 10/11 adaptation.
 
@@ -378,7 +378,7 @@ Price, J. C. Land surface temperature measurements from the split window channel
 
 SHA256 da fonte local: `4011859cf02beeab075b2f636d18a2d5369ce4d015ec7169e411b911935a6dec`.
 
-## sobrino-1993
+## split_window / sobrino-1993
 
 Sobrino, J. A., Caselles, V., and Coll, C. Theoretical split window algorithms for determining the actual surface temperature. Il Nuovo Cimento, 1993.
 
@@ -412,7 +412,7 @@ Sobrino, J. A., Caselles, V., and Coll, C. Theoretical split window algorithms f
 
 SHA256 da fonte local: `07ebbe08ad41541cfcc3f1638782b9a0f21cc1d28536f4f19e439ef529634e80`.
 
-## brightness
+## thermal / brightness
 
 USGS LSDS-1747, Landsat 8-9 Calibration and Validation Algorithm Description Document, version 5, Sections 4.7.2.5/4.7.3.4.
 
@@ -442,7 +442,7 @@ USGS LSDS-1747, Landsat 8-9 Calibration and Validation Algorithm Description Doc
 
 SHA256 da fonte local: `8e39d9abc926cbdb2be2ca68808260f7cb5da683d85ef134edd03d7252fe25a4`.
 
-## ren-2015
+## water_vapor / ren-2015
 
 Ren, H., Du, C., Liu, R., Qin, Q., Yan, G., Li, Z.-L., Meng, J. (2015). Atmospheric water vapor retrieval from Landsat 8 thermal infrared images. JGR Atmospheres 120, 1723-1738. https://doi.org/10.1002/2014JD022619
 
@@ -484,7 +484,7 @@ Ren, H., Du, C., Liu, R., Qin, Q., Yan, G., Li, Z.-L., Meng, J. (2015). Atmosphe
 
 SHA256 da fonte local: `c7d2acf96ebf65e7c01223c31ab839efac718bcc03481a622eb09d2e6799891b`.
 
-## wang-2015
+## water_vapor / wang-2015
 
 Wang, M., He, G., Zhang, Z., Wang, G., and Long, T. NDVI-based split-window algorithm for precipitable water vapour retrieval from Landsat-8 TIRS data over land area. Remote Sensing Letters, 2015.
 
@@ -532,7 +532,7 @@ Wang, M., He, G., Zhang, Z., Wang, G., and Long, T. NDVI-based split-window algo
 
 SHA256 da fonte local: `25ff799f57450bb428ddc0d74fa4fe1aa3f594eed4707a0cdb7ebd68dbba35d1`.
 
-## toa_radiance
+## calibration / toa_radiance
 
 USGS LSDS-1747, Landsat 8-9 Calibration and Validation Algorithm Description Document, version 5.
 
@@ -561,7 +561,7 @@ USGS LSDS-1747, Landsat 8-9 Calibration and Validation Algorithm Description Doc
 
 SHA256 da fonte local: `8e39d9abc926cbdb2be2ca68808260f7cb5da683d85ef134edd03d7252fe25a4`.
 
-## toa_reflectance
+## calibration / toa_reflectance
 
 USGS LSDS-1747, Landsat 8-9 Calibration and Validation Algorithm Description Document, version 5.
 
@@ -591,7 +591,7 @@ USGS LSDS-1747, Landsat 8-9 Calibration and Validation Algorithm Description Doc
 
 SHA256 da fonte local: `8e39d9abc926cbdb2be2ca68808260f7cb5da683d85ef134edd03d7252fe25a4`.
 
-## chavez-dos
+## optical_correction / chavez-dos-1996
 
 Chavez (1996). Image-Based Atmospheric Corrections - Revisited and Improved. Photogrammetric Engineering & Remote Sensing 62, 1025-1036.
 
@@ -623,7 +623,7 @@ Chavez (1996). Image-Based Atmospheric Corrections - Revisited and Improved. Pho
 
 SHA256 da fonte local: `e8f7822658fec59af9a8e6ea5bdbb32a2fc266bc2e5b2e76d7fd7967e2e2351e`.
 
-## chavez-cost
+## optical_correction / chavez-cost-1996
 
 Chavez (1996). Image-Based Atmospheric Corrections - Revisited and Improved. Photogrammetric Engineering & Remote Sensing 62, 1025-1036.
 

@@ -1,41 +1,32 @@
 # Contributing
 
-Thanks for considering a contribution to `pyLSTemp`.
+## Development
 
-## Development setup
+Create a virtual environment outside the source folder, then install the extras:
 
 ```bash
-python -m pip install -e ".[dev,examples]"
-python -m unittest discover -s tests -v
-python -m build
-python -m twine check dist/*
+python -m pip install -e ".[dev]"
+python -m pytest tests -q
+python -m build --outdir ../dist-pylstemp
+python -m twine check ../dist-pylstemp/*
 ```
 
-## Project principles
+CI installs the wheel and executes
+`python -I -m pytest --import-mode=importlib tests -q` in Windows and Linux.
+The dev extra includes pytest, Rasterio, Pillow, build and Twine. Tests use
+independent synthetic numeric references and aligned small GeoTIFF/MTL/QA
+fixtures; notebook execution does not require user images or research data.
 
-- keep bibliographic references explicit when implementing or modifying formulas
-- prefer one algorithm per file for clarity and maintainability
-- verify functional changes locally and summarize the validation in the pull request
-- preserve visible credit to the original `pylandtemp` project
+## Change review
 
-## Pull requests
+- Preserve source equations and coefficients unless an independently justified correction is requested.
+- Keep family + method identities, units, domains and optical assumptions explicit.
+- Test behavior and independent numeric outcomes, including masks and rejection reasons.
+- Preserve screened defaults when extending diagnostic information.
+- Update signatures, examples, migration notes and the README together.
+- Inspect wheel/sdist contents and avoid packaging environments, caches or generated output.
+- Keep research data, manuscripts and research-specific scenarios outside this project.
+- Preserve the original pylandtemp credit and bibliographic references.
 
-Before opening a pull request:
-
-1. run the essential scientific regression suite, installation/import checks and package builds; run applicable local scene checks
-2. update docs when behavior or public API changes
-3. explain the scientific or technical rationale for formula changes
-4. keep changes focused and reviewable
-
-## Code style
-
-- use clear names over clever names
-- add concise comments where scientific logic would otherwise be hard to review
-- keep public APIs stable unless there is a strong reason to change them
-
-
-The essential `tests/` suite uses independent synthetic equations without private
-articles or imagery. CI executes it against the installed wheel using
-`python -I -m unittest discover -s tests -v`. The full local scientific suite,
-scene validators, datasets and reports stay under `Verificacao/` outside Git
-and distributions. Source changes require updating the reviewed method cards.
+See [contracts](docs/result-contracts.md), [verification](docs/validation.md)
+and [architecture](docs/architecture.md).

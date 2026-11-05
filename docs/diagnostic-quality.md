@@ -1,6 +1,11 @@
 # Diagnostic PWV and LST mode
 
-The default `quality_mode="screened"` keeps the existing numerical outputs, exceptions and legacy diagnostic dictionary format. `quality_mode="diagnostic"` always returns a dictionary containing raw estimates and flags. Flags describe quality/applicability concerns; they are not probabilities or independent field validation.
+The default quality_mode="screened" preserves numerical array results and
+input validation. return_diagnostics=True provides raw and screened arrays
+with the screened array selected. quality_mode="diagnostic" always returns
+both and selects the raw estimate. Both modes identify family, method, units,
+effective parameters and library version. See [common contracts](result-contracts.md).
+Flags are operational/application indicators, not probabilities of accuracy.
 
 ```python
 from pylstemp import water_vapor, single_window
@@ -11,7 +16,7 @@ pwv = water_vapor(bt10, bt11, red=red, nir=nir, method="ren-2015",
 lst = single_window(bt10, emissivity_10=e10, radiance_band_10=L10,
                     water_vapor=pwv["water_vapor"],
                     pwv_quality_flags=pwv["quality_flags"],
-                    lst_method="jimenez-munoz-2014-sc",
+                    method="jimenez-munoz-2014",
                     quality_mode="diagnostic", unit="celsius", mask=invalid)
 # lst['lst'] == lst['raw_lst']; units follow the requested temperature unit.
 # Bits accumulate: a pixel can carry several reasons at once.
@@ -47,6 +52,6 @@ Ren raw regression uses any mathematically calculable window (at least two sampl
 
 SC retains the same polynomial beyond 0–3 g/cm2 and flags extrapolation. Jimenez SW retains its equation, including finite negative PWV with flags and values above its evaluated 0–6 range. Du has NO per-PWV coefficient set outside 0–6.3: diagnostic mode explicitly uses its existing published all-CWV row and sets both domain and fallback flags. This is a change of coefficient policy, not a justified extrapolation or clipping to the nearest bin. Invalid emissivity/BT/radiance input contracts remain enforced.
 
-Spatial aggregation must be explicit. Callers can OR quality flags of finite contributing PWV pixels and add `SPATIAL_MEAN_PWV`, then pass that aligned uint16 array to LST. The second study run does this conservatively; one flagged donor can flag the aggregate. Keep contributor counts and acceptance fractions to interpret that aggregation.
+Spatial aggregation must be explicit. Callers can OR quality flags of finite contributing PWV pixels and add `SPATIAL_MEAN_PWV`, then pass that aligned uint16 array to LST. The scene workflow performs this reduction; one flagged donor can flag the aggregate. Keep contributor counts and acceptance fractions to interpret that aggregation.
 
-Diagnostic mode is supported by the active temperature APIs. `du_from_scene` retains its existing screened semantics; use the public PWV/LST functions to construct an explicit diagnostic chain.
+Diagnostic mode is supported by the PWV/LST families and du_from_scene. The workflow defaults to screened selection, retains both complete chains and distinguishes the screened spatial mean from the raw spatial mean. Counts and aggregation policy accompany the exported provenance.

@@ -1,146 +1,38 @@
 # Arquitetura
 
-O catálogo apresenta 14 seletores disponíveis, todos ativos. Calibracao,
-leitura de cenas e workflows sao funcoes auxiliares, sem duplicar o catalogo.
+## Estrutura da distribuicao
 
-| Pasta | Conteudo | Distribuicao |
-|---|---|---|
-| `pylstemp/` | API, calibracao, cenas, workflows e algoritmos | Git, wheel e sdist |
-| `docs/` | Uso, API, contratos cientificos e referencias | Git e sdist |
-| `exemple/` | Um notebook por metodo e um indice de entradas/uso | Git e sdist |
-| `.github/` | CI, publicacao e templates de contribuicao | Git |
-| `tests/` | Regressao essencial sintetica e independente | Git e sdist; CI contra o wheel |
-| `Verificacao/` | Testes, verificadores, dados e relatorios locais | Fora do Git e dos pacotes |
+| Caminho | Responsabilidade |
+| --- | --- |
+| `pylstemp/api.py` | Familias numericas de emissividade, PWV e LST; catalogo |
+| `pylstemp/calibration/` | Conversoes radiometricas, leitura MTL e dispatcher calibrate |
+| `pylstemp/algorithms/` | Uma implementacao por metodo, organizada por familia |
+| `pylstemp/optical.py` | Ajuste de parametros e aplicacao DOS/COST |
+| `pylstemp/inputs.py` | Leitura de arquivos QA e verificacao da grade |
+| `pylstemp/scene.py` | Leitura de cenas, QA, calibracao e GeoTIFF |
+| `pylstemp/workflows.py` | Composicao Du/Rongali com Wang/Ren e exportacao |
+| `pylstemp/diagnostics.py` | Identidade de processamento e aliases dos resultados |
+| `pylstemp/quality.py` | Flags, legenda e propagacao de qualidade |
+| `pylstemp/validation.py` | Contratos de matrizes, mascaras, unidades e booleanos |
+| `pylstemp/messages.py` | Contexto de erros e orientacoes de correcao |
+| `pylstemp/provenance.py` | Identificacao de fontes, coeficientes e arquivos |
+| `pylstemp/method_cards.json` | 16 fichas identificadas por familia + metodo |
+| `pylstemp/sensors/` | Constantes de fallback explicitamente identificadas |
+| `tests/` | Referencias numericas e integracao sintetica, sem dados privados |
+| `exemple/` | 17 notebooks executaveis e indice de uso |
+| `docs/` | Documentacao vigente, contratos, referencias e migracao |
+| `.github/` | CI, publicacao e modelos de contribuicao |
 
-## Estrutura publica
+Cada algoritmo declara ALGORITHM_SPEC. O registro descobre os modulos por
+familia e alimenta list_algorithms; as correcoes opticas usam as mesmas fichas.
+O NDVI e compartilhado internamente, sem familia publica propria.
+`read_mtl` e `quality_mask` sao funcoes de apoio, sem seletor method.
 
-Mapa completo dos arquivos publicos presentes em `v1.11/`. Ambiente virtual,
-caches, builds e dados/testes locais nao fazem parte desta distribuicao.
+Versao e identificacao de resultados devem acompanhar a API. A CI executa o
+wheel instalado; os notebooks usam apenas fixtures sinteticas nos testes.
+Ambientes virtuais, caches, builds e pacotes gerados nao integram a arvore de
+fontes distribuida. Dados e materiais de pesquisas especificas permanecem
+fora da biblioteca.
 
-```text
-v1.11/
-  .github/
-    ISSUE_TEMPLATE/
-      bug_report.md
-      feature_request.md
-    workflows/
-      ci.yml
-      publish.yml
-    pull_request_template.md
-  docs/
-    api-reference.md
-    architecture.md
-    du-pwv-workflow.md
-    extending.md
-    image-only-methods.md
-    index.md
-    installation.md
-    method-cards.md
-    references.md
-    scientific-methods.md
-    usage.md
-    validation.md
-  exemple/
-    README.md
-    brightness.ipynb
-    emissivity__avdan-2016.ipynb
-    emissivity__rongali-2018.ipynb
-    optical_correction__chavez-cost.ipynb
-    optical_correction__chavez-dos.ipynb
-    single_window__jimenez-munoz-2014-sc.ipynb
-    single_window__mono-window-2016.ipynb
-    split_window__du-2015.ipynb
-    split_window__jimenez-munoz-2014-sw.ipynb
-    split_window__kerr-1992.ipynb
-    split_window__price-1984.ipynb
-    split_window__sobrino-1993.ipynb
-    toa_radiance.ipynb
-    toa_reflectance.ipynb
-    water_vapor__ren-2015.ipynb
-    water_vapor__wang-2015.ipynb
-  pylstemp/
-    algorithms/
-      emissivity/
-        __init__.py
-        avdan_2016.py
-        base.py
-        rongali_2018.py
-      single_channel/
-        __init__.py
-        base.py
-        jimenez_munoz_2014.py
-        mono_window_2016.py
-      split_window/
-        __init__.py
-        base.py
-        du_2015.py
-        jimenez_munoz_2014.py
-        kerr_1992.py
-        price_1984.py
-        sobrino_1993.py
-      thermal/
-        __init__.py
-        brightness.py
-      water_vapor/
-        __init__.py
-        ren_2015.py
-        wang_2015.py
-      __init__.py
-      base_temperature.py
-    sensors/
-      __init__.py
-      landsat.py
-    __init__.py
-    api.py
-    calibration.py
-
-    exceptions.py
-    messages.py
-    metadata.py
-    method_cards.json
-    optical.py
-    provenance.py
-    references.py
-    registry.py
-    requirements.py
-    scene.py
-    utils.py
-    validation.py
-    workflows.py
-  tests/
-    test_scientific_regression.py
-    test_unified_api.py
-  .gitattributes
-  .gitignore
-  CHANGELOG.md
-  CODE_OF_CONDUCT.md
-  CONTRIBUTING.md
-  CREDITS.md
-  LICENSE
-  MANIFEST.in
-  pyproject.toml
-  README.md
-```
-
-## Responsabilidades
-
-`api.py` expoe as funcoes publicas. `calibration.py` converte DN usando o MTL
-da cena. `scene.py` le bandas alinhadas, aplica QA e exporta GeoTIFFs.
-`workflows.py` conecta essas etapas para Du com modos PWV explicitos e estimadores Wang/Ren.
-
-Cada algoritmo declara `ALGORITHM_SPEC`; o registro descobre os modulos por
-familia e alimenta `list_algorithms()`, complementado pelos seletores Sobrino/Chavez
-com metadados das mesmas fichas cientificas. NDVI e um calculo interno compartilhado
-em `utils.py`, sem dispatcher publico, familia ou entrada no catalogo.
-Esses modulos fazem parte dos contratos da biblioteca.
-
-A CI publica verifica instalacao, importacao, empacotamento e regressao cientifica
-essencial contra o wheel instalado. A suite completa e os verificadores de cenas
-sao executados no ambiente local. `provenance.py` registra a execucao e os
-contratos de `method_cards.json`, sem expor uma nova funcao publica para NDVI.
-
-Veja [API](api-reference.md), [extensao](extending.md),
-[workflow Du/PWV](du-pwv-workflow.md) e [estado da validacao](validation.md).
-
-`optical.py` separa ajuste de haze e
-aplicacao DOS/COST, permitindo reutilizar parametros entre blocos.
+Veja [API](api-reference.md), [contratos](result-contracts.md),
+[extensao](extending.md) e [verificacao](validation.md).

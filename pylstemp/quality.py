@@ -32,7 +32,7 @@ def quality_legend():
     return {f.name: {'value': int(f), 'description': DESCRIPTIONS[f.name]} for f in QualityFlag}
 
 def validate_quality_mode(mode):
-    if mode not in ('screened', 'diagnostic'):
+    if not isinstance(mode, str) or mode not in ('screened', 'diagnostic'):
         raise ValueError("quality_mode must be 'screened' or 'diagnostic'.")
     return mode == 'diagnostic'
 

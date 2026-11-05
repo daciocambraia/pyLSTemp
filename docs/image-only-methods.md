@@ -30,7 +30,7 @@ caso NDVI nao e exigido nem participa da selecao.
 
 O artigo recomenda n=10 no suporte TIRS nativo de 100 m, aproximadamente
 1 km. A API isolada usa janela centrada impar de 11 pixels por padrao.
-`du_from_scene(..., pwv_method="ren-2015")` usa 33 pixels por padrao,
+`du_from_scene(..., method="ren-2015")` usa 33 pixels por padrao,
 aproximadamente 1 km na grade usual de entrega Landsat de 30 m. Sao
 adaptacoes explicitas, sem reconstituir o suporte nativo: pixels termicos
 reamostrados nao sao observacoes atmosfericas independentes de 30 m.
@@ -61,8 +61,8 @@ As verificacoes numericas nao substituem validacao com observacoes externas.
 
 ## Chavez 1996: DOS e COST
 
-`optical_correction(rho_toa, sun_elevation=..., method="chavez-dos" ou
-"chavez-cost", mask=..., return_diagnostics=True)` retorna a reflectancia
+`optical_correction(rho_toa, sun_elevation=..., method="chavez-dos-1996" ou
+"chavez-cost-1996", mask=..., return_diagnostics=True)` retorna a reflectancia
 corrigida e parametros reutilizaveis. A mesma funcao com `parameters=parametros`
 reaplica o ajuste a blocos, omitindo as opcoes de ajuste e mantendo o metodo.
 A entrada e reflectancia TOA ja corrigida pelo angulo solar, com um unico

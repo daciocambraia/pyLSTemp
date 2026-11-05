@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import numpy as np
 from .validation import to_float_array, ensure_boolean_mask
+from .diagnostics import annotate
 
 
 @dataclass(frozen=True)
@@ -77,12 +78,12 @@ from .messages import contextual_errors
 
 
 @contextual_errors
-def optical_correction(toa_reflectance, *, method="chavez-cost", sun_elevation=None,
+def optical_correction(toa_reflectance, *, method="chavez-cost-1996", sun_elevation=None,
                        mask=None, parameters=None, percentile=None,
                        assumed_dark_surface=None, return_diagnostics=False):
     """Correct TOA reflectance using a selected optical method.
 
-    method: chavez-dos or chavez-cost. Fit on the full valid scene with one
+    method: chavez-dos-1996 or chavez-cost-1996. Fit on the full valid scene with one
     sun_elevation [degrees, (0,90]]; defaults: percentile .01, dark surface .01.
     return_diagnostics=True returns reflectance and reusable parameters.
     For tiles supply parameters and omit fitting options; their method must
@@ -92,17 +93,17 @@ def optical_correction(toa_reflectance, *, method="chavez-cost", sun_elevation=N
 
     Quality inputs
     --------------
-    Before this calculation, call read_quality_mask(qa_pixel_path,
+    Before this calculation, call quality_mask(qa_pixel_path,
     qa_radsat_path, reference_path=...) and pass the aligned boolean result
     combined with input nodata as mask=. True means invalid. QA files are
     not read by this numerical function; mask=None applies no QA screening.
     LandsatScene.calibrated() prepares and returns its QA mask automatically.
     """
-    if not isinstance(method,str) or method.strip().lower() not in {"chavez-dos","chavez-cost"}:
-        raise ValueError("method must be chavez-dos or chavez-cost.")
+    if not isinstance(method,str) or method.strip().lower() not in {"chavez-dos-1996","chavez-cost-1996"}:
+        raise ValueError("method must be chavez-dos-1996 or chavez-cost-1996.")
     if not isinstance(return_diagnostics,(bool,np.bool_)):
         raise ValueError("return_diagnostics must be boolean.")
-    key=method.strip().lower().removeprefix("chavez-")
+    key=method.strip().lower().removeprefix("chavez-").removesuffix("-1996")
     if parameters is None:
         if sun_elevation is None:
             raise ValueError("Provide sun_elevation when fitting optical correction.")
@@ -117,6 +118,9 @@ def optical_correction(toa_reflectance, *, method="chavez-cost", sun_elevation=N
             raise ValueError("Reusable parameters must match the selected Chavez method.")
     corrected=_chavez_reflectance(toa_reflectance,parameters=parameters,mask=mask)
     if return_diagnostics:
-        return dict(reflectance=corrected,parameters=parameters,method="chavez-"+key,
-                    units="dimensionless",invalid_mask=~np.isfinite(corrected))
+        return annotate(dict(reflectance=corrected,parameters=parameters), family="optical_correction",
+            method="chavez-"+key+"-1996",units="dimensionless",
+            sun_elevation=parameters.sun_elevation,percentile=parameters.percentile,
+            assumed_dark_surface=parameters.assumed_dark_surface,
+            dark_reflectance=parameters.dark_reflectance,valid_samples=parameters.valid_samples)
     return corrected

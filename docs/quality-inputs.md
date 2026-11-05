@@ -5,9 +5,9 @@ QA_PIXEL e QA_RADSAT são GeoTIFFs de qualidade da mesma cena Landsat 8/9 Collec
 ## 1. Entradas explícitas por arquivo
 
 ```python
-from pylstemp import read_quality_mask
+from pylstemp import quality_mask
 
-mascara = read_quality_mask(
+mascara = quality_mask(
     qa_pixel_path="cena_QA_PIXEL.TIF",
     qa_radsat_path="cena_QA_RADSAT.TIF",
     reference_path="vermelho_calibrado.tif",
@@ -24,13 +24,13 @@ import numpy as np
 mascara |= ~np.isfinite(red) | ~np.isfinite(nir)
 ```
 
-Todos os 16 notebooks incluem agora os caminhos das QA na primeira célula de código, a chamada acima na segunda e o uso de `mask=mascara` na terceira. Nenhum exemplo substitui QA ausente por zeros ou por uma máscara vazia.
+Os 16 notebooks de metodos/calibracao incluem os caminhos das QA na primeira célula de código, a chamada acima na segunda e o uso de `mask=mascara` na terceira. Nenhum exemplo substitui QA ausente por zeros ou por uma máscara vazia.
 
 ## 2. Fluxo em cada etapa
 
 ```mermaid
 flowchart TD
-    QA[QA_PIXEL + QA_RADSAT + grade de referência] --> M[read_quality_mask: True = inválido]
+    QA[QA_PIXEL + QA_RADSAT + grade de referência] --> M[quality_mask: True = inválido]
     M --> C[DN para radiância / reflectância / BT com mask]
     M --> O[DOS ou COST com mask antes do ajuste do objeto escuro]
     C --> O
@@ -76,6 +76,18 @@ O construtor exige os arquivos originais B4, B5, B10, B11, QA_PIXEL, QA_RADSAT e
 - QA_RADSAT: saturação óptica B2/B4/B5 e oclusão de terreno (bits 1, 3, 4 e 11). É uma política conservadora comum ao fluxo atual; não identifica saturação térmica nem garante seleção de saturação de outras bandas ópticas.
 - Água: preservada por padrão. `exclude_water=True` acrescenta o bit 7 de QA_PIXEL; o notebook terrestre de Wang adota essa opção explicitamente.
 
-`pylstemp.calibration.quality_mask(qa_pixel, qa_radsat=None, ...)` é o decodificador de matrizes de baixo nível. Sua opção de receber apenas QA_PIXEL é mantida para compatibilidade e não representa a preparação completa de duas QA dos exemplos. O caminho recomendado por arquivos é `read_quality_mask()`, com ambas obrigatórias.
 
 QA seleciona a qualidade das observações de entrada. As flags diagnósticas da biblioteca descrevem outras condições dos estimadores (domínios, extrapolações etc.). Uma não substitui a outra. Essa alteração não reprocessa nem modifica as rodadas históricas do artigo.
+
+## Nome publico
+
+Importe `quality_mask` de `pylstemp`. A funcao recebe caminhos de arquivos,
+com ambas as QA e `reference_path` obrigatorios. O nome anterior
+`read_quality_mask` foi retirado, sem alias de compatibilidade.
+A decodificacao de matrizes e interna; `LandsatScene.quality_mask()` continua
+oferecendo a mascara da cena com o mesmo comportamento.
+
+## Exemplo dedicado
+
+Execute [quality_mask.ipynb](../exemple/quality_mask.ipynb) para conferir
+QA, nodata, exclusao opcional de agua e exportacao da mascara combinada.

@@ -1,11 +1,12 @@
 """Actionable input descriptions shared by API errors and the catalog."""
 
 INPUT_HELP = {
-    "read_quality_mask": "Provide BOTH QA_PIXEL and QA_RADSAT GeoTIFF paths plus reference_path on the same grid. Pass the returned boolean mask to each processing function as mask=.",
+    "calibrate": "Select method=toa-radiance, toa-reflectance or brightness. Supply the selected conversion arguments and an aligned QA mask; DN and radiance are not interchangeable.",
+    "quality_mask": "Provide BOTH QA_PIXEL and QA_RADSAT GeoTIFF paths plus reference_path on the same grid. Pass the returned boolean mask to each processing function as mask=.",
     "brightness": "Provide TOA radiance [W m-2 sr-1 um-1], band 10/11 and matching MTL (metadata=) or sensor. Output is TOA BT [K]. For raw Level-1 DN explicitly set input_quantity='dn'; never rescale radiance again.",
-    "optical_correction": "Provide TOA reflectance [0,1], method=chavez-dos/chavez-cost and scene solar elevation; for tiles reuse returned parameters and omit fitting options.",
+    "optical_correction": "Provide TOA reflectance [0,1], method=chavez-dos-1996/chavez-cost-1996 and scene solar elevation; for tiles reuse returned parameters and omit fitting options.",
     "emissivity": "Provide aligned red/nir bands and band 10/11; NDVI is calculated internally. Prepared NDVI remains an alternative. Main workflow: method=avdan-2016 or rongali-2018.",
-    "single_window": "Provide aligned band-10 brightness in Kelvin and calibrated red/nir matching the selected emissivity source contract; radiometric quantities are not interchangeable. Select a registered LST and emissivity method.",
+    "single_window": "Provide aligned band-10 brightness in Kelvin and calibrated red/nir matching the selected emissivity source contract; radiometric quantities are not interchangeable. Select the LST with method=. To choose emissivity, call emissivity(method=...) separately and pass emissivity_10.",
     "split_window": "Provide aligned band-10/11 brightness in Kelvin and calibrated red/nir matching the selected emissivity source contract; radiometric quantities are not interchangeable. Avdan is single-channel only. PWV is in g/cm2.",
     "water_vapor": "Provide aligned 2D band-10/11 brightness in Kelvin and red/nir for internal NDVI (or prepared NDVI). Use odd window_size>=3, group_count>=1, chunk_rows>=1 and a boolean mask.",
     "toa_radiance": "Provide Level-1 DN, band 1..11 and matching MTL radiance gain/bias. Output W m-2 sr-1 um-1; no solar-angle correction.",
@@ -13,16 +14,16 @@ INPUT_HELP = {
     "surface_reflectance": "Provide existing Collection 2 Level-2 SR_B* DN. Default scale=0.0000275, offset=-0.2; this does not correct Level-1 atmosphere.",
     "brightness_from_mtl": "Provide Level-1 MTL and thermal band 10/11 DN; MTL must include radiance gain/bias and K1/K2.",
     "read_mtl": "Provide one Landsat 8/9 *_MTL.txt file for the corresponding input product.",
-    "quality_mask": "Provide aligned unsigned 16-bit QA_PIXEL and optional QA_RADSAT. True means invalid.",
+    "_quality_mask_from_arrays": "Provide aligned unsigned 16-bit QA_PIXEL and optional QA_RADSAT. True means invalid.",
 }
 
 PWV_SUPPORT = {
-    "jimenez-munoz-2014-sc": "Required scalar or aligned raster [0,3] g/cm2. Invalid/out-of-range raster pixels become NaN; scalar out of range is rejected.",
-    "du-2015": "Optional scalar or aligned raster [0,6.3] g/cm2. Invalid raster pixels become NaN; invalid scalars raise. None uses all-CWV coefficients.",
-    "jimenez-munoz-2014-sw": "Required finite nonnegative scalar or aligned raster in g/cm2; invalid raster pixels become NaN. Source tested 0..6 g/cm2; valid pixels above 6 warn about extrapolation.",
-    "price-1984": "Not used; supplying water_vapor emits a RuntimeWarning.",
-    "kerr-1992": "Not used; supplying water_vapor emits a RuntimeWarning.",
-    "sobrino-1993": "Not used; supplying water_vapor emits a RuntimeWarning.",
+    ("single_channel", "jimenez-munoz-2014"): "Required scalar or aligned raster [0,3] g/cm2. Invalid/out-of-range raster pixels become NaN; scalar out of range is rejected.",
+    ("split_window", "du-2015"): "Optional scalar or aligned raster [0,6.3] g/cm2. Invalid raster pixels become NaN; invalid scalars raise. None uses all-CWV coefficients.",
+    ("split_window", "jimenez-munoz-2014"): "Required finite nonnegative scalar or aligned raster in g/cm2; invalid raster pixels become NaN. Source tested 0..6 g/cm2; valid pixels above 6 warn about extrapolation.",
+    ("split_window", "price-1984"): "Not used; supplying water_vapor emits a RuntimeWarning.",
+    ("split_window", "kerr-1992"): "Not used; supplying water_vapor emits a RuntimeWarning.",
+    ("split_window", "sobrino-1993"): "Not used; supplying water_vapor emits a RuntimeWarning.",
 }
 
 def describe_inputs(family, key):
@@ -36,20 +37,18 @@ def describe_inputs(family, key):
             text="TOA-radiance red/nir under the adopted Rongali Step-1 interpretation (or prepared NDVI in [-1,1]); band-specific emissivity, study-scene NDVI endmembers 0.15/0.48 transferred explicitly."
     if family=="water_vapor" and key=="ren-2015":
         text="Aligned 2D BT10/BT11 in K; Red/nir for internal NDVI, or prepared NDVI, required by default local +/-1.5 sigma filter; optional only with ndvi_filter=False. Odd window, minimum samples, chi-squared screen; PWV [.06,6.3] g/cm2. Diagnostics available. No global NDVI groups."
-    if family=="single_channel" and key=="jimenez-munoz-2014-sc":
-        text+=" Also supply radiance_band_10 [W m-2 sr-1 um-1] matching BT10 and "+PWV_SUPPORT[key]
+    if family=="single_channel" and key=="jimenez-munoz-2014":
+        text+=" Also supply radiance_band_10 [W m-2 sr-1 um-1] matching BT10 and "+PWV_SUPPORT[(family, key)]
     if family=="split_window":
-        text+=" "+PWV_SUPPORT.get(key,"Check the method's PWV requirements.")
+        text+=" "+PWV_SUPPORT.get((family, key),"Check the method's PWV requirements.")
         if key=="kerr-1992":text+=" The equation uses NDVI, not emissivity values."
-    return text+" QA preparation: read_quality_mask(qa_pixel_path, qa_radsat_path, reference_path=...); combine with nodata and pass mask= to this method. mask=None does not screen QA."
+    return text+" QA preparation: quality_mask(qa_pixel_path, qa_radsat_path, reference_path=...); combine with nodata and pass mask= to this method. mask=None does not screen QA."
 
 
 def describe_source_contract(family, key):
     """Expose the reviewed source contract shipped with the installed package."""
-    import json
-    from pathlib import Path
-    cards = json.loads(Path(__file__).with_name("method_cards.json").read_text(encoding="utf8"))
-    card = next((item for item in cards if item["method"] == key), None)
+    from .provenance import _card
+    card = _card(family, key)
     if card is None:
         return dict(source_sensor="Source sensor not declared", source_location="Not reviewed",
                     optical_input_contract="Not established", source_review_status="Not reviewed")

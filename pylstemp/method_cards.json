@@ -92,7 +92,7 @@
     }
   },
   {
-    "method": "jimenez-munoz-2014-sc",
+    "method": "jimenez-munoz-2014",
     "family": "single_channel",
     "reference": "Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. IEEE Geoscience and Remote Sensing Letters 11(10), 1840-1843, 2014. https://doi.org/10.1109/LGRS.2014.2312032",
     "source_location": "pp.1840-1842, Eqs.1-4,6",
@@ -151,7 +151,7 @@
     }
   },
   {
-    "method": "mono-window-2016",
+    "method": "avdan-2016",
     "family": "single_channel",
     "reference": "Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016.",
     "source_location": "PDF p.3, Eqs.7-8",
@@ -319,7 +319,7 @@
     }
   },
   {
-    "method": "jimenez-munoz-2014-sw",
+    "method": "jimenez-munoz-2014",
     "family": "split_window",
     "reference": "Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. IEEE Geoscience and Remote Sensing Letters, 2014.",
     "source_location": "pp.1841-1842, Eq.5, Table I",
@@ -783,8 +783,8 @@
     }
   },
   {
-    "method": "chavez-dos",
-    "family": "optical",
+    "method": "chavez-dos-1996",
+    "family": "optical_correction",
     "reference": "Chavez (1996). Image-Based Atmospheric Corrections - Revisited and Improved. Photogrammetric Engineering & Remote Sensing 62, 1025-1036.",
     "source_location": "pp.1027-1029, Eq.2",
     "source_sha256": "e8f7822658fec59af9a8e6ea5bdbb32a2fc266bc2e5b2e76d7fd7967e2e2351e",
@@ -828,8 +828,8 @@
     }
   },
   {
-    "method": "chavez-cost",
-    "family": "optical",
+    "method": "chavez-cost-1996",
+    "family": "optical_correction",
     "reference": "Chavez (1996). Image-Based Atmospheric Corrections - Revisited and Improved. Photogrammetric Engineering & Remote Sensing 62, 1025-1036.",
     "source_location": "pp.1027-1029, Eq.2",
     "source_sha256": "e8f7822658fec59af9a8e6ea5bdbb32a2fc266bc2e5b2e76d7fd7967e2e2351e",

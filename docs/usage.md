@@ -64,13 +64,15 @@ reflectancia podem produzir NDVIs diferentes.
 ## 4. Calcular emissividade das bandas 10 e 11
 
 ```python
-emissividade10 = emissivity(red=red, nir=nir, mask=mascara, band=10, emissivity_method="rongali-2018")
-emissividade11 = emissivity(red=red, nir=nir, mask=mascara, band=11, emissivity_method="rongali-2018")
+emissividade10 = emissivity(red=red, nir=nir, mask=mascara, band=10, method="rongali-2018")
+emissividade11 = emissivity(red=red, nir=nir, mask=mascara, band=11, method="rongali-2018")
 ```
 
 `rongali-2018` fornece valores por banda. `avdan-2016` tambem esta disponivel,
 com a parametrizacao single-channel da fonte. Emissividade e adimensional.
-As funcoes LST calculam essa etapa internamente; o calculo separado permite
+A rota por bandas calcula Avdan no single-channel e Rongali no split-window.
+Para escolher outro modelo, use emissivity(method=...) e forneca as emissividades
+prontas a funcao de LST. O calculo separado permite
 inspecionar ou exportar a emissividade. Os limiares de NDVI exigem justificativa
 para a convencao radiometrica usada.
 
@@ -79,7 +81,7 @@ para a convencao radiometrica usada.
 ```python
 lst_avdan = single_window(
     brightness_band_10=bt10, band_4_red=red, band_5_nir=nir,
-    lst_method="mono-window-2016", emissivity_method="avdan-2016",
+    method="avdan-2016",
     unit="celsius", mask=mascara,
 )
 ```
@@ -103,8 +105,8 @@ Uma estimativa externa de PWV tambem pode ser usada, com unidade e origem claras
 
 ```python
 lst_jimenez_sc = single_window(
-    brightness_band_10=bt10, band_4_red=red, band_5_nir=nir,
-    lst_method="jimenez-munoz-2014-sc", emissivity_method="rongali-2018",
+    brightness_band_10=bt10, emissivity_10=emissividade10,
+    method="jimenez-munoz-2014",
     radiance_band_10=radiancia10, water_vapor=pwv,
     unit="celsius", mask=mascara,
 )
@@ -123,14 +125,14 @@ B11 e usada para estimar PWV por Wang; a equacao termica SC utiliza apenas B10.
 lst_du = split_window(
     brightness_band_10=bt10, brightness_band_11=bt11,
     band_4_red=red, band_5_nir=nir,
-    lst_method="du-2015", emissivity_method="rongali-2018",
+    method="du-2015",
     unit="celsius", mask=mascara,
 )
 mascara_pwv_sw = mascara | (pwv < 0.066) | (pwv > 7.833)
 lst_jimenez_sw = split_window(
     brightness_band_10=bt10, brightness_band_11=bt11,
     band_4_red=red, band_5_nir=nir,
-    lst_method="jimenez-munoz-2014-sw", emissivity_method="rongali-2018",
+    method="jimenez-munoz-2014",
     water_vapor=pwv, unit="celsius", mask=mascara_pwv_sw,
 )
 ```
@@ -141,7 +143,7 @@ nao ha estimativa automatica em split_window(). Jimenez SW requer PWV.
 Veja o [workflow de cena Wang -> Du](du-pwv-workflow.md).
 A mascara SW acima usa o intervalo de referencia TIGR3 do estimador Wang
 (0.066..7.833 g/cm2), distinto da restricao SC de 0..3; ela nao certifica acuracia.
-`avdan-2016` e bloqueado no split-window; escolha `rongali-2018`.
+A rota automatica por bandas do split-window usa exclusivamente `rongali-2018`.
 
 ## 9. Converter reflectancia TOA, se necessario
 
@@ -181,7 +183,7 @@ Os GeoTIFFs conservam coordenadas, unidade e NoData NaN.
 catalogo = list_algorithms()
 print(catalogo["single_channel"].keys())
 print(catalogo["split_window"].keys())
-print(catalogo["single_channel"]["jimenez-munoz-2014-sc"]["input_requirements"])
+print(catalogo["single_channel"]["jimenez-munoz-2014"]["input_requirements"])
 ```
 
 ## Exemplos por metodo

@@ -9,18 +9,19 @@ from .api import (
     water_vapor,
 )
 from .optical import optical_correction
-from .inputs import read_quality_mask
+from .inputs import quality_mask
 from .references import ORIGINAL_LIBRARY_CREDIT
-from .calibration import toa_radiance, toa_reflectance, read_mtl
+from .calibration import calibrate, toa_radiance, toa_reflectance, read_mtl
 
 __all__ = [
+    "calibrate",
     "brightness",
     "emissivity",
     "list_algorithms",
     "toa_radiance",
     "toa_reflectance",
     "read_mtl",
-    "read_quality_mask",
+    "quality_mask",
     "single_window",
     "split_window",
     "water_vapor",
@@ -28,4 +29,4 @@ __all__ = [
     "ORIGINAL_LIBRARY_CREDIT",
 ]
 
-__version__ = "1.11.0"
+from ._version import __version__

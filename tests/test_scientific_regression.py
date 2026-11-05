@@ -11,7 +11,8 @@ import warnings
 import numpy as np
 import pylstemp
 from pylstemp import emissivity, single_window, split_window, water_vapor
-from pylstemp.calibration import toa_radiance, toa_reflectance, brightness_from_mtl, quality_mask
+from pylstemp.calibration import toa_radiance, toa_reflectance, brightness_from_mtl
+from pylstemp.calibration.quality import _quality_mask_from_arrays
 from pylstemp import optical_correction
 from pylstemp.exceptions import InputShapesNotEqual
 from pylstemp.workflows import du_from_scene, scene_ndvi_range
@@ -37,8 +38,8 @@ class ScientificRegression(unittest.TestCase):
 
     def test_qa_mask(self):
         qa=np.array([0,1,2,4,8,16,32,128],dtype=np.uint16)
-        np.testing.assert_array_equal(quality_mask(qa),[False,True,True,True,True,True,True,False])
-        self.assertTrue(quality_mask(qa,exclude_water=True)[-1])
+        np.testing.assert_array_equal(_quality_mask_from_arrays(qa),[False,True,True,True,True,True,True,False])
+        self.assertTrue(_quality_mask_from_arrays(qa,exclude_water=True)[-1])
 
     def test_avdan_endmembers_and_mixed_branch(self):
         n=np.array([[-.1,.1,.2,.35,.5,.8]])
@@ -49,7 +50,7 @@ class ScientificRegression(unittest.TestCase):
         n=np.array([0,.15,.315,.48,.8])
         for band,expected in [(10,[.971,.971,.979,.987,.987]),(11,[.977,.977,.983,.989,.989])]:
             with self.subTest(band=band):
-                np.testing.assert_allclose(emissivity(n,band=band,emissivity_method='rongali-2018'),expected)
+                np.testing.assert_allclose(emissivity(n,band=band,method='rongali-2018'),expected)
 
 
 
@@ -66,9 +67,9 @@ class ScientificRegression(unittest.TestCase):
         p3=.00918*w*w+1.36072*w-.27514
         expected=t*t/(1324*L)*((p1*L+p2)/e+p3)+t-t*t/1324
         np.testing.assert_allclose(single_window(t,np.ones((1,2)),np.full((1,2),3.),
-            lst_method='jimenez-munoz-2014-sc',radiance_band_10=L,water_vapor=w),expected)
+            method='jimenez-munoz-2014',radiance_band_10=L,water_vapor=w),expected)
         with self.assertRaises(ValueError):
-            single_window(t,np.ones((1,2)),np.full((1,2),3.),lst_method='jimenez-munoz-2014-sc',radiance_band_10=L,water_vapor=3.01)
+            single_window(t,np.ones((1,2)),np.full((1,2),3.),method='jimenez-munoz-2014',radiance_band_10=L,water_vapor=3.01)
 
     def test_du_all_rows_and_overlaps(self):
         # Du 2015 Table1, b0..b7, independently transcribed.
@@ -85,12 +86,12 @@ class ScientificRegression(unittest.TestCase):
             with self.subTest(w=w):
                 coeff=[rows[-1]] if w is None else [r for (lo,hi),r in zip(intervals,rows) if lo<=w<=hi]
                 expected=np.mean([np.dot(r,f) for r in coeff])
-                actual=split_window(np.array([300.]),np.array([298.]),emissivity_10=np.array([.97]),emissivity_11=np.array([.98]),lst_method='du-2015',water_vapor=w)
+                actual=split_window(np.array([300.]),np.array([298.]),emissivity_10=np.array([.97]),emissivity_11=np.array([.98]),method='du-2015',water_vapor=w)
                 np.testing.assert_allclose(actual,expected,atol=2e-10,rtol=0)
 
     def test_legacy_and_jimenez_split_equations(self):
         t=np.array([300.]); u=np.array([298.]); a=np.array([.97]); b=np.array([.98]); d=2.; w=2.
-        cases={'jimenez-munoz-2014-sw':300+1.378*d+.183*d*d-.268+(54.3-2.238*w)*.025+(-129.2+16.4*w)*(-.01),
+        cases={'jimenez-munoz-2014':300+1.378*d+.183*d*d-.268+(54.3-2.238*w)*.025+(-129.2+16.4*w)*(-.01),
                'sobrino-1993':300+(1.060+.46*d)*d+53*.03-53*(-.01),
                'price-1984':(300+3.33*d)*(5.5-.97)/4.5+.75*298*(-.01),
                'kerr-1992':300*(3.1+.5*.5)+298*(-2.1-.5*.5)+3.1-5.5*.5}
@@ -98,8 +99,8 @@ class ScientificRegression(unittest.TestCase):
             warnings.simplefilter('ignore',RuntimeWarning)
             for key,expected in cases.items():
                 with self.subTest(method=key):
-                    actual=split_window(t,u,emissivity_10=a,emissivity_11=b,lst_method=key,
-                        water_vapor=w if key=='jimenez-munoz-2014-sw' else None,ndvi_image=np.array([.415]) if key=='kerr-1992' else None)
+                    actual=split_window(t,u,emissivity_10=a,emissivity_11=b,method=key,
+                        water_vapor=w if key=='jimenez-munoz-2014' else None,ndvi_image=np.array([.415]) if key=='kerr-1992' else None)
                     np.testing.assert_allclose(actual,expected,rtol=0,atol=2e-10)
 
 
@@ -117,7 +118,7 @@ class ScientificRegression(unittest.TestCase):
     def test_chavez_scene_fit_and_reusable_tiles(self):
         rho=np.array([[.1,.2],[.3,.4]])
         for method,divisor in [('dos',1.),('cost',.5)]:
-            key='chavez-'+method
+            key='chavez-'+method+'-1996'
             p=optical_correction(rho,sun_elevation=30,method=key,percentile=0,return_diagnostics=True)['parameters']
             expected=(rho-.09)/divisor
             np.testing.assert_allclose(optical_correction(rho,method=key,parameters=p),expected)
@@ -126,20 +127,20 @@ class ScientificRegression(unittest.TestCase):
     def test_internal_ndvi_diagnostics_mask_and_declaration(self):
         t=np.array([300.,301.,302.]); red=np.ones(3); nir=np.array([1.,3.,1.])
         mask=np.array([False,False,True])
-        result=split_window(t,t-2,red,nir,lst_method='du-2015',mask=mask,
+        result=split_window(t,t-2,red,nir,method='du-2015',mask=mask,
                             return_diagnostics=True,optical_quantity='radiance')
         np.testing.assert_allclose(result['ndvi'],[0,.5,np.nan],equal_nan=True)
         self.assertTrue(result['invalid_mask'][-1])
         self.assertEqual(result['optical_contract']['status'],'declared_quantity_matches_source_interpretation')
         self.assertFalse(hasattr(pylstemp,'spectral_index'))
         with self.assertRaises(ValueError):
-            split_window(t,t-2,red,nir,lst_method='du-2015',optical_quantity='dn')
+            split_window(t,t-2,red,nir,method='du-2015',optical_quantity='dn')
 
     def test_jimenez_sw_warns_only_for_unmasked_extrapolation(self):
         t=np.full(3,300.); u=t-2; e10=np.full(3,.97); e11=np.full(3,.98)
         w=np.array([0.,6.,6.1])
         def retrieve(pwv,mask=None):
-            return split_window(t,u,lst_method='jimenez-munoz-2014-sw',
+            return split_window(t,u,method='jimenez-munoz-2014',
                 emissivity_10=e10,emissivity_11=e11,water_vapor=pwv,mask=mask)
         with self.assertWarnsRegex(RuntimeWarning,'extrapolation'):
             result=retrieve(w)
@@ -163,7 +164,7 @@ class ScientificRegression(unittest.TestCase):
             with self.subTest(method=method):
                 kw={'ndvi_image':np.array([.415])} if method=='kerr-1992' else {}
                 with self.assertWarnsRegex(RuntimeWarning,'AVHRR-to-Landsat adaptation'):
-                    result=split_window(t,u,lst_method=method,emissivity_10=e10,
+                    result=split_window(t,u,method=method,emissivity_10=e10,
                                         emissivity_11=e11,**kw)
                 np.testing.assert_allclose(result,[value],rtol=0,atol=1e-12)
 
@@ -173,7 +174,7 @@ class ScientificRegression(unittest.TestCase):
             ('du-2015',0.,6.3,{})]:
             with self.subTest(method=method):
                 def retrieve(w):
-                    return split_window(t,u,lst_method=method,emissivity_10=e10,
+                    return split_window(t,u,method=method,emissivity_10=e10,
                         emissivity_11=e11,water_vapor=w,**options)
                 for bad in [lower-.01,upper+.01,np.nan,np.inf]:
                     with self.assertRaises(ValueError):retrieve(bad)
@@ -182,40 +183,41 @@ class ScientificRegression(unittest.TestCase):
                 for idx,value in enumerate([lower,upper]):
                     np.testing.assert_array_equal(raster[idx],retrieve(value)[idx])
                 with self.assertRaises(InputShapesNotEqual):retrieve(np.ones(2))
-        for method in ['jimenez-munoz-2014-sw','jimenez-munoz-2014-sc']:
+        for family in ('split_window','single_channel'):
+            method='jimenez-munoz-2014'
             with self.subTest(method=method):
                 def retrieve(w):
-                    if method.endswith('-sc'):
-                        return single_window(t.reshape(1,4),np.ones((1,4)),np.full((1,4),2.),lst_method=method,
+                    if family == 'single_channel':
+                        return single_window(t.reshape(1,4),np.ones((1,4)),np.full((1,4),2.),method=method,
                             radiance_band_10=np.full((1,4),10.),
                             water_vapor=np.atleast_2d(w) if np.ndim(w) else w)
-                    return split_window(t,u,lst_method=method,emissivity_10=e10,
+                    return split_window(t,u,method=method,emissivity_10=e10,
                         emissivity_11=e11,water_vapor=w)
                 for bad in [-.01,np.nan,np.inf]:
                     with self.assertRaises(ValueError):retrieve(bad)
                 raster=retrieve(np.array([0.,3.,-.01,np.nan]))
                 self.assertTrue(np.isnan(raster.reshape(-1)[2:]).all())
-                if method.endswith('-sc'):
+                if family == 'single_channel':
                     with self.assertRaises(ValueError):retrieve(3.01)
                 with self.assertRaises(InputShapesNotEqual):retrieve(np.ones(2))
 
     def test_physical_masks_and_no_broadcasting(self):
         t=np.array([300.,0.,np.nan,300.]); u=np.full(4,298.); e=np.array([.97,.97,.97,1.1])
-        out=split_window(t,u,emissivity_10=e,emissivity_11=np.full(4,.98),lst_method='du-2015')
+        out=split_window(t,u,emissivity_10=e,emissivity_11=np.full(4,.98),method='du-2015')
         self.assertTrue(np.isnan(out[1:]).all())
         with self.assertRaises(InputShapesNotEqual):
-            split_window(t,u,emissivity_10=np.ones(2),emissivity_11=np.ones(4),lst_method='du-2015')
+            split_window(t,u,emissivity_10=np.ones(2),emissivity_11=np.ones(4),method='du-2015')
 
     def test_catalog_has_audited_contract_for_every_registered_method(self):
         cards=json.loads(Path(pylstemp.__file__).with_name('method_cards.json').read_text(encoding='utf8'))
         self.assertEqual(len(cards),16)
-        names={c['method'] for c in cards}
+        names={(c['family'],c['method']) for c in cards}
         for family, entries in pylstemp.list_algorithms(include_inactive=True).items():
             if family=='credit': continue
             for key, entry in entries.items():
-                self.assertIn(key,names)
+                self.assertIn((family,key),names)
                 self.assertIn('Primary',entry['source_review_status'])
-        self.assertEqual(len({c['method'] for c in cards}),16)
+        self.assertEqual(len({(c['family'],c['method']) for c in cards}),16)
         for card in cards:
             self.assertEqual(len(card['source_sha256']),64)
             self.assertNotIn('not re-audited',card['source_review_status'])
@@ -238,11 +240,11 @@ class WorkflowRegression(unittest.TestCase):
         scene=SyntheticScene(); bounds=scene_ndvi_range(scene,block_rows=4)
         full=du_from_scene(scene,pwv_mode='raster',window_size=5,ndvi_range=bounds,diagnostics=True)
         for method in ('wang-2015','ren-2015'):
-            if method=='ren-2015': full=du_from_scene(scene,pwv_mode='raster',pwv_method=method,window_size=5,diagnostics=True)
+            if method=='ren-2015': full=du_from_scene(scene,pwv_mode='raster',method=method,window_size=5,diagnostics=True)
             for win in [(0,12,0,13),(0,12,13,31),(12,25,0,13),(12,25,13,31)]:
                 with self.subTest(method=method,window=win):
                     kw={'ndvi_range':bounds} if method=='wang-2015' else {}
-                    tile=du_from_scene(scene,window=win,pwv_mode='raster',pwv_method=method,window_size=5,chunk_rows=1,diagnostics=True,**kw)
+                    tile=du_from_scene(scene,window=win,pwv_mode='raster',method=method,window_size=5,chunk_rows=1,diagnostics=True,**kw)
                     sl=np.s_[win[0]:win[1],win[2]:win[3]]
                     np.testing.assert_allclose(tile.lst,full.lst[sl],rtol=0,atol=2e-9,equal_nan=True)
                     np.testing.assert_allclose(tile.pwv,full.pwv[sl],rtol=0,atol=2e-9,equal_nan=True)
@@ -255,7 +257,8 @@ class WorkflowRegression(unittest.TestCase):
         self.assertEqual(len(rich.intermediates),7)
         json.dumps(rich.provenance,allow_nan=False)
         self.assertEqual(len(rich.provenance['package_sha256']),64)
-        self.assertIn('du-2015',rich.provenance['source_method_cards'])
+        self.assertIn('du-2015',rich.provenance['source_method_cards']['split_window'])
+        self.assertEqual(rich.provenance['provenance_schema'],2)
 
 
 if __name__=='__main__':

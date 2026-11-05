@@ -10,17 +10,32 @@ def _cards():
     return json.loads(Path(__file__).with_name("method_cards.json").read_text(encoding="utf8"))
 
 
-def optical_contract(method, quantity):
+def _card_index():
+    """Index scientific cards by family and method; selectors are family-local."""
+    result = {}
+    for card in _cards():
+        identity = (card["family"], card["method"])
+        if identity in result:
+            raise ValueError(f"Duplicate scientific card: {identity!r}")
+        result[identity] = card
+    return result
+
+
+def _card(family, method):
+    return _card_index().get((family, method))
+
+
+def optical_contract(method, quantity, *, family="emissivity"):
     """Describe a declaration without claiming atmospheric or scene validation."""
     if quantity not in {None, "radiance", "reflectance", "toa_reflectance", "surface_reflectance"}:
         raise ValueError("optical_quantity must be radiance, reflectance/toa_reflectance or surface_reflectance.")
     quantity = "toa_reflectance" if quantity == "reflectance" else quantity
-    card = next((c for c in _cards() if c["method"] == method), None)
+    card = _card(family, method)
     expected = {"rongali-2018": "radiance", "kerr-1992": "surface_reflectance"}.get(method)
     status = "quantity_undeclared" if quantity is None else (
         "source_quantity_unspecified" if expected is None else
         "declared_quantity_matches_source_interpretation" if quantity == expected else "optical_quantity_adaptation")
-    return dict(method=method, declared_quantity=quantity, status=status,
+    return dict(family=family, method=method, declared_quantity=quantity, status=status,
                 source_condition=None if card is None else card["optical_contract"],
                 scene_threshold_validation="not established by declaring a radiometric quantity")
 
@@ -63,10 +78,15 @@ def scene_provenance(scene, *, emissivity_method, optical_quantity, mask=None, h
         grid.update(crs=str(src.crs), transform=list(src.transform))
     elif src is not None and hasattr(src, "tag_v2"):
         grid["geotiff_tags"] = {str(k): src.tag_v2[k] for k in (33550,33922,34264,34735,34736,34737) if k in src.tag_v2}
-    cards = {c["method"]: c for c in _cards()}
-    chosen = {key: cards[key] for key in ("du-2015", emissivity_method, pwv_method) if key in cards}
+    cards = _card_index()
+    chosen = {}
+    for family, method in (("split_window", "du-2015"), ("emissivity", emissivity_method),
+                           ("water_vapor", pwv_method)):
+        card = cards.get((family, method))
+        if card is not None:
+            chosen.setdefault(family, {})[method] = card
     mask_digest = None if mask is None else hashlib.sha256(np.asarray(mask.shape,dtype="<i8").tobytes()+np.packbits(mask).tobytes()).hexdigest()
-    return dict(provenance_schema=1, python_version=platform.python_version(), numpy_version=np.__version__,
+    return dict(provenance_schema=2, python_version=platform.python_version(), numpy_version=np.__version__,
                 package_sha256=digest.hexdigest(), input_files=files,
                 input_hash_policy="sha256_all_inputs" if hash_inputs else "MTL_sha256; imagery_size_and_mtime_only",
                 calibration_mtl=fields, source_grid=grid, user_mask_sha256=mask_digest,

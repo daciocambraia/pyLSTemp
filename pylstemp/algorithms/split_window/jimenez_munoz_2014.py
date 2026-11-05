@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+from ...exceptions import DomainWarning
 
 import numpy as np
 
@@ -69,7 +70,7 @@ class SplitWindowJimenezMunoz2014LST(SplitWindowParentLST):
         water_vapor = kwargs.get("water_vapor")
         if water_vapor is None:
             raise ValueError(
-                "'jimenez-munoz-2014-sw' requires water_vapor in g/cm2. "
+                "'jimenez-munoz-2014' requires water_vapor in g/cm2. "
                 "Use water_vapor(...) or provide an external estimate."
             )
 
@@ -100,9 +101,9 @@ class SplitWindowJimenezMunoz2014LST(SplitWindowParentLST):
         # Table II tests PWV in 0..6 g/cm2; larger computable values are extrapolations.
         if np.any(np.isfinite(cwv) & (cwv > 6) & ~mask):
             warnings.warn(
-                "jimenez-munoz-2014-sw: water_vapor above 6 g/cm2 is outside "
+                "jimenez-munoz-2014: water_vapor above 6 g/cm2 is outside "
                 "the source's evaluated PWV range; returning an extrapolation.",
-                RuntimeWarning, stacklevel=2)
+                DomainWarning, stacklevel=2)
         mean_e = (emissivity_10 + emissivity_11) / 2
         diff_e = emissivity_10 - emissivity_11
         diff_tb = tb_10 - tb_11
@@ -119,8 +120,7 @@ class SplitWindowJimenezMunoz2014LST(SplitWindowParentLST):
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="jimenez-munoz-2014-sw",
-    aliases=("jimenez-munoz-2014",),
+    key="jimenez-munoz-2014",
     factory=SplitWindowJimenezMunoz2014LST,
     name="Jimenez-Munoz 2014 split-window LST",
     reference="Jimenez-Munoz et al. (2014)",

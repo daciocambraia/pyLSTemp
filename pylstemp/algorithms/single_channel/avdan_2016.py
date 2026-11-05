@@ -9,7 +9,7 @@ from ...metadata import AlgorithmSpec
 from .base import BaseTemperatureAlgorithm
 
 
-class MonoWindow2016LST(BaseTemperatureAlgorithm):
+class SingleChannelAvdan2016LST(BaseTemperatureAlgorithm):
     """
     Compute Band 10 mono-window LST from Avdan and Jovanovska (2016).
 
@@ -65,9 +65,9 @@ class MonoWindow2016LST(BaseTemperatureAlgorithm):
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="mono-window-2016",
-    factory=MonoWindow2016LST,
-    name="Mono-window 2016 LST",
+    key="avdan-2016",
+    factory=SingleChannelAvdan2016LST,
+    name="Avdan and Jovanovska 2016 single-channel LST",
     reference="Avdan and Jovanovska (2016)",
     citation=(
         "Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land "

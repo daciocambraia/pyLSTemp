@@ -8,7 +8,7 @@ try:
     from rasterio.transform import from_origin
 except ImportError:
     rasterio = None
-from pylstemp import read_quality_mask, emissivity, optical_correction
+from pylstemp import quality_mask, emissivity, optical_correction
 
 @unittest.skipIf(rasterio is None, 'rasterio optional dependency')
 class ExplicitQAInputs(unittest.TestCase):
@@ -29,9 +29,9 @@ class ExplicitQAInputs(unittest.TestCase):
     def test_bits_and_actual_emissivity_mask(self):
         with TemporaryDirectory() as temp:
             ref,qp,qs=self.fixture(temp)
-            mask=read_quality_mask(qp,qs,reference_path=ref)
+            mask=quality_mask(qp,qs,reference_path=ref)
             np.testing.assert_array_equal(mask,[[True,False,False],[True,True,False]])
-            water=read_quality_mask(qp,qs,reference_path=ref,exclude_water=True)
+            water=quality_mask(qp,qs,reference_path=ref,exclude_water=True)
             self.assertTrue(water[0,2]);self.assertFalse(mask[0,2])
             result=emissivity(np.full((2,3),.3),method='rongali-2018',mask=mask)
             np.testing.assert_array_equal(np.isnan(result),mask)
@@ -42,28 +42,28 @@ class ExplicitQAInputs(unittest.TestCase):
             for name in ('QA_PIXEL','QA_RADSAT'):
                 with self.subTest(name=name):
                     args=(None,qs) if name=='QA_PIXEL' else (qp,None)
-                    with self.assertRaisesRegex(ValueError,name):read_quality_mask(*args,reference_path=ref)
-            with self.assertRaises(TypeError):read_quality_mask(qp,reference_path=ref)
-            with self.assertRaises(TypeError):read_quality_mask(qp,qs)
+                    with self.assertRaisesRegex(ValueError,name):quality_mask(*args,reference_path=ref)
+            with self.assertRaises(TypeError):quality_mask(qp,reference_path=ref)
+            with self.assertRaises(TypeError):quality_mask(qp,qs)
 
     def test_shifted_grid_float_qa_and_nodata(self):
         with TemporaryDirectory() as temp:
             ref,qp,qs=self.fixture(temp)
             bad=self.write(temp,'shifted.tif',np.zeros((2,3),dtype='uint16'),shifted=True)
-            with self.assertRaisesRegex(ValueError,'Unaligned QA_RADSAT'):read_quality_mask(qp,bad,reference_path=ref)
+            with self.assertRaisesRegex(ValueError,'Unaligned QA_RADSAT'):quality_mask(qp,bad,reference_path=ref)
             bad=self.write(temp,'float.tif',np.zeros((2,3),dtype='float32'))
-            with self.assertRaisesRegex(ValueError,'integer QA'):read_quality_mask(qp,bad,reference_path=ref)
+            with self.assertRaisesRegex(ValueError,'integer QA'):quality_mask(qp,bad,reference_path=ref)
             a=np.zeros((2,3),dtype='uint16');a[1,2]=65535
             nodata=self.write(temp,'nodata.tif',a,nodata=65535)
-            self.assertTrue(read_quality_mask(qp,nodata,reference_path=ref)[1,2])
+            self.assertTrue(quality_mask(qp,nodata,reference_path=ref)[1,2])
 
     def test_dos_fit_excludes_qa_rejected_dark_pixel(self):
         with TemporaryDirectory() as temp:
             ref,qp,qs=self.fixture(temp)
-            mask=read_quality_mask(qp,qs,reference_path=ref)
+            mask=quality_mask(qp,qs,reference_path=ref)
             rho=np.array([[.05,.2,.3],[.06,.07,.4]])
-            result=optical_correction(rho,method='chavez-dos',sun_elevation=45,percentile=0,mask=mask,return_diagnostics=True)
-            unmasked=optical_correction(rho,method='chavez-dos',sun_elevation=45,percentile=0,return_diagnostics=True)
+            result=optical_correction(rho,method='chavez-dos-1996',sun_elevation=45,percentile=0,mask=mask,return_diagnostics=True)
+            unmasked=optical_correction(rho,method='chavez-dos-1996',sun_elevation=45,percentile=0,return_diagnostics=True)
             self.assertTrue(np.isnan(result['reflectance'][0,0]))
             # A cloudy artificial dark pixel must not influence the fit for clear pixels.
             self.assertNotEqual(float(result['reflectance'][0,1]),float(unmasked['reflectance'][0,1]))

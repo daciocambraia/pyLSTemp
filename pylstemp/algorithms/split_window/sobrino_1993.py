@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+from ...exceptions import ApplicabilityWarning
 
 from ...exceptions import assert_required_keywords_provided
 from ...metadata import AlgorithmSpec
@@ -46,7 +47,7 @@ class SplitWindowSobrino1993LST(SplitWindowParentLST):
         tuple
             Raw LST image in Kelvin and validated mask.
         """
-        warnings.warn("sobrino-1993 is an AVHRR-to-Landsat adaptation; independent Landsat accuracy is not established by this library. See docs/scientific-methods.md.", RuntimeWarning, stacklevel=2)
+        warnings.warn("sobrino-1993 is an AVHRR-to-Landsat adaptation; independent Landsat accuracy is not established by this library. See docs/scientific-methods.md.", ApplicabilityWarning, stacklevel=2)
         required_keywords = [
             "emissivity_10",
             "emissivity_11",

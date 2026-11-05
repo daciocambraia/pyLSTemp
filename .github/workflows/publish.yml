@@ -20,7 +20,7 @@ jobs:
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install build twine rasterio pytest
+          python -m pip install build twine rasterio pillow pytest
 
       - name: Check release tag matches package version
         run: >-

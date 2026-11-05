@@ -15,6 +15,9 @@
 - [Referencias e creditos](references.md)
 
 Exemplos: um notebook por metodo no indice acima.
-A regressao essencial publica em `tests/` acompanha o codigo e o sdist. A bateria
-completa, verificadores e relatorios detalhados pertencem ao arquivo local
-`Verificacao/` e nao acompanham o repositorio ou os pacotes.
+- [Calibracao radiometrica com method](calibration.md)
+
+- [Selecao uniforme por method](method-selection.md)
+
+- [Contratos de entrada, resultado e exportacao](result-contracts.md)
+- [Diagnosticos e flags](diagnostic-quality.md)

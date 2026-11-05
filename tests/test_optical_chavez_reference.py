@@ -23,7 +23,7 @@ class ChavezReferenceTests(unittest.TestCase):
                 expected = np.pi*(L-Lhaze)/(E0*c*tau)
                 for band in range(2):
                     p = ChavezParameters(method, float(np.pi*Ldark[band]/(E0[band]*c)), .01, elevation, 0., 2)
-                    actual = optical_correction(rho_toa[:,band], method='chavez-'+method, parameters=p)
+                    actual = optical_correction(rho_toa[:,band], method='chavez-'+method+'-1996', parameters=p)
                     np.testing.assert_allclose(actual,expected[:,band],rtol=2e-14,atol=2e-15)
 
     def test_known_reflectances_differ_but_ndvi_cancels(self):
@@ -34,7 +34,7 @@ class ChavezReferenceTests(unittest.TestCase):
             vals=[]
             for rho,dark in [(.15,.06),(.33,.04)]:
                 p=ChavezParameters(method,dark,.01,30.,0.,2)
-                vals.append(float(optical_correction(np.array([rho]),method='chavez-'+method,parameters=p)[0]))
+                vals.append(float(optical_correction(np.array([rho]),method='chavez-'+method+'-1996',parameters=p)[0]))
             results[method]=vals
         np.testing.assert_allclose(results['dos'],[.10,.30])
         np.testing.assert_allclose(results['cost'],[.20,.60])
@@ -43,8 +43,8 @@ class ChavezReferenceTests(unittest.TestCase):
 
     def test_no_transmittance_correction_at_sun_zenith(self):
         a=np.array([.10,.20,.30])
-        d=optical_correction(a,method='chavez-dos',sun_elevation=90.,percentile=0.)
-        c=optical_correction(a,method='chavez-cost',sun_elevation=90.,percentile=0.)
+        d=optical_correction(a,method='chavez-dos-1996',sun_elevation=90.,percentile=0.)
+        c=optical_correction(a,method='chavez-cost-1996',sun_elevation=90.,percentile=0.)
         np.testing.assert_allclose(d,c)
 
     def test_cost_range_mask_can_differ_from_dos(self):
@@ -52,7 +52,7 @@ class ChavezReferenceTests(unittest.TestCase):
         outputs={}
         for method in ['dos','cost']:
             p=ChavezParameters(method,.1,.01,30.,0.,3)
-            outputs[method]=optical_correction(a,method='chavez-'+method,parameters=p,mask=mask)
+            outputs[method]=optical_correction(a,method='chavez-'+method+'-1996',parameters=p,mask=mask)
         self.assertAlmostEqual(outputs['dos'][1],.71)
         self.assertTrue(np.isnan(outputs['cost'][1])) # 1.42 exceeds unit reflectance
         self.assertTrue(np.isnan(outputs['dos'][2:]).all())
@@ -61,7 +61,7 @@ class ChavezReferenceTests(unittest.TestCase):
     def test_scene_fit_percentile_and_tile_reuse(self):
         # Fixed dark percentile instead of estimating it again on each tile.
         a=np.array([.03,.04,.10,.20,.30])
-        for method in ['chavez-dos','chavez-cost']:
+        for method in ['chavez-dos-1996','chavez-cost-1996']:
             fit=optical_correction(a,method=method,sun_elevation=50.,percentile=25.,return_diagnostics=True)
             self.assertAlmostEqual(fit['parameters'].dark_reflectance,.04)
             tiled=np.concatenate([optical_correction(x,method=method,parameters=fit['parameters']) for x in [a[:2],a[2:]]])

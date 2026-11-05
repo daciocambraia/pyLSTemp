@@ -8,20 +8,20 @@ from pylstemp.quality import QualityFlag as Q
 
 def test_sc_extrapolation_preserves_equation_and_scalar_array_parity():
     t=np.full((2,3),300.);eps=np.full(t.shape,.98);L=np.full(t.shape,10.)
-    with pytest.raises(ValueError):single_window(t,lst_method='jimenez-munoz-2014-sc',emissivity_10=eps,radiance_band_10=L,water_vapor=4.)
-    r=single_window(t,lst_method='jimenez-munoz-2014-sc',emissivity_10=eps,radiance_band_10=L,water_vapor=4.,quality_mode='diagnostic')
+    with pytest.raises(ValueError):single_window(t,method='jimenez-munoz-2014',emissivity_10=eps,radiance_band_10=L,water_vapor=4.)
+    r=single_window(t,method='jimenez-munoz-2014',emissivity_10=eps,radiance_band_10=L,water_vapor=4.,quality_mode='diagnostic')
     w=4.;p1=.04019*w*w+.02916*w+1.01523;p2=-.38333*w*w-1.50294*w+.20324;p3=.00918*w*w+1.36072*w-.27514
     gamma=300**2/(1324*10);delta=300-300**2/1324;expected=gamma*((p1*10+p2)/.98+p3)+delta
     np.testing.assert_allclose(r['lst'],expected,atol=1e-12)
     assert np.all(r['quality_flags'] & Q.PWV_OUT_OF_DOMAIN) and np.isnan(r['screened_lst']).all()
-    a=single_window(t,lst_method='jimenez-munoz-2014-sc',emissivity_10=eps,radiance_band_10=L,water_vapor=np.full(t.shape,w),quality_mode='diagnostic')
+    a=single_window(t,method='jimenez-munoz-2014',emissivity_10=eps,radiance_band_10=L,water_vapor=np.full(t.shape,w),quality_mode='diagnostic')
     np.testing.assert_array_equal(a['lst'],r['lst'])
 
 
 def test_du_explicit_fallback_not_clipped_or_nearest_coefficients():
     t=np.full((3,3),300.);e=np.full(t.shape,.98)
-    general=split_window(t,t-2,emissivity_10=e,emissivity_11=e,lst_method='du-2015')
-    r=split_window(t,t-2,emissivity_10=e,emissivity_11=e,lst_method='du-2015',water_vapor=8.,quality_mode='diagnostic')
+    general=split_window(t,t-2,emissivity_10=e,emissivity_11=e,method='du-2015')
+    r=split_window(t,t-2,emissivity_10=e,emissivity_11=e,method='du-2015',water_vapor=8.,quality_mode='diagnostic')
     np.testing.assert_array_equal(r['lst'],general)
     assert np.all(r['quality_flags'] & Q.DU_GENERAL_FALLBACK) and np.all(r['quality_flags'] & Q.PWV_OUT_OF_DOMAIN)
     assert np.isnan(r['screened_lst']).all()
@@ -59,11 +59,11 @@ def test_wang_raw_group_regression_and_original_screened_result():
 
 def test_upstream_flags_shape_validation_and_mask_preserved():
     t=np.full((2,2),300.);eps=np.full(t.shape,.98);mask=np.zeros(t.shape,bool);mask[0,0]=True;up=np.full(t.shape,int(Q.LOW_QUALITY),dtype=np.uint16)
-    r=split_window(t,t-2,lst_method='du-2015',emissivity_10=eps,emissivity_11=eps,water_vapor=2.,mask=mask,pwv_quality_flags=up,quality_mode='diagnostic')
+    r=split_window(t,t-2,method='du-2015',emissivity_10=eps,emissivity_11=eps,water_vapor=2.,mask=mask,pwv_quality_flags=up,quality_mode='diagnostic')
     assert np.isnan(r['lst'][0,0]) and r['quality_flags'][0,0]&Q.INPUT_MASKED
     assert np.all(r['quality_flags']&Q.LOW_QUALITY) and not np.any(r['quality_acceptable'])
     assert not np.any(r['lst_quality_flags']&Q.LOW_QUALITY)
-    with pytest.raises(ValueError):split_window(t,t-2,lst_method='du-2015',emissivity_10=eps,emissivity_11=eps,water_vapor=2.,pwv_quality_flags=np.zeros((3,3),dtype='uint16'),quality_mode='diagnostic')
+    with pytest.raises(ValueError):split_window(t,t-2,method='du-2015',emissivity_10=eps,emissivity_11=eps,water_vapor=2.,pwv_quality_flags=np.zeros((3,3),dtype='uint16'),quality_mode='diagnostic')
     with pytest.raises(ValueError):water_vapor(t,t,ndvi_filter=False,method='ren-2015',quality_mode='anything')
 
 def test_mono_nonpositive_kelvin_is_retained_and_flagged_only_in_diagnostic_mode():

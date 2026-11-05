@@ -1,12 +1,13 @@
 """Explicit quality-raster inputs for prepared Landsat 8/9 C2 arrays."""
 from pathlib import Path
 import numpy as np
-from .calibration import quality_mask
+from .calibration.quality import _quality_mask_from_arrays
 from .messages import contextual_errors
+from .validation import ensure_bool
 
 
 @contextual_errors
-def read_quality_mask(qa_pixel_path, qa_radsat_path, *, reference_path, exclude_water=False):
+def quality_mask(qa_pixel_path, qa_radsat_path, *, reference_path, exclude_water=False):
     """Read BOTH required QA files and return an aligned invalid-pixel mask.
 
     Parameters
@@ -35,6 +36,7 @@ def read_quality_mask(qa_pixel_path, qa_radsat_path, *, reference_path, exclude_
     pass the result as mask= to each calculation. This is quality screening,
     separate from diagnostic confidence flags and atmospheric correction.
     """
+    exclude_water = ensure_bool("exclude_water", exclude_water)
     import rasterio
     paths = dict(QA_PIXEL=qa_pixel_path, QA_RADSAT=qa_radsat_path,
                  reference_path=reference_path)
@@ -58,5 +60,5 @@ def read_quality_mask(qa_pixel_path, qa_radsat_path, *, reference_path, exclude_
                 raise ValueError(f"{name} must contain integer QA bit values, not calibrated data.")
             invalid |= np.ma.getmaskarray(data)
             values[name] = data.filled(0)
-    return invalid | quality_mask(values["QA_PIXEL"], values["QA_RADSAT"],
+    return invalid | _quality_mask_from_arrays(values["QA_PIXEL"], values["QA_RADSAT"],
                                   exclude_water=exclude_water)

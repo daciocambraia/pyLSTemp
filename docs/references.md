@@ -19,17 +19,17 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 
 ## Single-channel temperature algorithms
 
-- `mono-window-2016`
+- `avdan-2016`
   Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016.
   This is a Band 10 single-channel workflow. The implementation uses `lambda=10.895e-6 m`, calculated as the midpoint of the Landsat 8/9 TIRS Band 10 range (`10.6-11.19 um`).
 
-- `jimenez-munoz-2014-sc`
+- `jimenez-munoz-2014`
   Jimenez-Munoz et al. (2014). Band-10 SC: Eqs. 1, 2, 4 and 6.
   [Article](https://doi.org/10.1109/LGRS.2014.2312032).
 
 ## Split-window temperature algorithms
 
-- `jimenez-munoz-2014-sw`
+- `jimenez-munoz-2014`
   Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J. Land surface temperature retrieval methods from Landsat-8 thermal infrared sensor data. IEEE Geoscience and Remote Sensing Letters, 2014.
 - `du-2015`
   Du, C., Ren, H., Qin, Q., Meng, J., and Zhao, S. A practical split-window algorithm for estimating land surface temperature from Landsat 8 data. Remote Sensing, 2015.

@@ -31,7 +31,10 @@ def to_float_array(name: str, value) -> np.ndarray:
     if value is None:
         raise ValueError(f"Input '{name}' must be provided as a numeric array; received None.")
     try:
-        array = np.asarray(value, dtype=float)
+        if np.iscomplexobj(value):
+            raise ValueError("Complex-valued inputs are not physical real-valued measurements.")
+        array = (np.ma.asarray(value, dtype=float).filled(np.nan)
+                 if np.ma.isMaskedArray(value) else np.asarray(value, dtype=float))
     except (TypeError, ValueError) as exc:
         raise ValueError(f"Input '{name}' must contain numeric values convertible to float.") from exc
     if array.size == 0:
@@ -136,3 +139,10 @@ def normalize_temperature_unit(unit: str) -> str:
     """
     assert_temperature_unit(unit)
     return unit.strip().lower()
+
+
+def ensure_bool(name, value):
+    """Reject truthy strings/numbers where an explicit Boolean is required."""
+    if not isinstance(value, (bool, np.bool_)):
+        raise ValueError(f"{name} must be boolean (True or False); received {value!r}.")
+    return bool(value)

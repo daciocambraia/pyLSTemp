@@ -3,7 +3,7 @@
 O workflow conecta calibracao, PWV e Du sem duplicar entradas do catalogo.
 Aceita Wang e Ren/MSWCVR, com escolha explicita do estimador.
 
-`split_window(..., lst_method="du-2015", water_vapor=None)` preserva os
+`split_window(..., method="du-2015", water_vapor=None)` preserva os
 coeficientes gerais. PWV escalar exige valor finito em [0,6.3] g/cm2. Raster
 exige exatamente a mesma forma e grade das BT e emissividades; nao ha
 broadcasting. Valores nao finitos ou fora do dominio ficam NaN, sem clipping
@@ -18,7 +18,7 @@ from pylstemp.workflows import du_from_scene
 
 with LandsatScene("caminho/para/cena") as cena:
     resultado = du_from_scene(
-        cena, pwv_mode="raster", pwv_method="ren-2015", unit="celsius",
+        cena, pwv_mode="raster", method="ren-2015", unit="celsius",
     )
     resultado.export(cena, "resultados/du_ren")
 ```
@@ -47,7 +47,7 @@ sobre suporte identico exige preparar esse suporte explicitamente.
 
 ## Estimadores e parametros
 
-O padrao continua `pwv_method="wang-2015"`. A escolha Ren e explicita:
+O padrao continua `method="wang-2015"`. A escolha Ren e explicita:
 
 | Escolha | Janela padrao no workflow | Selecao NDVI | PWV aceito no workflow |
 |---|---|---|---|
@@ -66,7 +66,8 @@ nao e fornecida; o workflow usa 33 por conhecer o contexto Landsat.
 `pwv_options`, apenas para Ren, permite `min_samples` (padrao 10),
 `quality_threshold` (0.95) e `ndvi_filter` (True). Estes limiares sao escolhas
 operacionais. Os demais controles sao `window_size`, `chunk_rows`, `mask`,
-`emissivity_method`, `optical_quantity` e `unit`. Ren rejeita `ndvi_range`
+`optical_quantity` e `unit`. A emissividade desta composicao e Rongali;
+`method` seleciona Wang/Ren para PWV e a LST permanece Du. Ren rejeita `ndvi_range`
 e `group_count` diferente de 3, pois nao usa agrupamento global. Wang rejeita
 `pwv_options`. Veja [formulas e criterios](image-only-methods.md#ren-2015-mswcvr).
 
@@ -80,7 +81,7 @@ from pylstemp.workflows import scene_ndvi_range
 with LandsatScene("caminho/para/cena") as cena:
     limites = scene_ndvi_range(cena, optical_quantity="radiance")
     resultado = du_from_scene(cena, window=(3000, 3128, 3000, 3128),
-                             pwv_mode="raster", pwv_method="wang-2015",
+                             pwv_mode="raster", method="wang-2015",
                              ndvi_range=limites)
 ```
 
@@ -100,21 +101,22 @@ limites globais. O modo media varia com a area escolhida para a media.
 
 ## Produtos e proveniencia
 
-`DuSceneResult` contem `lst`, `pwv` (raster aceito), `pwv_raw`,
-`invalid_mask`, `window`, `provenance` e `pwv_diagnostics` (Ren).
-No modo media, `pwv` ainda e o raster que originou a media; o valor aplicado
-esta em `provenance["mean_pwv"]`. No modo geral os campos PWV sao None.
-O PWV bruto preserva valores calculaveis antes dos filtros de qualidade e
-dominio; ele nao deve substituir automaticamente o PWV aceito na LST.
+DuSceneResult oferece lst e pwv selecionados, lst_raw, lst_screened,
+pwv_raw, pwv_screened, quality_flags, invalid_mask, window,
+provenance e diagnosticos PWV para Wang e Ren. Use quality_mode="diagnostic"
+para selecionar o bruto; o padrao seleciona o filtrado.
 
-`export()` grava `lst_du.tif`, `lst_invalid.tif` (1=invalido), `pwv.tif`,
-`pwv_raw.tif`, `pwv_invalid.tif` e `provenance.json`.
-Ren acrescenta `pwv_ratio.tif`, `pwv_chi_squared.tif` e
-`pwv_sample_count.tif`; o modo geral exporta somente LST, mascara e JSON.
-Os GeoTIFFs preservam grade, unidades e NoData NaN. O JSON registra cena,
-sensor, versao, modo, estimador, selecao de coeficientes, convencao optica,
-janela/halo, limites globais de Wang ou controles locais de Ren e rejeicoes.
-Use a mesma cena aberta que originou o resultado para exportar.
+O bruto PWV precede os filtros operacionais do estimador. A cadeia filtrada
+aplica esses filtros, o dominio PWV da composicao e sua propria media espacial.
+No modo mean, o raster pwv origina a media aplicada; proveniencia informa o
+valor e a quantidade de contribuintes de cada cadeia. Flags dos contribuintes
+sao combinadas com OR e SPATIAL_MEAN_PWV. No modo general, PWV e None.
+
+export() grava os produtos selecionados, brutos e filtrados, mascaras uint8,
+flags uint16, provenance.json e quality_legend.json. Mascaras e flags preservam
+zero como valor valido; produtos de ponto flutuante usam NaN. GeoTIFFs incluem
+unidades, versao e identidade do processamento. A proveniencia usa schema 2
+e fichas agrupadas por familia/metodo. Use a mesma cena para exportar.
 
 ## Equacoes verificadas e alcance da cadeia
 

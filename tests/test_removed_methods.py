@@ -10,8 +10,9 @@ class RemovedMethods(unittest.TestCase):
     def test_both_catalog_views_contain_only_available_methods(self):
         a=list_algorithms();b=list_algorithms(include_inactive=True)
         self.assertEqual(a,b)
-        keys={k for family,items in b.items() if family!='credit' for k in items}
-        self.assertEqual(len(keys),14)
+        identities={(family,k) for family,items in b.items() if family!='credit' for k in items}
+        keys={k for _,k in identities}
+        self.assertEqual(len(identities),14)
         self.assertTrue(keys.isdisjoint({'rozenstein-2014','sobrino-2004-tm6','sobrino-2008'}))
         for family,items in b.items():
             if family!='credit':
@@ -20,7 +21,7 @@ class RemovedMethods(unittest.TestCase):
     def test_removed_calls_fail(self):
         t=np.array([300.]);u=t-2
         with self.assertRaises(InvalidMethodRequested):
-            split_window(t,u,lst_method='rozenstein-2014',emissivity_10=np.array([.97]),emissivity_11=np.array([.98]))
+            split_window(t,u,method='rozenstein-2014',emissivity_10=np.array([.97]),emissivity_11=np.array([.98]))
         for key in ['sobrino-2004-tm6','sobrino-2008','sobrino-2008-simplified','sobrino-2008-full']:
             with self.subTest(method=key),self.assertRaises(InvalidMethodRequested):emissivity(np.array([.35]),method=key)
 

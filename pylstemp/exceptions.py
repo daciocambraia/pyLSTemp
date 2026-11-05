@@ -69,3 +69,15 @@ def assert_temperature_unit(unit: str) -> None:
         raise InvalidTemperatureUnitError(
             "Temperature unit should be either 'kelvin' or 'celsius'; brightness inputs must remain in Kelvin."
         )
+
+
+class ApplicabilityWarning(RuntimeWarning):
+    """A sensor transfer or source assumption requires independent justification."""
+
+
+class DomainWarning(RuntimeWarning):
+    """A finite estimate extrapolates beyond a method's evaluated domain."""
+
+
+class UnusedParameterWarning(RuntimeWarning):
+    """A supplied parameter does not enter the selected equation."""
