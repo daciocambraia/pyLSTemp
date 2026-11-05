@@ -32,19 +32,24 @@ class SingleChannelJimenezMunoz2014LST(BaseTemperatureAlgorithm):
             brightness_temperature_10=tb, emissivity_10=eps, radiance_band_10=radiance)
         invalid |= radiance <= 0
         w = to_float_array("water_vapor", kwargs["water_vapor"])
-        if w.ndim == 0:
+        diagnostic = kwargs.get("diagnostic", False)
+        if w.ndim == 0 and not diagnostic:
             if not np.isfinite(w) or not 0 <= w <= 3:
                 raise ValueError("jimenez-munoz-2014-sc: scalar water_vapor must be finite "
                                  "and within [0,3] g/cm2; above 3 the polynomial SC approach "
                                  "loses accuracy. Use split_window or atmospheric parameters.")
-        else:
+        elif w.ndim > 0:
             ensure_same_shape(water_vapor=w, brightness_temperature_10=tb)
-        invalid |= ~np.isfinite(w) | (w < 0) | (w > 3)
+        invalid |= ~np.isfinite(w)
+        if not diagnostic:
+            invalid |= (w < 0) | (w > 3)
         with np.errstate(all="ignore"):
             psi1, psi2, psi3 = (a*w*w + b*w + c for a,b,c in self.coefficients)
             gamma = tb*tb / (self.b_gamma*radiance)
             delta = tb - tb*tb/self.b_gamma
             result = gamma*((psi1*radiance + psi2)/eps + psi3) + delta
+        if diagnostic:
+            return np.where(invalid | ~np.isfinite(result), np.nan, result)
         return self._finalize(result, mask=invalid)
 
 

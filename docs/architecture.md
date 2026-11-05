@@ -1,6 +1,6 @@
 # Arquitetura
 
-O catalogo apresenta 17 seletores por familia, incluindo Sobrino e Chavez. Calibracao,
+O catálogo apresenta 14 seletores disponíveis, todos ativos. Calibracao,
 leitura de cenas e workflows sao funcoes auxiliares, sem duplicar o catalogo.
 
 | Pasta | Conteudo | Distribuicao |
@@ -41,31 +41,30 @@ v1.11/
     usage.md
     validation.md
   exemple/
-    avdan_2016_emissivity.ipynb
-    avdan_2016_lst.ipynb
-    brightness.ipynb
-    chavez_cost.ipynb
-    chavez_dos.ipynb
-    du_2015.ipynb
-    gopinadh_2018.ipynb
-    jimenez_munoz_2014_sc.ipynb
-    jimenez_munoz_2014_sw.ipynb
-    kerr_1992.ipynb
-    price_1984.ipynb
     README.md
-    ren_2015.ipynb
-    rozenstein_2014.ipynb
-    sobrino_1993.ipynb
-    sobrino_2004_tm6.ipynb
-    sobrino_2008.ipynb
-    wang_2015.ipynb
+    brightness.ipynb
+    emissivity__avdan-2016.ipynb
+    emissivity__rongali-2018.ipynb
+    optical_correction__chavez-cost.ipynb
+    optical_correction__chavez-dos.ipynb
+    single_window__jimenez-munoz-2014-sc.ipynb
+    single_window__mono-window-2016.ipynb
+    split_window__du-2015.ipynb
+    split_window__jimenez-munoz-2014-sw.ipynb
+    split_window__kerr-1992.ipynb
+    split_window__price-1984.ipynb
+    split_window__sobrino-1993.ipynb
+    toa_radiance.ipynb
+    toa_reflectance.ipynb
+    water_vapor__ren-2015.ipynb
+    water_vapor__wang-2015.ipynb
   pylstemp/
     algorithms/
       emissivity/
         __init__.py
         avdan_2016.py
         base.py
-        gopinadh_2018.py
+        rongali_2018.py
       single_channel/
         __init__.py
         base.py
@@ -78,7 +77,6 @@ v1.11/
         jimenez_munoz_2014.py
         kerr_1992.py
         price_1984.py
-        rozenstein_2014.py
         sobrino_1993.py
       thermal/
         __init__.py
@@ -95,7 +93,7 @@ v1.11/
     __init__.py
     api.py
     calibration.py
-    emissivity_models.py
+
     exceptions.py
     messages.py
     metadata.py
@@ -144,6 +142,5 @@ contratos de `method_cards.json`, sem expor uma nova funcao publica para NDVI.
 Veja [API](api-reference.md), [extensao](extending.md),
 [workflow Du/PWV](du-pwv-workflow.md) e [estado da validacao](validation.md).
 
-`emissivity_models.py` implementa internamente Sobrino 2004/2008 sem atribuir constantes
-espectrais nao verificadas a TIRS. `optical.py` separa ajuste de haze e
+`optical.py` separa ajuste de haze e
 aplicacao DOS/COST, permitindo reutilizar parametros entre blocos.

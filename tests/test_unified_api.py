@@ -10,6 +10,26 @@ class UnifiedAPI(unittest.TestCase):
         self.t=np.full((5,6),300.);self.u=self.t-2
         self.red=np.ones((5,6));self.nir=np.full((5,6),2.)
 
+    def test_single_channel_prepared_emissivity_routes(self):
+        from pylstemp import single_window
+        mask = np.zeros(self.t.shape, dtype=bool); mask[0,0] = True
+        for method in ("mono-window-2016", "jimenez-munoz-2014-sc"):
+            extra = dict(radiance_band_10=np.full(self.t.shape,10.), water_vapor=1.5) if method.endswith("-sc") else {}
+            for provider in ("avdan-2016", "rongali-2018"):
+                with self.subTest(method=method, provider=provider):
+                    e = emissivity(method=provider, band=10, red=self.red, nir=self.nir, mask=mask)
+                    auto = single_window(self.t, self.red, self.nir, lst_method=method, emissivity_method=provider, mask=mask, **extra)
+                    ready = single_window(self.t, lst_method=method, emissivity_10=e, mask=mask, return_diagnostics=True, **extra)
+                    np.testing.assert_array_equal(auto, ready['lst'])
+                    self.assertIsNone(ready['ndvi'])
+                    self.assertTrue(np.isnan(ready['lst'][0,0]))
+                    c = single_window(self.t, lst_method=method, emissivity_10=e, mask=mask, unit='celsius', **extra)
+                    np.testing.assert_array_equal(c, auto-273.15)
+        for extra in (dict(band_4_red=self.red), dict(emissivity_method='avdan-2016')):
+            with self.assertRaises(ValueError):single_window(self.t, emissivity_10=np.full(self.t.shape,.98), **extra)
+        with self.assertRaises(Exception):single_window(self.t, emissivity_10=np.ones((2,2)))
+        with self.assertRaises(ValueError):single_window(self.t)
+
     def test_old_entry_points_and_empty_family_are_absent(self):
         for name in ('split_window_from_emissivity','sobrino_2004_tm6','sobrino_2008','fit_chavez','chavez_reflectance','ChavezParameters'):
             self.assertFalse(hasattr(pylstemp,name),name)
@@ -18,12 +38,12 @@ class UnifiedAPI(unittest.TestCase):
         self.assertFalse(hasattr(api,'split_window_from_emissivity'))
         self.assertIsNone(importlib.util.find_spec('pylstemp.algorithms.radiative_transfer'))
         self.assertNotIn('radiative_transfer',list_algorithms())
-        self.assertEqual(sum(len(v) for k,v in list_algorithms().items() if k!='credit'),17)
+        self.assertEqual(sum(len(v) for k,v in list_algorithms().items() if k!='credit'),14)
 
     def test_only_jimenez_split_window_is_renamed(self):
         from pylstemp.algorithms.split_window import split_window_registry
         catalog = list_algorithms()
-        expected = {'du-2015', 'jimenez-munoz-2014-sw', 'rozenstein-2014',
+        expected = {'du-2015', 'jimenez-munoz-2014-sw',
                     'price-1984', 'kerr-1992', 'sobrino-1993'}
         self.assertEqual(set(catalog['split_window']), expected)
         self.assertIn('jimenez-munoz-2014-sc', catalog['single_channel'])
@@ -43,6 +63,7 @@ class UnifiedAPI(unittest.TestCase):
         for key in expected:
             self.assertNotEqual(catalog['split_window'][key]['source_review_status'],
                                 'Not reviewed')
+
 
     def test_jimenez_sc_suffix_and_compatibility_alias(self):
         from pylstemp import single_window
@@ -67,10 +88,33 @@ class UnifiedAPI(unittest.TestCase):
             else:
                 self.assertEqual(a[key], b[key])
 
+    def test_catalog_separates_numerical_evidence_and_sensor_applicability(self):
+        catalog=list_algorithms(include_inactive=True)
+        for family,entries in catalog.items():
+            if family=='credit':continue
+            for method,item in entries.items():
+                with self.subTest(method=method):
+                    self.assertEqual(item['evidence']['implementation'],
+                                     'independent_synthetic_regression_checked')
+                    self.assertEqual(item['evidence']['empirical_accuracy'],
+                                     'not_established_by_this_library')
+                    self.assertIn('numerical_evidence',item)
+                    self.assertIn('empirical_accuracy',item)
+        for method in ['price-1984','kerr-1992','sobrino-1993']:
+            for sensor in ['landsat_8','landsat_9']:
+                self.assertEqual(catalog['split_window'][method]['evidence'][sensor],
+                                 'experimental_avhrr_to_tirs_transfer')
+        self.assertEqual(catalog['thermal']['brightness']['evidence']['landsat_9'],
+                         'scene_metadata_calibration')
+        self.assertEqual(catalog['split_window']['du-2015']['evidence']['landsat_9'],
+                         'experimental_coefficient_transfer')
+        self.assertEqual(catalog['optical_correction']['chavez-cost']['evidence']['landsat_8'],
+                         'experimental_tm_to_oli_transfer')
+
     def test_prepared_pair_matches_optical_route_and_diagnostics(self):
-        e10=emissivity(red=self.red,nir=self.nir,method='gopinadh-2018',band=10)
-        e11=emissivity(red=self.red,nir=self.nir,method='gopinadh-2018',band=11)
-        for method,options in [('du-2015',{}),('jimenez-munoz-2014-sw',{'water_vapor':2}),('rozenstein-2014',{'water_vapor':1,'atmospheric_profile':'us-standard-1976'})]:
+        e10=emissivity(red=self.red,nir=self.nir,method='rongali-2018',band=10)
+        e11=emissivity(red=self.red,nir=self.nir,method='rongali-2018',band=11)
+        for method,options in [('du-2015',{}),('jimenez-munoz-2014-sw',{'water_vapor':2})]:
             with self.subTest(method=method):
                 a=split_window(self.t,self.u,self.red,self.nir,lst_method=method,**options)
                 b=split_window(self.t,self.u,emissivity_10=e10,emissivity_11=e11,lst_method=method,return_diagnostics=True,**options)
@@ -91,24 +135,18 @@ class UnifiedAPI(unittest.TestCase):
     def test_ambiguous_and_partial_routes_are_rejected(self):
         options=[{'emissivity_10':self.red}, {'emissivity_11':self.red},
                  {'emissivity_10':self.red,'emissivity_11':self.red,'band_4_red':self.red,'band_5_nir':self.nir},
-                 {'emissivity_10':self.red,'emissivity_11':self.red,'emissivity_method':'gopinadh-2018'},
+                 {'emissivity_10':self.red,'emissivity_11':self.red,'emissivity_method':'rongali-2018'},
                  {'band_4_red':self.red}, {'band_4_red':self.red,'band_5_nir':self.nir,'ndvi_image':self.red}]
         for kw in options:
             with self.subTest(options=list(kw)),self.assertRaises(ValueError):
                 split_window(self.t,self.u,lst_method='du-2015',**kw)
 
-    def test_tm6_cannot_be_mislabelled_tirs(self):
-        result=emissivity(np.full(self.t.shape,.35),method='sobrino-2004-tm6')
-        np.testing.assert_allclose(result,.987)
-        with self.assertRaises(ValueError):emissivity(np.full(self.t.shape,.35),method='sobrino-2004-tm6',band=10)
 
     def test_emissivity_selector_and_method_specific_options(self):
-        for key in ('avdan-2016','gopinadh-2018'):
+        for key in ('avdan-2016','rongali-2018'):
             np.testing.assert_array_equal(emissivity(red=self.red,nir=self.nir,method=key),emissivity(red=self.red,nir=self.nir,emissivity_method=key))
-        for kw in ({'method':'avdan-2016','emissivity_method':'avdan-2016'}, {'method':'avdan-2016','soil_emissivity':.96}, {'method':'sobrino-2008'}, {'method':'sobrino-2008','soil_emissivity':.96,'vegetation_emissivity':.98,'cavity_factor':.6}):
+        for kw in ({'method':'avdan-2016','emissivity_method':'avdan-2016'},):
             with self.assertRaises(ValueError):emissivity(red=self.red,nir=self.nir,**kw)
-        with self.assertRaises(ValueError):
-            emissivity(red=self.red,nir=self.nir,method='sobrino-2008',soil_emissivity=.96,vegetation_emissivity=.98,variant='full')
 
     def test_optical_fit_reuse_and_parameter_conflicts(self):
         rho=np.arange(30,dtype=float).reshape(5,6)/100+.1

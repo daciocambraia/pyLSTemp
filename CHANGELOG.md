@@ -1,5 +1,18 @@
 # Changelog
 
+## Release readiness (2026-11-05)
+
+- Consolidate the retained 14 selectors, 16 scientific cards and 16 executable example notebooks.
+- Include QA file inputs, diagnostic quality flags, Rongali naming and the documented method removals in the public distribution.
+- Run GeoTIFF-dependent regression tests in CI and the release workflow before publishing.
+- Verify 50 tests and 68 subtests locally, distribution metadata, notebook syntax and documentation links.
+
+## Applicability review (2026-10-24)
+
+- Separate numerical evidence, empirical accuracy and Landsat 8/9 applicability in the catalog and reviewed method cards.
+- Warn consistently for AVHRR-derived Price/Kerr/Sobrino methods and Jimenez-Munoz SW PWV extrapolation above the evaluated 6 g/cm2 range.
+- Record the external historical-method application evidence and independent-validation protocol; preserve equations, coefficient values and API signatures.
+
 ## Consistent Jimenez-Munoz SC/SW selectors (2026-10-23)
 
 - Use jimenez-munoz-2014-sw and jimenez-munoz-2014-sc, placing SC/SW after the year in both selectors. Update catalog, source cards, examples and documentation.
@@ -108,7 +121,7 @@
 ## 1.11.0 - 2026-10-04 (updated 2026-10-05)
 
 - Verify retained scope: 619 tests, 106 subtests, 486 real cases and 102 unchanged GeoTIFFs; see docs/ESCOPO_LEVEL1_v1.11.md.
-- Remove Xiaolei implementation and catalog entry; retained emissivity methods are Avdan and Gopinadh. Old Xiaolei calls now raise InvalidMethodRequested.
+- Remove Xiaolei implementation and catalog entry; retained emissivity methods are Avdan and Rongali. Old Xiaolei calls now raise InvalidMethodRequested.
 - Clarify NDVI radiance/reflectance inputs; retain TOA-based scene calibration and optional SR scaling.
 - Fix undefined NDVI ratios and nonfinite EVI inputs; keep one canonical NDVI catalog entry with legacy import aliases.
 - Add explicit Level-1 TOA / Collection 2 Level-2 SR reflectance conversion with product-level guards.
@@ -125,7 +138,7 @@
 - Restore repository-root packaging/CI; use SPDX license metadata.
 
 Migration: Xiaolei has been removed from the selected release scope.
-Use Avdan for single-channel or Gopinadh for single-channel/split-window.
+Use Avdan for single-channel or Rongali for single-channel/split-window.
 Earlier numerical corrections still change outputs relative to v1.10.
 See docs/scientific-methods.md.
 
@@ -143,7 +156,7 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
   moving window, and `group_count=3` follows the article configuration.
 - Changed Wang 2015 NDVI grouping to use scene-level NDVI group boundaries
   instead of recalculating NDVI boundaries independently for every local window.
-- Aligned `emissivity_method="gopinadh-2018"` with Rongali et al. (2018) by
+- Aligned `emissivity_method="rongali-2018"` with Rongali et al. (2018) by
   using a method-specific linear FVC with `NDVIsoil=0.15` and
   `NDVIvegetation=0.48`.
 - Aligned `lst_method="du-2015"` with Du et al. (2015) by averaging the two LST
@@ -171,3 +184,39 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 - original library credit is preserved in `CREDITS.md`
 - scientific conversion formulas were kept aligned with the referenced methods
+
+
+## Unreleased — Sobrino 2008 scope
+
+- Remove the full Sobrino 2008 variant, its exclusive API parameters and its source-catalog entry. Keep the simplified mixture with explicit band-compatible endmembers; reject `variant="full"`. Update the notebook and local test protocol.
+
+- Remove the remaining Sobrino 2008 simplified variant, its notebook and all exclusive emissivity API parameters. Keep historical verification artifacts outside the repository.
+
+
+## Unreleased — main workflow scope (2026-10-26)
+
+- Exclude Rozenstein 2014 and Sobrino 2004 TM6 from the default catalog and main notebook index. Preserve implementations and numerical tests; expose inactive metadata via `list_algorithms(include_inactive=True)`. Keep every other current method active.
+
+## Diagnostic quality mode ? local update 2026-10-26
+
+- Added optional raw PWV/LST diagnostics with uint16 flags and quality metrics; screened defaults and formulas remain unchanged.
+- Ren/Wang retain finite estimates rejected by quality/domain controls. SC permits flagged polynomial extrapolation. Du flags its explicit all-CWV fallback outside per-PWV bins.
+- Added regression tests for numerical equations, masks, flag propagation and compatibility.
+
+
+## 2026-10-27 — remoção definitiva de métodos
+
+Removidas as implementações, rotas explícitas e fichas de Rozenstein 2014 e Sobrino2004 TM6. Sobrino2008 continua removido. Corrigida a manutenção indevida como opções inativas: ambos os catálogos agora possuem os mesmos 14 seletores ativos, com 16 fichas científicas. Os registros anteriores deste changelog são históricos.
+
+
+## 2026-10-28 — nome Rongali e entradas QA
+
+- Padronizado o método de emissividade como rongali-2018, com módulo rongali_2018.py, classe ComputeEmissivityRongali2018 e notebook emissivity__rongali-2018.ipynb. Atualizados catálogo, contratos, padrões, documentação e os 16 exemplos. O seletor anterior não faz parte da API atual; registros e cópias de código de execuções anteriores são preservados fora desta versão de trabalho.
+- Explicitado que QA_PIXEL e QA_RADSAT são obrigatórias para LandsatScene. A validação já existia; funções por matrizes recebem mask explicitamente. Esclarecida nos exemplos a diferença entre máscara QA e seleção de NaN/nodata.
+
+### Entradas QA executáveis
+
+- Nova função pública `read_quality_mask(qa_pixel_path, qa_radsat_path, *, reference_path, exclude_water=False)` com ambas QA obrigatórias e verificação da grade.
+- Os 16 notebooks agora leem QA e a combinam com nodata antes de chamar os métodos.
+- `LandsatScene.quality_mask()` expõe a máscara da cena; `calibrated()` reutiliza essa etapa.
+- As assinaturas de métodos numéricos mantêm `mask=`; help() e catálogo explicam sua origem e aplicação.

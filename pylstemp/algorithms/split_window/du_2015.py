@@ -154,11 +154,17 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
         emissivity_11 = kwargs["emissivity_11"]
         water = kwargs.get("water_vapor")
         water = None if water is None else np.asarray(water, dtype=float)
+        diagnostic = kwargs.get("diagnostic", False)
         raster = water is not None and water.ndim != 0
         if raster:
             ensure_same_shape(brightness_temperature_10=tb_10, water_vapor=water)
         else:
-            coefficient_sets = self._coefficients_for(water)
+            if diagnostic and water is not None and np.isfinite(water) and not 0 <= water <= 6.3:
+                coefficient_sets = (self.default_coefficients,)
+            elif diagnostic and water is not None and not np.isfinite(water):
+                coefficient_sets = (self.default_coefficients,)
+            else:
+                coefficient_sets = self._coefficients_for(water)
         mask = self._validate_inputs(
             mask=kwargs["mask"],
             brightness_temperature_10=tb_10,
@@ -168,7 +174,9 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
         )
 
         if raster:
-            mask |= ~np.isfinite(water) | (water < 0) | (water > 6.3)
+            mask |= ~np.isfinite(water)
+            if not diagnostic:
+                mask |= (water < 0) | (water > 6.3)
             total = np.zeros(tb_10.shape, dtype=float)
             count = np.zeros(tb_10.shape, dtype=np.uint8)
             for (lower, upper), coefficients in self.coefficient_ranges:
@@ -181,6 +189,11 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
                 count[selected] += 1
             result = np.full(tb_10.shape, np.nan)
             np.divide(total, count, out=result, where=count > 0)
+            if diagnostic:
+                fallback = ~mask & np.isfinite(water) & (count == 0)
+                result[fallback] = self._estimate_with_coefficients(
+                    self.default_coefficients, tb_10[fallback], tb_11[fallback],
+                    emissivity_10[fallback], emissivity_11[fallback])
         else:
             estimates = (
                 self._estimate_with_coefficients(
@@ -188,6 +201,8 @@ class SplitWindowDu2015LST(SplitWindowParentLST):
                 for coefficients in coefficient_sets
             )
             result = sum(estimates) / len(coefficient_sets)
+        if water is not None:
+            mask |= ~np.isfinite(water)
         return result, mask
 
 

@@ -1,6 +1,7 @@
 """Ren et al. (2015) MSWCVR: Eqs.1b/1c/2, Sections 2 and 4.2."""
 from __future__ import annotations
 import numpy as np
+from ...quality import QualityFlag as Q, BLOCKING_FLAGS, quality_legend
 from ...metadata import AlgorithmSpec
 from ...validation import to_float_array, ensure_same_shape, ensure_boolean_mask
 
@@ -23,7 +24,7 @@ class WaterVaporRen2015:
     def __call__(self, *, brightness_band_10, brightness_band_11,
                  ndvi_image=None, window_size=11, mask=None, chunk_rows=8,
                  min_samples=10, quality_threshold=.95, ndvi_filter=True,
-                 return_diagnostics=False):
+                 return_diagnostics=False, diagnostic=False):
         x = to_float_array("brightness_band_10", brightness_band_10)
         y = to_float_array("brightness_band_11", brightness_band_11)
         ensure_same_shape(brightness_band_10=x, brightness_band_11=y)
@@ -58,6 +59,8 @@ class WaterVaporRen2015:
         ratio = np.full(x.shape,np.nan)
         quality = np.full(x.shape,np.nan)
         counts = np.zeros(x.shape,dtype=np.int32)
+        flags = np.zeros(x.shape,dtype=np.uint16)
+        flags[~valid] |= int(Q.INPUT_MASKED)
         radius = window_size//2
         arrays = [np.pad(np.where(valid,a,np.nan),radius,constant_values=np.nan)
                   for a in ([x,y,n] if ndvi_filter else [x,y])]
@@ -92,20 +95,38 @@ class WaterVaporRen2015:
                     water=-9.674*r*r+.653*r+9.087
                     tolx=number*64*np.finfo(float).eps*np.maximum(1,mx*mx)
                     toly=number*64*np.finfo(float).eps*np.maximum(1,my*my)
+                    mathematical=(number>=2)&(vx>0)&(vy>0)&np.isfinite(water)
+                    mathematical &= valid[row:stop,col:right]
                     calculable=(number>=min_samples)&(vx>tolx)&(vy>toly)&(covariance>0)
                     calculable &= valid[row:stop,col:right]
                     screened=calculable & np.isfinite(water) & (chi>=quality_threshold)
                     screened &= (water>=.06)&(water<=6.3)
                 sl=np.s_[row:stop,col:right]
                 result[sl]=np.where(screened,water,np.nan)
-                raw[sl]=np.where(calculable & np.isfinite(water),water,np.nan)
-                ratio[sl]=np.where(calculable,r,np.nan)
-                quality[sl]=np.where(calculable,chi,np.nan)
+                raw_ok = mathematical if diagnostic else calculable & np.isfinite(water)
+                raw[sl]=np.where(raw_ok,water,np.nan)
+                ratio[sl]=np.where(mathematical if diagnostic else calculable,r,np.nan)
+                quality[sl]=np.where(mathematical if diagnostic else calculable,chi,np.nan)
                 counts[sl]=np.where(valid[sl],number,0)
-        if return_diagnostics:
+                local=flags[sl]
+                center_valid=valid[sl]
+                local[center_valid & ~mathematical] |= int(Q.UNDEFINED)
+                local[center_valid & (number<min_samples)] |= int(Q.INSUFFICIENT_SAMPLES)
+                local[mathematical & (chi<quality_threshold)] |= int(Q.LOW_QUALITY)
+                local[mathematical & ((water<.06)|(water>6.3))] |= int(Q.PWV_OUT_OF_DOMAIN)
+                local[mathematical & ((water<0)|(covariance<=0))] |= int(Q.NONPHYSICAL)
+                local[mathematical & ((vx<=tolx)|(vy<=toly))] |= int(Q.ILL_CONDITIONED)
+        if return_diagnostics and not diagnostic:
             return dict(water_vapor=result,raw_water_vapor=raw,ratio=ratio,
+                        chi_squared=quality,sample_count=counts,invalid_mask=~np.isfinite(result))
+        if diagnostic:
+            output = raw
+            return dict(water_vapor=output,raw_water_vapor=raw,
+                        screened_water_vapor=result,ratio=ratio,
                         chi_squared=quality,sample_count=counts,
-                        invalid_mask=~np.isfinite(result))
+                        quality_flags=flags,quality_acceptable=(flags & BLOCKING_FLAGS)==0,
+                        quality_legend=quality_legend(),quality_mode='diagnostic' if diagnostic else 'screened',
+                        invalid_mask=~np.isfinite(output))
         return result
 
 

@@ -47,7 +47,7 @@ This rebuild keeps the conversion methods tied to the references listed by the o
 - `avdan-2016`
   Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface temperature using LANDSAT 8 satellite data. Journal of Sensors, 2016.
   Emissivity follows the article's NDVI conditional rules, including `C=0.005` for mixed pixels.
-- `gopinadh-2018`
+- `rongali-2018`
   Rongali, G., et al. Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data. Journal of Geovisualization and Spatial Analysis, 2018.
 
 ## Water vapor algorithms
@@ -70,7 +70,16 @@ Links for all current algorithms are also listed in the [README](../README.md#al
 
 ## Metodos adicionais
 
-- Rozenstein, O., Qin, Z., Derimian, Y., Karnieli, A. (2014). Derivation of Land Surface Temperature for Landsat-8 TIRS Using a Split Window Algorithm. Sensors, 14, 5768-5780. [Artigo](https://doi.org/10.3390/s140405768). Eqs.3--10; Tabelas 1--2.
-- Sobrino, J.A., Jimenez-Munoz, J.C., Paolini, L. (2004). Land surface temperature retrieval from LANDSAT TM 5. Remote Sensing of Environment, 90, 434-440. [Artigo](https://doi.org/10.1016/j.rse.2004.02.003). Secao 3, Eqs.8--13. Constantes de TM6.
 - Sobrino, J.A., et al. (2008). Land Surface Emissivity Retrieval From Different VNIR and TIR Sensors. IEEE TGRS, 46, 316-327. [Artigo](https://doi.org/10.1109/TGRS.2007.904834). Eqs.5--9. Endmembers devem corresponder a banda.
 - Chavez, P.S., Jr. (1996). Image-Based Atmospheric Corrections - Revisited and Improved. PE&RS, 62, 1025-1036. [Artigo](https://static1.1.sqspcdn.com/static/f/891472/15133582/1321370214637/Chavez_P.S._1996.pdf). Eq.2 e discussoes DOS/COST, pp.1027--1029.
+
+
+## External application of historical SW methods
+
+Arabi Aliabad, F., Zare, M., and Ghafarian Malamiri, H. (2021; online 2020).
+A comparative assessment of the accuracies of split-window algorithms for retrieving
+of land surface temperature using Landsat 8 data. Modeling Earth Systems and
+Environment 7, 2267–2281. [DOI](https://doi.org/10.1007/s40808-020-01007-1).
+Table 3 documents use of Price/Kerr/Sobrino expressions; the reference types and
+limits are explained in scientific-methods.md. This citation is not proof of
+TIRS-specific coefficient calibration.

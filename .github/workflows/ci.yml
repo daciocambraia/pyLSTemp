@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install build tools
-        run: python -m pip install build twine
+        run: python -m pip install build twine rasterio pytest
       - name: Build distributions
         run: python -m build
       - name: Check distribution metadata
@@ -36,4 +36,4 @@ jobs:
           from pylstemp.workflows import du_from_scene, scene_ndvi_range;
           print(pylstemp.__version__); print(pylstemp.list_algorithms())"
       - name: Scientific regression against installed wheel
-        run: python -I -m unittest discover -s tests -v
+        run: python -I -m pytest --import-mode=importlib tests -q

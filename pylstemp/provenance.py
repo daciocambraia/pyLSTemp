@@ -16,7 +16,7 @@ def optical_contract(method, quantity):
         raise ValueError("optical_quantity must be radiance, reflectance/toa_reflectance or surface_reflectance.")
     quantity = "toa_reflectance" if quantity == "reflectance" else quantity
     card = next((c for c in _cards() if c["method"] == method), None)
-    expected = {"gopinadh-2018": "radiance", "kerr-1992": "surface_reflectance"}.get(method)
+    expected = {"rongali-2018": "radiance", "kerr-1992": "surface_reflectance"}.get(method)
     status = "quantity_undeclared" if quantity is None else (
         "source_quantity_unspecified" if expected is None else
         "declared_quantity_matches_source_interpretation" if quantity == expected else "optical_quantity_adaptation")

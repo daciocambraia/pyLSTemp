@@ -20,7 +20,7 @@ Near-surface air temperature is not a ground-truth substitute for skin temperatu
 - TOA BT: K2 / log(1 + K1 / L), in kelvin. brightness defaults to radiance; DN requires input_quantity="dn".
 - All four thermal coefficients come from the scene MTL in the scene reader.
 - C2 Level-2 SR_B* scaling is 0.0000275 * DN - 0.2. This scaling does not atmospherically correct Level-1.
-- The emissivity dispatcher includes Avdan, Gopinadh and Sobrino2004/2008; Xiaolei was removed because its additional SR requirement is outside the selected release scope.
+- The emissivity dispatcher includes Avdan and Rongali; Xiaolei was removed because its additional SR requirement is outside the selected release scope.
 - QA excludes fill, dilated cloud, high-confidence cirrus/cloud/shadow/snow, selected optical saturation and terrain occlusion.
 - Wang and Ren scene PWV workflows operate over land; exclude QA water. Cloud masking is an initial quality screen, not complete atmospheric correction.
 
@@ -38,9 +38,7 @@ The original PDFs were checked for the following decisions:
 | Parametrization | Source location | Optical decision and remaining condition |
 |---|---|---|
 | Avdan 2016 | p.3, Sections 2.3.1-2.3.3, Eqs.3-6; p.4, Table 2 | The scene input quantity is not uniquely specified. The discussion links fixed global 0.2/0.5 endmembers to surface reflectivities and states that TOA thresholds depend on atmospheric conditions. Radiance/TOA use is an adaptation, not established equivalence. |
-| Rongali 2018 (`gopinadh-2018`) | PDF pp.5-6, Steps 1/3-5, Eqs.3/5-7, Table 2; p.8 | Adopt Step 1, which includes optical TOA radiance, before NDVI. The 0.15/0.48 endpoints are study-scene averages; transferring them is explicit, not a universal calibration. The workflow figure alone does not establish a different optical quantity. |
-| Sobrino 2004 TM6 | p.436, Sections 3/4, Eqs.9/13/14 | Section 4 constructs NDVI from TOA reflectivities as a first approximation and prefers surface reflectivities. Radiance is not established as equivalent. The function retains only the implemented mixed/vegetation classes and TM6 constants. |
-| Sobrino 2008 | pp.317-318, Eqs.5-9 | Thresholds and endmembers require sensor/band and optical-convention justification. Full mode additionally requires surface red reflectance with compatible soil coefficients. Simplifying the mixture does not prove radiance/reflectance equivalence. |
+| Rongali 2018 (`rongali-2018`) | PDF pp.5-6, Steps 1/3-5, Eqs.3/5-7, Table 2; p.8 | Adopt Step 1, which includes optical TOA radiance, before NDVI. The 0.15/0.48 endpoints are study-scene averages; transferring them is explicit, not a universal calibration. The workflow figure alone does not establish a different optical quantity. |
 | Wang 2015 | Section 2.3, Eqs.2-4, Figure 3 | The inspected description specifies NDVI groups, thermal sample selection and emissivity ratios, without explicitly fixing the optical radiometric quantity. Keep this uncertainty visible. |
 | Ren 2015 | Section 4.2, local NDVI filter | The local +/-1.5 sigma criterion is specified; its optical radiometric quantity is not explicitly fixed in the inspected description. Record the operational quantity; thermal-only mode remains separate. |
 
@@ -55,7 +53,7 @@ surface product or declared correction, not from relabelling Level-1 data.
 `list_algorithms()` now includes `source_sensor`, `source_location`,
 `optical_input_contract` and `source_review_status`. A recorded source decision,
 a passing numerical test and successful scene execution are distinct evidence.
-All 13 registered methods and seven standalone conversion/variant entries now have
+All 13 registered methods and five standalone conversion/variant entries now have
 [reviewed source cards](method-cards.md), including equations, coefficient branches,
 source locations, domains, sensor origin and explicit adaptations. Numerical tests
 and empirical accuracy remain separate evidence states.
@@ -135,7 +133,7 @@ LST and PWV results here are experimental coefficient transfers.
 The two supplied scenes have different acquisition dates and grids; differences between
 them are not a cross-sensor accuracy measurement.
 The Level-1 scene runs use TOA-derived NDVI and empirical emissivity as operational
-demonstrations. Current NDVI-derived emissivity uses Avdan or Gopinadh.
+demonstrations. Current NDVI-derived emissivity uses Avdan or Rongali.
 Xiaolei and its associated synthetic-SR combinations have been removed.
 No RMSE, bias against ground truth or scientific accuracy certification is claimed.
 
@@ -143,7 +141,7 @@ No RMSE, bias against ground truth or scientific accuracy certification is claim
 
 Numerical results change after unit/coefficient/reflectance corrections.
 Xiaolei is not available in this release. Existing calls selecting it raise
-InvalidMethodRequested; Avdan is available for single-channel and Gopinadh for
+InvalidMethodRequested; Avdan is available for single-channel and Rongali for
 single-channel and split-window workflows.
 Temperature above 56.7 C is no longer discarded. Nonfinite/nonpositive absolute
 temperature and invalid emissivity are NaN. Workflow masks are explicit keyword arguments.
@@ -217,15 +215,11 @@ retain their previously documented limitations.
 
 ## Additional source-checked methods (2026-10-22)
 
-The catalog includes Rozenstein 2014 LST and Ren 2015 PWV. Sobrino 2004/2008
-emissivity and Chavez DOS/COST optical correction use family dispatchers
-with explicit band/domain requirements. They do not replace the
-historical Sobrino 1993 AVHRR temperature adaptation or silently calibrate
-TM coefficients for TIRS. See [additional methods](image-only-methods.md).
+The catalog includes Ren 2015 PWV and Chavez DOS/COST optical correction with explicit input contracts. See [additional methods](image-only-methods.md).
 
 ## Completed source audit and reproducibility
 
-The [20 method cards](method-cards.md) accompany the installed package. Price
+The [16 method cards](method-cards.md) accompany the installed package. Price
 retains the explicitly documented inverse-emissivity adaptation, rather than
 claiming literal reproduction of the conflicting printed factor. Kerr's .11/.72
 endpoints specifically require atmospherically corrected NDVI in its source
@@ -260,7 +254,7 @@ are not thermal saturation bits.
 
 ## Unified family interface
 
-`emissivity(..., method=...)` selects Avdan, Rongali or Sobrino. Chavez DOS/COST
+`emissivity(..., method=...)` selects Avdan or Rongali. Chavez DOS/COST
 uses `optical_correction(..., method=...)`, which returns an array or diagnostics
 with reusable parameters. Both appear in the 17-selector catalog. Their source
 conditions and coefficient choices are unchanged. `split_window` accepts
@@ -268,3 +262,90 @@ calibrated optical bands or a prepared band-specific emissivity pair, with
 conflicting/unused input routes rejected. The empty reserved family was removed.
 See the [per-method notebooks](../exemple/README.md) for all
 parameters, units and options.
+
+
+## Revisão de aplicabilidade e domínios (2026-10-24)
+
+`list_algorithms()` separa `numerical_evidence`, `empirical_accuracy` e `evidence`.
+Este último informa a origem da parametrização em Landsat 8/9; **não** é um selo
+que confirma acurácia em uma cena. Nenhum método recebeu classificação de
+validação empírica concluída nesta biblioteca.
+
+| Método | Landsat 8 | Landsat 9 |
+|---|---|---|
+| `avdan-2016` | Coeficientes para o sensor de origem; respeitar as hipóteses | Transferência experimental de coeficientes |
+| `rongali-2018` | Coeficientes para o sensor de origem; respeitar as hipóteses | Transferência experimental de coeficientes |
+| `jimenez-munoz-2014-sc` | Coeficientes para o sensor de origem; respeitar as hipóteses | Transferência experimental de coeficientes |
+| `mono-window-2016` | Coeficientes para o sensor de origem; respeitar as hipóteses | Transferência experimental de coeficientes |
+| `du-2015` | Coeficientes para o sensor de origem; respeitar as hipóteses | Transferência experimental de coeficientes |
+| `jimenez-munoz-2014-sw` | Coeficientes para o sensor de origem; respeitar as hipóteses | Transferência experimental de coeficientes |
+| `kerr-1992` | Adaptação experimental AVHRR → TIRS | Adaptação experimental AVHRR → TIRS |
+| `price-1984` | Adaptação experimental AVHRR → TIRS | Adaptação experimental AVHRR → TIRS |
+| `sobrino-1993` | Adaptação experimental AVHRR → TIRS | Adaptação experimental AVHRR → TIRS |
+| `brightness` | Calibração com o MTL do sensor | Calibração com o MTL do sensor |
+| `ren-2015` | Coeficientes para o sensor de origem; respeitar as hipóteses | Transferência experimental de coeficientes |
+| `wang-2015` | Coeficientes para o sensor de origem; respeitar as hipóteses | Transferência experimental de coeficientes |
+| `chavez-dos` | Transferência experimental TM → OLI | Transferência experimental TM → OLI |
+| `chavez-cost` | Transferência experimental TM → OLI | Transferência experimental TM → OLI |
+
+### Entradas e domínios
+
+As verificações de forma, máscara booleana, BT em K, emissividade (0,1], PWV,
+rotas incompatíveis foram conferidas. Arrays
+NumPy não trazem CRS nem unidade: a igualdade de forma não comprova alinhamento
+ou grandeza física. O leitor e os notebooks verificam as grades; em chamadas
+diretas essa responsabilidade permanece com quem fornece os arrays.
+
+Price, Kerr e Sobrino1993 agora emitem o mesmo aviso de adaptação AVHRR → Landsat.
+Jiménez-Muñoz SW avisa quando pixels válidos usam PWV >6 g/cm², fora da faixa
+avaliada na Table II da fonte. A saída continua sendo uma extrapolação explícita;
+não há clipping ou troca de coeficientes. Valores mascarados não disparam esse aviso.
+As equações e os valores numéricos dos coeficientes permanecem inalterados.
+
+### Price, Kerr e Sobrino1993: evidência encontrada
+
+[Arabi Aliabad, Zare e Ghafarian Malamiri](https://doi.org/10.1007/s40808-020-01007-1)
+(2021; publicação online em 2020) aplica os três métodos a Landsat 8 em região árida.
+A Table 3 apresenta as mesmas estruturas implementadas, inclusive o fator
+(5.5−ε10)/4.5 de Price. A avaliação usa temperatura do solo a 5 cm interpolada
+no tempo e comparação com MODIS. Isso documenta uma aplicação externa; não
+comprova temperatura radiométrica da pele, recalibração para TIRS ou validade em
+Landsat 9. A busca desta revisão é dirigida, não uma revisão sistemática exaustiva.
+
+Na página 7236 do original de Price, a expressão impressa usa (3.5+ε)/4.5.
+A expansão de ε^(−1/4.5) ao redor de ε=1 produz (5.5−ε)/4.5. Esta verificação
+algébrica justifica a escolha declarada como aproximação inversa; não demonstra
+que o restante dos coeficientes AVHRR seja adequado a TIRS. Não foi introduzida
+uma terceira formulação nem declarada uma errata do artigo sem comprovação.
+
+### Sequência de validação independente
+
+1. LST: observação radiométrica da superfície ou derivação de fluxos de onda longa
+   com emissividade **banda larga** e incerteza justificadas. Temperatura do ar e
+   solo a profundidade não são referências equivalentes de temperatura da pele.
+2. PWV: GNSS com conversão documentada de atraso para PWV, ou radiossondagens com
+   controle de qualidade e cobertura vertical compatível com a coluna estimada.
+3. Óptica/Chavez: reflectância superficial independente, harmonizada à resposta
+   espectral da banda e com incerteza. Comparação com outro produto orbital é
+   intercomparação, registrada separadamente de evidência de campo.
+4. Parear tempo, espaço, suporte do pixel e QA; definir tolerâncias e critérios de
+   aceitação antes de analisar os erros. Separar sensores, métodos, condições
+   atmosféricas e tipos de referência. Não ajustar e avaliar com os mesmos grupos.
+5. Reportar bias (estimativa−referência), MAE, RMSE, dispersão e quantidade de
+   observações/cenas/estações independentes, incluindo exclusões e incertezas.
+
+Fontes públicas para planejar a amostra: [NOAA SURFRAD](https://gml.noaa.gov/grad/surfrad/),
+[IGRA](https://www.ncei.noaa.gov/products/weather-balloon/integrated-global-radiosonde-archive),
+[IGS](https://igs.org/products/) e [RadCalNet](https://www.radcalnet.org/).
+Essas fontes são referências para um eventual estudo independente, não fazem parte
+do plano ativo. Por orientação do usuário, a avaliação atual usa somente as duas
+cenas já existentes em `Imagens/`. Seus resultados serão tratados como verificação
+operacional e intercomparação; imagens sem referência não permitem calcular
+acurácia independente nem justificar uma recalibração de coeficientes.
+Scripts, modelos de planilha e produtos desta preparação ficam no arquivo local
+`Verificacao/`, sem aumentar a API pública.
+
+
+## Main workflow scope — 2026-10-26
+
+The catalog contains 14 available selectors and 16 scientific source cards. Both catalog views list the same available methods.

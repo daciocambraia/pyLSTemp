@@ -33,11 +33,19 @@
     "implementation_pending": [],
     "limitations": [
       "Source internal discrepancies: soil .996 in prose vs .966 Table 2; vegetation Eq.6 vs .973 prose/Table 2. Adopt Table 2 endmembers and explicit mixed-class formula. Fixed thresholds are not universal; no atmospheric correction by this equation.",
-      "Not established by software regression or Landsat transfer"
-    ]
+      "Not established by software regression or Landsat transfer",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "source_sensor_coefficients_under_documented_assumptions",
+      "landsat_9": "experimental_coefficient_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
-    "method": "gopinadh-2018",
+    "method": "rongali-2018",
     "family": "emissivity",
     "reference": "Rongali, G., et al. Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data. Journal of Geovisualization and Spatial Analysis, 2018.",
     "source_location": "PDF pp.5-6, Eqs.3,5-7, Table 2; p.8 scene endmembers",
@@ -72,8 +80,16 @@
     "implementation_pending": [],
     "limitations": [
       "Adopt optical TOA-radiance Step-1 interpretation. Endmembers .15/.48 are study-scene values; transfer to other scenes is an adaptation. Paper BT Celsius wording does not change absolute-Kelvin LST equations.",
-      "Not established by software regression or Landsat transfer"
-    ]
+      "Not established by software regression or Landsat transfer",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "source_sensor_coefficients_under_documented_assumptions",
+      "landsat_9": "experimental_coefficient_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "jimenez-munoz-2014-sc",
@@ -123,8 +139,16 @@
     "implementation_pending": [],
     "limitations": [
       "Native sensor coefficients retained; supplied emissivity must represent the corresponding thermal band. No empirical field accuracy established.",
-      "Not established by software regression or Landsat transfer"
-    ]
+      "Not established by software regression or Landsat transfer",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "source_sensor_coefficients_under_documented_assumptions",
+      "landsat_9": "experimental_coefficient_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "mono-window-2016",
@@ -158,8 +182,16 @@
     "implementation_pending": [],
     "limitations": [
       "Kelvin used despite ambiguous Celsius wording in paper; wavelength/rho in m and m K. Emissivity correction alone is not full atmospheric compensation.",
-      "Not established by software regression or Landsat transfer"
-    ]
+      "Not established by software regression or Landsat transfer",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "source_sensor_coefficients_under_documented_assumptions",
+      "landsat_9": "experimental_coefficient_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "du-2015",
@@ -275,8 +307,16 @@
     "implementation_pending": [],
     "limitations": [
       "Do not use the conflicting polynomial coefficient order in source Eq.3a: Ren Eq.2 is authoritative for Ren retrieval. Du all-CWV row is separate from per-CWV rows. Landsat9 transfer experimental.",
-      "Not established by software regression or Landsat transfer"
-    ]
+      "Not established by software regression or Landsat transfer",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "source_sensor_coefficients_under_documented_assumptions",
+      "landsat_9": "experimental_coefficient_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "jimenez-munoz-2014-sw",
@@ -297,7 +337,7 @@
       ]
     },
     "inputs": "Provide aligned band-10/11 brightness in Kelvin and calibrated red/nir matching the selected emissivity source contract; radiometric quantities are not interchangeable. Avdan is single-channel only. PWV is in g/cm2. Required finite nonnegative scalar or aligned raster in g/cm2; invalid raster pixels become NaN.",
-    "units_and_domain": "BT and LST K, e dimensionless, w g/cm2. Source evaluated 0..6; implementation accepts nonnegative w, so w>6 is explicit extrapolation, not demonstrated validity.",
+    "units_and_domain": "BT and LST K, e dimensionless, w g/cm2. Source evaluated 0..6; implementation accepts nonnegative w, so w>6 is explicit extrapolation, not demonstrated validity. Source Table II evaluates 0..6 g/cm2; computable values above 6 produce an extrapolation warning without changing the formula.",
     "sensor": "Landsat 8; Landsat 9 coefficient transfer remains experimental",
     "optical_contract": "NDVI convention depends on the selected emissivity parametrization; calibrated red/nir quantities are not interchangeable.",
     "decisions": "Native sensor coefficients retained; supplied emissivity must represent the corresponding thermal band. No empirical field accuracy established.",
@@ -317,8 +357,16 @@
     "implementation_pending": [],
     "limitations": [
       "Native sensor coefficients retained; supplied emissivity must represent the corresponding thermal band. No empirical field accuracy established.",
-      "Not established by software regression or Landsat transfer"
-    ]
+      "Not established by software regression or Landsat transfer",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "source_sensor_coefficients_under_documented_assumptions",
+      "landsat_9": "experimental_coefficient_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "kerr-1992",
@@ -362,7 +410,24 @@
     "implementation_pending": [],
     "limitations": [
       "Original thresholds .11/.72 require atmospherically corrected NDVI, derived in Niger; transferring them or using radiance/TOA NDVI is an adaptation.",
-      "Not established by software regression or Landsat transfer"
+      "Not established by software regression or Landsat transfer",
+      "External application is not TIRS-specific coefficient validation."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "experimental_avhrr_to_tirs_transfer",
+      "landsat_9": "experimental_avhrr_to_tirs_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    },
+    "external_application_evidence": [
+      {
+        "doi": "10.1007/s40808-020-01007-1",
+        "scope": "Landsat 8 arid-region application; Table 3 uses the implemented structure and constants.",
+        "reference_limit": "Soil temperature at 5 cm interpolated to overpass time and MODIS intercomparison; not direct skin-temperature reference.",
+        "sensor_specific_recalibration_established": false,
+        "landsat_9_validation_established": false
+      }
     ]
   },
   {
@@ -382,7 +447,7 @@
     "units_and_domain": "Not used; supplying water_vapor emits a RuntimeWarning.",
     "sensor": "NOAA AVHRR; adaptation to Landsat arrays",
     "optical_contract": "NDVI convention depends on the selected emissivity parametrization; calibrated red/nir quantities are not interchangeable.",
-    "decisions": "Retained legacy inverse-emissivity approximation; source printed factor conflicts with it. Explicit adaptation, not source-literal or Landsat validated.",
+    "decisions": "Retained legacy inverse-emissivity approximation; source printed factor conflicts with it. Explicit adaptation, not source-literal or Landsat validated. A later Landsat-8 application (Arabi Aliabad et al., DOI 10.1007/s40808-020-01007-1, Table 3) uses this inverse-emissivity factor; it does not resolve the original printed discrepancy or establish TIRS-specific calibration.",
     "source_review_status": "Primary equations and coefficient branches checked; documented source discrepancies and sensor transfers remain explicit",
     "numerical_evidence": "Independent synthetic regression plus local numerical/scene checks; see docs/validation.md",
     "empirical_accuracy": "Not established by software regression or Landsat transfer",
@@ -399,90 +464,24 @@
     "implementation_pending": [],
     "limitations": [
       "Retained legacy inverse-emissivity approximation; source printed factor conflicts with it. Explicit adaptation, not source-literal or Landsat validated.",
-      "Not established by software regression or Landsat transfer"
-    ]
-  },
-  {
-    "method": "rozenstein-2014",
-    "family": "split_window",
-    "reference": "Rozenstein, O., Qin, Z., Derimian, Y., Karnieli, A. (2014). Derivation of Land Surface Temperature for Landsat-8 TIRS Using a Split Window Algorithm. Sensors 14, 5768-5780. https://doi.org/10.3390/s140405768",
-    "source_location": "pp.5770-5773, Eqs.3-10, Tables 1-2",
-    "source_sha256": "71c5a68e0d63d5ccbf42975ea27b3fd49b926e9bbe64e5475cf8902c09d1d735",
-    "equation": "Ci=ei*taui; Di=(1-taui)*(1+(1-ei)*taui); E0=D11*C10-D10*C11; A=D10/E0; E1=D11*(1-C10-D10)/E0; E2=D10*(1-C11-D11)/E0; LST=E1*a10+E2*a11+(1+A+E1*b10)*T10-(A+E2*b11)*T11.",
-    "coefficients": {
-      "thermal_a10_b10_a11_b11": {
-        "0-60": [
-          -64.4661,
-          0.4398,
-          -68.8678,
-          0.4755
-        ],
-        "0-30": [
-          -59.1391,
-          0.4213,
-          -63.3921,
-          0.4565
-        ],
-        "0-40": [
-          -60.9196,
-          0.4276,
-          -65.224,
-          0.4629
-        ],
-        "10-40": [
-          -62.8065,
-          0.4338,
-          -67.1728,
-          0.4694
-        ],
-        "10-50": [
-          -64.6081,
-          0.4399,
-          -69.0215,
-          0.4756
-        ]
-      },
-      "tau_intercept10_slope10_intercept11_slope11": {
-        "us-standard-1976": [
-          1.0286,
-          -0.1146,
-          1.0083,
-          -0.1568
-        ],
-        "midlatitude-summer": [
-          1.0335,
-          -0.1134,
-          1.0078,
-          -0.1546
-        ]
-      },
-      "PWV_domain": [
-        0.5,
-        3
-      ]
-    },
-    "inputs": "Provide aligned band-10/11 brightness in Kelvin and calibrated red/nir matching the selected emissivity source contract; radiometric quantities are not interchangeable. Avdan is single-channel only. PWV is in g/cm2. Required PWV scalar/aligned raster [0.5,3] g/cm2, explicit atmospheric_profile and preselected temperature_range. Invalid raster pixels become NaN.",
-    "units_and_domain": "Required PWV scalar/aligned raster [0.5,3] g/cm2, explicit atmospheric_profile and preselected temperature_range. Invalid raster pixels become NaN.",
-    "sensor": "Landsat 8; Landsat 9 coefficient transfer remains experimental",
-    "optical_contract": "NDVI convention depends on the selected emissivity parametrization; calibrated red/nir quantities are not interchangeable.",
-    "decisions": "Explicit atmosphere selection; no assumed tropical profile. Mask singular denominator and LST outside preselected fit interval. Landsat9 transfer experimental.",
-    "source_review_status": "Primary equations and coefficient branches checked; documented source discrepancies and sensor transfers remain explicit",
-    "numerical_evidence": "Independent synthetic regression plus local numerical/scene checks; see docs/validation.md",
-    "empirical_accuracy": "Not established by software regression or Landsat transfer",
-    "tests": [
-      "tests/test_scientific_regression.py"
+      "Not established by software regression or Landsat transfer",
+      "External application is not TIRS-specific coefficient validation."
     ],
-    "units": {
-      "thermal_temperature": "K in retrieval equations; convert to Celsius only at output",
-      "spectral_radiance": "W m-2 sr-1 um-1",
-      "PWV": "g/cm2",
-      "emissivity_NDVI_reflectance": "dimensionless (different physical quantities, not interchangeable)"
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "experimental_avhrr_to_tirs_transfer",
+      "landsat_9": "experimental_avhrr_to_tirs_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
     },
-    "domain_notes": "BT >0 K, emissivity (0,1]; aligned arrays and boolean masks. PWV restrictions and source fit ranges are given above.",
-    "implementation_pending": [],
-    "limitations": [
-      "Explicit atmosphere selection; no assumed tropical profile. Mask singular denominator and LST outside preselected fit interval. Landsat9 transfer experimental.",
-      "Not established by software regression or Landsat transfer"
+    "external_application_evidence": [
+      {
+        "doi": "10.1007/s40808-020-01007-1",
+        "scope": "Landsat 8 arid-region application; Table 3 uses the implemented structure and constants.",
+        "reference_limit": "Soil temperature at 5 cm interpolated to overpass time and MODIS intercomparison; not direct skin-temperature reference.",
+        "sensor_specific_recalibration_established": false,
+        "landsat_9_validation_established": false
+      }
     ]
   },
   {
@@ -519,7 +518,24 @@
     "implementation_pending": [],
     "limitations": [
       "Native sensor coefficients retained; supplied emissivity must represent the corresponding thermal band. No empirical field accuracy established.",
-      "Not established by software regression or Landsat transfer"
+      "Not established by software regression or Landsat transfer",
+      "External application is not TIRS-specific coefficient validation."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "experimental_avhrr_to_tirs_transfer",
+      "landsat_9": "experimental_avhrr_to_tirs_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    },
+    "external_application_evidence": [
+      {
+        "doi": "10.1007/s40808-020-01007-1",
+        "scope": "Landsat 8 arid-region application; Table 3 uses the implemented structure and constants.",
+        "reference_limit": "Soil temperature at 5 cm interpolated to overpass time and MODIS intercomparison; not direct skin-temperature reference.",
+        "sensor_specific_recalibration_established": false,
+        "landsat_9_validation_established": false
+      }
     ]
   },
   {
@@ -554,8 +570,16 @@
     "implementation_pending": [],
     "limitations": [
       "Native sensor coefficients retained; supplied emissivity must represent the corresponding thermal band. No empirical field accuracy established.",
-      "Not established by software regression or Landsat transfer"
-    ]
+      "Not established by software regression or Landsat transfer",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "scene_metadata_calibration",
+      "landsat_9": "scene_metadata_calibration",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "ren-2015",
@@ -601,8 +625,16 @@
     "implementation_pending": [],
     "limitations": [
       "Eq.2 intercept 9.087 adopted over figure annotation 9.088. Source native n=10 adapted to centered odd windows (11 standalone,33 scene on usual30m grid). min_samples=10 and chi2=.95 are declared operational controls. Optical quantity unspecified.",
-      "Not established by software regression or Landsat transfer"
-    ]
+      "Not established by software regression or Landsat transfer",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "source_sensor_coefficients_under_documented_assumptions",
+      "landsat_9": "experimental_coefficient_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "wang-2015",
@@ -654,8 +686,16 @@
     "implementation_pending": [],
     "limitations": [
       "Source optical quantity unspecified; record it. Source n=20 adapted to odd centered n=21. Global bounds must be reused across tiles. Native samples differ from 30-m resampled support.",
-      "Not established by software regression or Landsat transfer"
-    ]
+      "Not established by software regression or Landsat transfer",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "source_sensor_coefficients_under_documented_assumptions",
+      "landsat_9": "experimental_coefficient_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "toa_radiance",
@@ -688,8 +728,16 @@
     "implementation_pending": [],
     "limitations": [
       "No solar or atmospheric correction.",
-      "Not established by software tests"
-    ]
+      "Not established by software tests",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "scene_metadata_calibration",
+      "landsat_9": "scene_metadata_calibration",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "toa_reflectance",
@@ -723,123 +771,16 @@
     "implementation_pending": [],
     "limitations": [
       "TOA reflectance is not surface reflectance; SZA versus scene-mean angle explicitly chosen.",
-      "Not established by software tests"
-    ]
-  },
-  {
-    "method": "sobrino-2004-tm6",
-    "family": "emissivity",
-    "reference": "Sobrino, Jimenez-Munoz and Paolini (2004). Land surface temperature retrieval from LANDSAT TM 5. Remote Sensing of Environment 90, 434-440. https://doi.org/10.1016/j.rse.2004.02.003",
-    "source_location": "p.436, Eqs.8-10/13; Section4 Eq.14",
-    "source_sha256": "c968520726f0c5ddc6ab51335ddf9803757c55ffa9285aa2dfa58899d73126df",
-    "equation": "Pv=((NDVI-.2)/.3)^2; mixed e=.004*Pv+.986; vegetation .99; bare soil NaN",
-    "coefficients": {
-      "ndvi_soil": 0.2,
-      "ndvi_vegetation": 0.5,
-      "mixed_slope": 0.004,
-      "mixed_intercept": 0.986,
-      "vegetation": 0.99,
-      "bare": "NaN: no inferred soil relation"
-    },
-    "inputs": "Reflectance NDVI; surface preferred, TOA approximation; e dimensionless",
-    "units_and_domain": "Finite physical inputs; e in (0,1], corrected rho [0,1]; invalid pixels NaN",
-    "sensor": "Landsat 5 TM band6",
-    "optical_contract": "Reflectance NDVI; surface preferred, TOA approximation; e dimensionless",
-    "decisions": "No universal bare-soil red relation supplied; do not assign TIRS constants.",
-    "source_review_status": "Primary equations and coefficient branches checked; adaptations explicit",
-    "numerical_evidence": "Independent synthetic regression; see docs/validation.md",
-    "empirical_accuracy": "Not established by software tests",
-    "tests": [
-      "tests/test_scientific_regression.py"
+      "Not established by software tests",
+      "Applicability and independent empirical accuracy are separate evidence states."
     ],
-    "units": {
-      "thermal_temperature": "K in retrieval equations; convert to Celsius only at output",
-      "spectral_radiance": "W m-2 sr-1 um-1",
-      "PWV": "g/cm2",
-      "emissivity_NDVI_reflectance": "dimensionless (different physical quantities, not interchangeable)"
-    },
-    "domain_notes": "NDVI [-1,1]; emissivity (0,1]; bands and thresholds must match the source conditions.",
-    "implementation_pending": [],
-    "limitations": [
-      "No universal bare-soil red relation supplied; do not assign TIRS constants.",
-      "Not established by software tests"
-    ]
-  },
-  {
-    "method": "sobrino-2008-simplified",
-    "family": "emissivity",
-    "reference": "Sobrino et al. (2008). Land Surface Emissivity Retrieval From Different VNIR and TIR Sensors. IEEE TGRS 46, 316-327. https://doi.org/10.1109/TGRS.2007.904834",
-    "source_location": "pp.317-318, Eqs.5-9",
-    "source_sha256": "d62227dd284013caacf7e501d2cc448e429691294eddbe8a6b0daaf6ee2f245c",
-    "equation": "e=es*(1-Pv)+ev*Pv; Pv=clip((NDVI-ns)/(nv-ns),0,1)^2",
-    "coefficients": {
-      "ndvi_soil_default": 0.2,
-      "ndvi_vegetation_default": 0.5,
-      "vegetation_fraction_exponent": 2,
-      "es_ev": "Caller-supplied for the selected band"
-    },
-    "inputs": "Reflectance NDVI, user band-specific es,ev; e dimensionless",
-    "units_and_domain": "Finite physical inputs; e in (0,1], corrected rho [0,1]; invalid pixels NaN",
-    "sensor": "Band parameters supplied by caller",
-    "optical_contract": "Reflectance NDVI, user band-specific es,ev; e dimensionless",
-    "decisions": "No universal Landsat TIRS defaults; thresholds require scene justification.",
-    "source_review_status": "Primary equations and coefficient branches checked; adaptations explicit",
-    "numerical_evidence": "Independent synthetic regression; see docs/validation.md",
-    "empirical_accuracy": "Not established by software tests",
-    "tests": [
-      "tests/test_scientific_regression.py"
-    ],
-    "units": {
-      "thermal_temperature": "K in retrieval equations; convert to Celsius only at output",
-      "spectral_radiance": "W m-2 sr-1 um-1",
-      "PWV": "g/cm2",
-      "emissivity_NDVI_reflectance": "dimensionless (different physical quantities, not interchangeable)"
-    },
-    "domain_notes": "NDVI [-1,1]; emissivity (0,1]; bands and thresholds must match the source conditions.",
-    "implementation_pending": [],
-    "limitations": [
-      "No universal Landsat TIRS defaults; thresholds require scene justification.",
-      "Not established by software tests"
-    ]
-  },
-  {
-    "method": "sobrino-2008-full",
-    "family": "emissivity",
-    "reference": "Sobrino et al. (2008). Land Surface Emissivity Retrieval From Different VNIR and TIR Sensors. IEEE TGRS 46, 316-327. https://doi.org/10.1109/TGRS.2007.904834",
-    "source_location": "pp.317-318, Eqs.5-8",
-    "source_sha256": "d62227dd284013caacf7e501d2cc448e429691294eddbe8a6b0daaf6ee2f245c",
-    "equation": "Bare e=a+b*rho_red; mixed e=es*(1-Pv)+ev*Pv+(1-es)*ev*F*(1-Pv); vegetation e=ev+.005",
-    "coefficients": {
-      "ndvi_soil_default": 0.2,
-      "ndvi_vegetation_default": 0.5,
-      "vegetation_fraction_exponent": 2,
-      "cavity_factor_default": 0.55,
-      "vegetation_cavity_default": 0.005,
-      "es_ev_a_b": "Caller-supplied band-compatible endmembers and soil-red relation"
-    },
-    "inputs": "Surface red reflectance, reflectance NDVI, user band-specific a,b,es,ev; e dimensionless",
-    "units_and_domain": "Finite physical inputs; e in (0,1], corrected rho [0,1]; invalid pixels NaN",
-    "sensor": "Band parameters supplied by caller",
-    "optical_contract": "Surface red reflectance, reflectance NDVI, user band-specific a,b,es,ev; e dimensionless",
-    "decisions": "F=.55 and vegetation cavity .005 are explicit configurable assumptions; no TIRS coefficients inferred.",
-    "source_review_status": "Primary equations and coefficient branches checked; adaptations explicit",
-    "numerical_evidence": "Independent synthetic regression; see docs/validation.md",
-    "empirical_accuracy": "Not established by software tests",
-    "tests": [
-      "tests/test_scientific_regression.py"
-    ],
-    "units": {
-      "thermal_temperature": "K in retrieval equations; convert to Celsius only at output",
-      "spectral_radiance": "W m-2 sr-1 um-1",
-      "PWV": "g/cm2",
-      "emissivity_NDVI_reflectance": "dimensionless (different physical quantities, not interchangeable)"
-    },
-    "domain_notes": "NDVI [-1,1]; emissivity (0,1]; bands and thresholds must match the source conditions.",
-    "implementation_pending": [],
-    "limitations": [
-      "F=.55 and vegetation cavity .005 are explicit configurable assumptions; no TIRS coefficients inferred.",
-      "Not established by software tests"
-    ]
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "scene_metadata_calibration",
+      "landsat_9": "scene_metadata_calibration",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "chavez-dos",
@@ -875,8 +816,16 @@
     "implementation_pending": [],
     "limitations": [
       "Fit full scene once, reuse for tiles; percentile .01 is operational, not mandated by source; no clipping or automatic LaSRC equivalence.",
-      "Not established by software tests"
-    ]
+      "Not established by software tests",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "experimental_tm_to_oli_transfer",
+      "landsat_9": "experimental_tm_to_oli_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   },
   {
     "method": "chavez-cost",
@@ -913,7 +862,15 @@
     "implementation_pending": [],
     "limitations": [
       "TAUv=1, downwelling=0, TAUz=cos(SZA); full-scene fit reusable; percentile .01 operational; not validated OLI atmospheric correction.",
-      "Not established by software tests"
-    ]
+      "Not established by software tests",
+      "Applicability and independent empirical accuracy are separate evidence states."
+    ],
+    "evidence": {
+      "implementation": "independent_synthetic_regression_checked",
+      "landsat_8": "experimental_tm_to_oli_transfer",
+      "landsat_9": "experimental_tm_to_oli_transfer",
+      "empirical_accuracy": "not_established_by_this_library",
+      "classification_note": "Applicability describes coefficient/input provenance, not demonstrated accuracy on a scene."
+    }
   }
 ]

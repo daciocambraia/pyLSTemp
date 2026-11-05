@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from ...quality import QualityFlag as Q, BLOCKING_FLAGS, quality_legend
 from ...metadata import AlgorithmSpec
 from ...validation import ensure_same_shape, to_float_array
 
@@ -34,7 +35,7 @@ class WaterVaporWang2015:
 
     def __call__(self, *, brightness_band_10, brightness_band_11, ndvi_image,
                  window_size=21, group_count=3, mask=None, ndvi_range=None,
-                 chunk_rows=8):
+                 chunk_rows=8, diagnostic=False):
         """Retrieve PWV in g/cm2, using bounded-memory vectorized windows.
 
         Invalid central pixels remain NaN. ndvi_range, if supplied, is the
@@ -60,7 +61,17 @@ class WaterVaporWang2015:
             from ...validation import ensure_boolean_mask
             valid &= ~ensure_boolean_mask(mask, shape=bt10.shape)
         result = np.full(bt10.shape, np.nan)
+        raw = np.full(bt10.shape,np.nan) if diagnostic else None
+        quality = np.full(bt10.shape,np.nan) if diagnostic else None
+        min_quality = np.full(bt10.shape,np.nan) if diagnostic else None
+        samples = np.zeros(bt10.shape,dtype=np.int32) if diagnostic else None
+        flags = np.zeros(bt10.shape,dtype=np.uint16) if diagnostic else None
+        if diagnostic:
+            flags[~valid] |= int(Q.INPUT_MASKED)
         if not valid.any():
+            if diagnostic:
+                flags |= int(Q.UNDEFINED)
+                return self._diagnostic_output(raw,result,quality,min_quality,samples,flags)
             return result
         if ndvi_range is None:
             ndvi_min, ndvi_max = ndvi[valid].min(), ndvi[valid].max()
@@ -84,16 +95,37 @@ class WaterVaporWang2015:
                 windows = [np.lib.stride_tricks.sliding_window_view(
                     a[row:r1+2*radius, col:c1+2*radius], (window_size, window_size)
                 ) for a in padded]
-                result[row:r1, col:c1] = self._vectorized_windows(*windows, ndvi_edges=edges)
+                if diagnostic:
+                    d=self._vectorized_windows(*windows,ndvi_edges=edges,diagnostic=True)
+                    sl=np.s_[row:r1,col:c1]
+                    result[sl]=d['screened'];raw[sl]=d['raw'];quality[sl]=d['quality']
+                    min_quality[sl]=d['minimum_quality'];samples[sl]=d['samples'];flags[sl] |= d['flags']
+                else:
+                    result[row:r1, col:c1] = self._vectorized_windows(*windows, ndvi_edges=edges)
         result[~valid | ~np.isfinite(result) | (result < 0)] = np.nan
+        if diagnostic:
+            raw[~valid]=np.nan
+            flags[~np.isfinite(raw)] |= int(Q.UNDEFINED)
+            return self._diagnostic_output(raw,result,quality,min_quality,samples,flags)
         return result
 
-    def _vectorized_windows(self, x, y, ndvi, *, ndvi_edges):
+    @staticmethod
+    def _diagnostic_output(raw,screened,quality,min_quality,samples,flags):
+        return dict(water_vapor=raw,raw_water_vapor=raw,screened_water_vapor=screened,
+                    r_squared=quality,minimum_group_r_squared=min_quality,sample_count=samples,
+                    quality_flags=flags,quality_acceptable=(flags & BLOCKING_FLAGS)==0,
+                    quality_legend=quality_legend(),quality_mode='diagnostic',invalid_mask=~np.isfinite(raw))
+
+    def _vectorized_windows(self, x, y, ndvi, *, ndvi_edges, diagnostic=False):
         """Same grouped regression as the scalar oracle; windows are views."""
         axes = (-2, -1)
         valid = np.isfinite(x) & np.isfinite(y) & np.isfinite(ndvi)
         weighted = np.zeros(x.shape[:2])
         counts = np.zeros(x.shape[:2])
+        if diagnostic:
+            raw_weighted=np.zeros(x.shape[:2]);raw_counts=np.zeros(x.shape[:2])
+            quality_weighted=np.zeros(x.shape[:2]);minimum_quality=np.full(x.shape[:2],np.inf)
+            diagnostic_flags=np.zeros(x.shape[:2],dtype=np.uint16)
         ranges = [(None, None)] if ndvi_edges is None else list(zip(ndvi_edges[:-1], ndvi_edges[1:]))
         for index, (lower, upper) in enumerate(ranges):
             group = valid.copy()
@@ -120,10 +152,32 @@ class WaterVaporWang2015:
                 water = np.where(ratio > 0.9, -18.973*ratio+19.13, -13.412*ratio+14.158)
                 ok = (count >= 2) & ~np.isclose(vx, 0) & ~np.isclose(vy, 0)
                 ok &= (forward*reverse >= self.correlation_threshold) & np.isfinite(water) & (water >= 0)
+            if diagnostic:
+                raw_ok=(count>=2)&(vx>0)&(vy>0)&(cov!=0)&np.isfinite(water)
+                r2=forward*reverse
+                raw_weighted += np.where(raw_ok,water*count,0)
+                raw_counts += np.where(raw_ok,count,0)
+                quality_weighted += np.where(raw_ok,r2*count,0)
+                minimum_quality=np.minimum(minimum_quality,np.where(raw_ok,r2,np.inf))
+                diagnostic_flags[raw_ok & (r2<self.correlation_threshold)] |= int(Q.LOW_QUALITY)
+                diagnostic_flags[raw_ok & (np.isclose(vx,0)|np.isclose(vy,0))] |= int(Q.ILL_CONDITIONED)
+                diagnostic_flags[raw_ok & ((water<0)|(cov<=0))] |= int(Q.NONPHYSICAL)
+                diagnostic_flags[raw_ok & ((water<.066)|(water>7.833))] |= int(Q.PWV_OUT_OF_DOMAIN)
             weighted += np.where(ok, water*count, 0)
             counts += np.where(ok, count, 0)
         with np.errstate(divide="ignore", invalid="ignore"):
-            return np.where(counts > 0, weighted/counts, np.nan)
+            screened=np.where(counts > 0, weighted/counts, np.nan)
+            if diagnostic:
+                raw=np.where(raw_counts>0,raw_weighted/raw_counts,np.nan)
+                q=np.where(raw_counts>0,quality_weighted/raw_counts,np.nan)
+                minimum_quality=np.where(raw_counts>0,minimum_quality,np.nan)
+                diagnostic_flags[raw_counts==0] |= int(Q.UNDEFINED)
+                diagnostic_flags[(raw_counts>0)&(raw_counts<2)] |= int(Q.INSUFFICIENT_SAMPLES)
+                diagnostic_flags[np.isfinite(raw)&((raw<.066)|(raw>7.833))] |= int(Q.PWV_OUT_OF_DOMAIN)
+                diagnostic_flags[np.isfinite(raw)&(raw<0)] |= int(Q.NONPHYSICAL)
+                return dict(raw=raw,screened=screened,quality=q,minimum_quality=minimum_quality,
+                            samples=raw_counts.astype(np.int32),flags=diagnostic_flags)
+            return screened
 
     def _window_water_vapor(self, bt_10, bt_11, ndvi, *, ndvi_edges) -> float:
         """

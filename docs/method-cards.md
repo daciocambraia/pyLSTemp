@@ -1,6 +1,6 @@
 # Fichas dos metodos implementados
 
-As 20 fichas cobrem os 13 algoritmos registrados e sete conversoes/variantes auxiliares.
+As 16 fichas documentam os métodos disponíveis e as conversões auxiliares de calibração.
 A fonte de cada equacao foi conferida no artigo ou manual original. As decisoes
 sobre inconsistencias e transferencias permanecem explicitas; isso nao estabelece
 acuracia de campo. NDVI continua interno, sem metodo adicional no catalogo.
@@ -37,9 +37,11 @@ Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface te
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
 
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `source_sensor_coefficients_under_documented_assumptions`; Landsat 9: `experimental_coefficient_transfer`.
+
 SHA256 da fonte local: `8f299fee5025be73f9b5d6a6c912b6a7fbadc3907e51f0f44d9a59ec4c2124aa`.
 
-## gopinadh-2018
+## rongali-2018
 
 Rongali, G., et al. Split-window algorithm for retrieval of land surface temperature using Landsat 8 thermal infrared data. Journal of Geovisualization and Spatial Analysis, 2018.
 
@@ -68,6 +70,8 @@ Rongali, G., et al. Split-window algorithm for retrieval of land surface tempera
 
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
+
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `source_sensor_coefficients_under_documented_assumptions`; Landsat 9: `experimental_coefficient_transfer`.
 
 SHA256 da fonte local: `b4b54e4e4fb6e5fb734e0b7cdfe55548b7983363adfe3b89ac2a95c3a0f3c6e8`.
 
@@ -113,6 +117,8 @@ Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
 
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `source_sensor_coefficients_under_documented_assumptions`; Landsat 9: `experimental_coefficient_transfer`.
+
 SHA256 da fonte local: `90d022db854f27d61c4ceb597a4f07b6f2d61079ff5ee2828eaebe02a59ce00c`.
 
 ## mono-window-2016
@@ -140,6 +146,8 @@ Avdan, U., and Jovanovska, G. Algorithm for automated mapping of land surface te
 
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
+
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `source_sensor_coefficients_under_documented_assumptions`; Landsat 9: `experimental_coefficient_transfer`.
 
 SHA256 da fonte local: `8f299fee5025be73f9b5d6a6c912b6a7fbadc3907e51f0f44d9a59ec4c2124aa`.
 
@@ -251,6 +259,8 @@ Du, C., Ren, H., Qin, Q., Meng, J., and Zhao, S. A practical split-window algori
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
 
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `source_sensor_coefficients_under_documented_assumptions`; Landsat 9: `experimental_coefficient_transfer`.
+
 SHA256 da fonte local: `60c7702be839f8b3bb066ef888fa65f20670208dd80be02921ad4b95c245da2f`.
 
 ## jimenez-munoz-2014-sw
@@ -285,6 +295,10 @@ Jimenez-Munoz, J.-C., Sobrino, J. A., Skokovic, D., Mattar, C., and Cristobal, J
 
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
+
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `source_sensor_coefficients_under_documented_assumptions`; Landsat 9: `experimental_coefficient_transfer`.
+
+**Faixa avaliada:** Table II, 0–6 g/cm². A execução avisa sobre extrapolação acima de 6 em pixels válidos; não recorta o PWV nem altera a equação.
 
 SHA256 da fonte local: `90d022db854f27d61c4ceb597a4f07b6f2d61079ff5ee2828eaebe02a59ce00c`.
 
@@ -324,6 +338,10 @@ Kerr, Y. H., Lagouarde, J. P., and Imbernon, J. Accurate land surface temperatur
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
 
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `experimental_avhrr_to_tirs_transfer`; Landsat 9: `experimental_avhrr_to_tirs_transfer`.
+
+**Aplicação externa:** [Arabi Aliabad et al.](https://doi.org/10.1007/s40808-020-01007-1), Table 3, aplica esta estrutura a Landsat 8. A referência usa solo a 5 cm e comparação com MODIS; não estabelece calibração de coeficientes para TIRS nem validação de temperatura da pele para esta biblioteca.
+
 SHA256 da fonte local: `1843f18fc14d660fac0c713a5e49693935815e36175071bd09f2b809e0545d3b`.
 
 ## price-1984
@@ -354,83 +372,11 @@ Price, J. C. Land surface temperature measurements from the split window channel
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
 
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `experimental_avhrr_to_tirs_transfer`; Landsat 9: `experimental_avhrr_to_tirs_transfer`.
+
+**Aplicação externa:** [Arabi Aliabad et al.](https://doi.org/10.1007/s40808-020-01007-1), Table 3, aplica esta estrutura a Landsat 8. A referência usa solo a 5 cm e comparação com MODIS; não estabelece calibração de coeficientes para TIRS nem validação de temperatura da pele para esta biblioteca.
+
 SHA256 da fonte local: `4011859cf02beeab075b2f636d18a2d5369ce4d015ec7169e411b911935a6dec`.
-
-## rozenstein-2014
-
-Rozenstein, O., Qin, Z., Derimian, Y., Karnieli, A. (2014). Derivation of Land Surface Temperature for Landsat-8 TIRS Using a Split Window Algorithm. Sensors 14, 5768-5780. https://doi.org/10.3390/s140405768
-
-- **Fonte:** pp.5770-5773, Eqs.3-10, Tables 1-2.
-- **Sensor:** Landsat 8; Landsat 9 coefficient transfer remains experimental.
-- **Entradas:** Provide aligned band-10/11 brightness in Kelvin and calibrated red/nir matching the selected emissivity source contract; radiometric quantities are not interchangeable. Avdan is single-channel only. PWV is in g/cm2. Required PWV scalar/aligned raster [0.5,3] g/cm2, explicit atmospheric_profile and preselected temperature_range. Invalid raster pixels become NaN.
-- **Unidades e dominio:** Required PWV scalar/aligned raster [0.5,3] g/cm2, explicit atmospheric_profile and preselected temperature_range. Invalid raster pixels become NaN. BT >0 K, emissivity (0,1]; aligned arrays and boolean masks. PWV restrictions and source fit ranges are given above.
-- **Convencao optica:** NDVI convention depends on the selected emissivity parametrization; calibrated red/nir quantities are not interchangeable.
-
-**Equacao adotada:** Ci=ei*taui; Di=(1-taui)*(1+(1-ei)*taui); E0=D11*C10-D10*C11; A=D10/E0; E1=D11*(1-C10-D10)/E0; E2=D10*(1-C11-D11)/E0; LST=E1*a10+E2*a11+(1+A+E1*b10)*T10-(A+E2*b11)*T11.
-
-**Coeficientes e constantes:**
-
-```json
-{
-  "thermal_a10_b10_a11_b11": {
-    "0-60": [
-      -64.4661,
-      0.4398,
-      -68.8678,
-      0.4755
-    ],
-    "0-30": [
-      -59.1391,
-      0.4213,
-      -63.3921,
-      0.4565
-    ],
-    "0-40": [
-      -60.9196,
-      0.4276,
-      -65.224,
-      0.4629
-    ],
-    "10-40": [
-      -62.8065,
-      0.4338,
-      -67.1728,
-      0.4694
-    ],
-    "10-50": [
-      -64.6081,
-      0.4399,
-      -69.0215,
-      0.4756
-    ]
-  },
-  "tau_intercept10_slope10_intercept11_slope11": {
-    "us-standard-1976": [
-      1.0286,
-      -0.1146,
-      1.0083,
-      -0.1568
-    ],
-    "midlatitude-summer": [
-      1.0335,
-      -0.1134,
-      1.0078,
-      -0.1546
-    ]
-  },
-  "PWV_domain": [
-    0.5,
-    3
-  ]
-}
-```
-
-**Decisoes, adaptacoes e limites:** Explicit atmosphere selection; no assumed tropical profile. Mask singular denominator and LST outside preselected fit interval. Landsat9 transfer experimental.
-
-**Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
-**Acuracia externa:** Not established by software regression or Landsat transfer.
-
-SHA256 da fonte local: `71c5a68e0d63d5ccbf42975ea27b3fd49b926e9bbe64e5475cf8902c09d1d735`.
 
 ## sobrino-1993
 
@@ -460,6 +406,10 @@ Sobrino, J. A., Caselles, V., and Coll, C. Theoretical split window algorithms f
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
 
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `experimental_avhrr_to_tirs_transfer`; Landsat 9: `experimental_avhrr_to_tirs_transfer`.
+
+**Aplicação externa:** [Arabi Aliabad et al.](https://doi.org/10.1007/s40808-020-01007-1), Table 3, aplica esta estrutura a Landsat 8. A referência usa solo a 5 cm e comparação com MODIS; não estabelece calibração de coeficientes para TIRS nem validação de temperatura da pele para esta biblioteca.
+
 SHA256 da fonte local: `07ebbe08ad41541cfcc3f1638782b9a0f21cc1d28536f4f19e439ef529634e80`.
 
 ## brightness
@@ -487,6 +437,8 @@ USGS LSDS-1747, Landsat 8-9 Calibration and Validation Algorithm Description Doc
 
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
+
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `scene_metadata_calibration`; Landsat 9: `scene_metadata_calibration`.
 
 SHA256 da fonte local: `8e39d9abc926cbdb2be2ca68808260f7cb5da683d85ef134edd03d7252fe25a4`.
 
@@ -527,6 +479,8 @@ Ren, H., Du, C., Liu, R., Qin, Q., Yan, G., Li, Z.-L., Meng, J. (2015). Atmosphe
 
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
+
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `source_sensor_coefficients_under_documented_assumptions`; Landsat 9: `experimental_coefficient_transfer`.
 
 SHA256 da fonte local: `c7d2acf96ebf65e7c01223c31ab839efac718bcc03481a622eb09d2e6799891b`.
 
@@ -574,6 +528,8 @@ Wang, M., He, G., Zhang, Z., Wang, G., and Long, T. NDVI-based split-window algo
 **Evidencia numerica:** Independent synthetic regression plus local numerical/scene checks; see docs/validation.md.
 **Acuracia externa:** Not established by software regression or Landsat transfer.
 
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `source_sensor_coefficients_under_documented_assumptions`; Landsat 9: `experimental_coefficient_transfer`.
+
 SHA256 da fonte local: `25ff799f57450bb428ddc0d74fa4fe1aa3f594eed4707a0cdb7ebd68dbba35d1`.
 
 ## toa_radiance
@@ -600,6 +556,8 @@ USGS LSDS-1747, Landsat 8-9 Calibration and Validation Algorithm Description Doc
 
 **Evidencia numerica:** Independent synthetic regression; see docs/validation.md.
 **Acuracia externa:** Not established by software tests.
+
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `scene_metadata_calibration`; Landsat 9: `scene_metadata_calibration`.
 
 SHA256 da fonte local: `8e39d9abc926cbdb2be2ca68808260f7cb5da683d85ef134edd03d7252fe25a4`.
 
@@ -629,101 +587,9 @@ USGS LSDS-1747, Landsat 8-9 Calibration and Validation Algorithm Description Doc
 **Evidencia numerica:** Independent synthetic regression; see docs/validation.md.
 **Acuracia externa:** Not established by software tests.
 
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `scene_metadata_calibration`; Landsat 9: `scene_metadata_calibration`.
+
 SHA256 da fonte local: `8e39d9abc926cbdb2be2ca68808260f7cb5da683d85ef134edd03d7252fe25a4`.
-
-## sobrino-2004-tm6
-
-Sobrino, Jimenez-Munoz and Paolini (2004). Land surface temperature retrieval from LANDSAT TM 5. Remote Sensing of Environment 90, 434-440. https://doi.org/10.1016/j.rse.2004.02.003
-
-- **Fonte:** p.436, Eqs.8-10/13; Section4 Eq.14.
-- **Sensor:** Landsat 5 TM band6.
-- **Entradas:** Reflectance NDVI; surface preferred, TOA approximation; e dimensionless
-- **Unidades e dominio:** Finite physical inputs; e in (0,1], corrected rho [0,1]; invalid pixels NaN NDVI [-1,1]; emissivity (0,1]; bands and thresholds must match the source conditions.
-- **Convencao optica:** Reflectance NDVI; surface preferred, TOA approximation; e dimensionless
-
-**Equacao adotada:** Pv=((NDVI-.2)/.3)^2; mixed e=.004*Pv+.986; vegetation .99; bare soil NaN
-
-**Coeficientes e constantes:**
-
-```json
-{
-  "ndvi_soil": 0.2,
-  "ndvi_vegetation": 0.5,
-  "mixed_slope": 0.004,
-  "mixed_intercept": 0.986,
-  "vegetation": 0.99,
-  "bare": "NaN: no inferred soil relation"
-}
-```
-
-**Decisoes, adaptacoes e limites:** No universal bare-soil red relation supplied; do not assign TIRS constants.
-
-**Evidencia numerica:** Independent synthetic regression; see docs/validation.md.
-**Acuracia externa:** Not established by software tests.
-
-SHA256 da fonte local: `c968520726f0c5ddc6ab51335ddf9803757c55ffa9285aa2dfa58899d73126df`.
-
-## sobrino-2008-simplified
-
-Sobrino et al. (2008). Land Surface Emissivity Retrieval From Different VNIR and TIR Sensors. IEEE TGRS 46, 316-327. https://doi.org/10.1109/TGRS.2007.904834
-
-- **Fonte:** pp.317-318, Eqs.5-9.
-- **Sensor:** Band parameters supplied by caller.
-- **Entradas:** Reflectance NDVI, user band-specific es,ev; e dimensionless
-- **Unidades e dominio:** Finite physical inputs; e in (0,1], corrected rho [0,1]; invalid pixels NaN NDVI [-1,1]; emissivity (0,1]; bands and thresholds must match the source conditions.
-- **Convencao optica:** Reflectance NDVI, user band-specific es,ev; e dimensionless
-
-**Equacao adotada:** e=es*(1-Pv)+ev*Pv; Pv=clip((NDVI-ns)/(nv-ns),0,1)^2
-
-**Coeficientes e constantes:**
-
-```json
-{
-  "ndvi_soil_default": 0.2,
-  "ndvi_vegetation_default": 0.5,
-  "vegetation_fraction_exponent": 2,
-  "es_ev": "Caller-supplied for the selected band"
-}
-```
-
-**Decisoes, adaptacoes e limites:** No universal Landsat TIRS defaults; thresholds require scene justification.
-
-**Evidencia numerica:** Independent synthetic regression; see docs/validation.md.
-**Acuracia externa:** Not established by software tests.
-
-SHA256 da fonte local: `d62227dd284013caacf7e501d2cc448e429691294eddbe8a6b0daaf6ee2f245c`.
-
-## sobrino-2008-full
-
-Sobrino et al. (2008). Land Surface Emissivity Retrieval From Different VNIR and TIR Sensors. IEEE TGRS 46, 316-327. https://doi.org/10.1109/TGRS.2007.904834
-
-- **Fonte:** pp.317-318, Eqs.5-8.
-- **Sensor:** Band parameters supplied by caller.
-- **Entradas:** Surface red reflectance, reflectance NDVI, user band-specific a,b,es,ev; e dimensionless
-- **Unidades e dominio:** Finite physical inputs; e in (0,1], corrected rho [0,1]; invalid pixels NaN NDVI [-1,1]; emissivity (0,1]; bands and thresholds must match the source conditions.
-- **Convencao optica:** Surface red reflectance, reflectance NDVI, user band-specific a,b,es,ev; e dimensionless
-
-**Equacao adotada:** Bare e=a+b*rho_red; mixed e=es*(1-Pv)+ev*Pv+(1-es)*ev*F*(1-Pv); vegetation e=ev+.005
-
-**Coeficientes e constantes:**
-
-```json
-{
-  "ndvi_soil_default": 0.2,
-  "ndvi_vegetation_default": 0.5,
-  "vegetation_fraction_exponent": 2,
-  "cavity_factor_default": 0.55,
-  "vegetation_cavity_default": 0.005,
-  "es_ev_a_b": "Caller-supplied band-compatible endmembers and soil-red relation"
-}
-```
-
-**Decisoes, adaptacoes e limites:** F=.55 and vegetation cavity .005 are explicit configurable assumptions; no TIRS coefficients inferred.
-
-**Evidencia numerica:** Independent synthetic regression; see docs/validation.md.
-**Acuracia externa:** Not established by software tests.
-
-SHA256 da fonte local: `d62227dd284013caacf7e501d2cc448e429691294eddbe8a6b0daaf6ee2f245c`.
 
 ## chavez-dos
 
@@ -752,6 +618,8 @@ Chavez (1996). Image-Based Atmospheric Corrections - Revisited and Improved. Pho
 
 **Evidencia numerica:** Independent synthetic regression; see docs/validation.md.
 **Acuracia externa:** Not established by software tests.
+
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `experimental_tm_to_oli_transfer`; Landsat 9: `experimental_tm_to_oli_transfer`.
 
 SHA256 da fonte local: `e8f7822658fec59af9a8e6ea5bdbb32a2fc266bc2e5b2e76d7fd7967e2e2351e`.
 
@@ -783,5 +651,7 @@ Chavez (1996). Image-Based Atmospheric Corrections - Revisited and Improved. Pho
 
 **Evidencia numerica:** Independent synthetic regression; see docs/validation.md.
 **Acuracia externa:** Not established by software tests.
+
+**Aplicabilidade (sem atestar acurácia):** Landsat 8: `experimental_tm_to_oli_transfer`; Landsat 9: `experimental_tm_to_oli_transfer`.
 
 SHA256 da fonte local: `e8f7822658fec59af9a8e6ea5bdbb32a2fc266bc2e5b2e76d7fd7967e2e2351e`.

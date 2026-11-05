@@ -74,7 +74,7 @@ def scene_ndvi_range(scene, *, optical_quantity="radiance", block_rows=256, mask
 
 
 def du_from_scene(scene, *, window=None, pwv_mode="general", pwv_method="wang-2015",
-                  emissivity_method="gopinadh-2018", optical_quantity="radiance",
+                  emissivity_method="rongali-2018", optical_quantity="radiance",
                   unit="kelvin", window_size=None, group_count=3, chunk_rows=8,
                   ndvi_range=None, mask=None, pwv_options=None,
                   diagnostics=False, hash_inputs=False):

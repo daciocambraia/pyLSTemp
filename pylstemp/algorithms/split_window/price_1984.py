@@ -47,7 +47,7 @@ class SplitWindowPrice1984LST(SplitWindowParentLST):
         tuple
             Raw LST image in Kelvin and validated mask.
         """
-        warnings.warn("price-1984 is an unvalidated AVHRR-to-Landsat adaptation; see docs/scientific-methods.md.", RuntimeWarning, stacklevel=2)
+        warnings.warn("price-1984 is an AVHRR-to-Landsat adaptation; independent Landsat accuracy is not established by this library. See docs/scientific-methods.md.", RuntimeWarning, stacklevel=2)
         required_keywords = [
             "emissivity_10",
             "emissivity_11",

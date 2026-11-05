@@ -1,4 +1,4 @@
-"""Gopinadh 2018 emissivity implementation."""
+"""Rongali 2018 emissivity implementation."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from ...validation import to_float_array
 from .base import BaseEmissivityAlgorithm
 
 
-class ComputeEmissivityGopinadh2018(BaseEmissivityAlgorithm):
+class ComputeEmissivityRongali2018(BaseEmissivityAlgorithm):
     """
     Estimate Band 10 and Band 11 emissivity using Rongali et al. (2018).
 
@@ -70,9 +70,9 @@ class ComputeEmissivityGopinadh2018(BaseEmissivityAlgorithm):
 
 
 ALGORITHM_SPEC = AlgorithmSpec(
-    key="gopinadh-2018",
-    factory=ComputeEmissivityGopinadh2018,
-    name="Gopinadh 2018 emissivity",
+    key="rongali-2018",
+    factory=ComputeEmissivityRongali2018,
+    name="Rongali 2018 emissivity",
     reference="Rongali et al. (2018)",
     citation=(
         "Rongali, G., et al. "

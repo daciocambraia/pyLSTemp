@@ -20,7 +20,7 @@ jobs:
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install build twine
+          python -m pip install build twine rasterio pytest
 
       - name: Check release tag matches package version
         run: >-
@@ -44,6 +44,9 @@ jobs:
           python -I -c "import pylstemp; from pylstemp.scene import LandsatScene;
           from pylstemp.workflows import du_from_scene;
           print(pylstemp.__version__); print(pylstemp.list_algorithms())"
+
+      - name: Scientific regression against installed wheel
+        run: python -I -m pytest --import-mode=importlib tests -q
 
       - name: Publish to PyPI
         env:

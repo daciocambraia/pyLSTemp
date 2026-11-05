@@ -9,6 +9,7 @@ from .api import (
     water_vapor,
 )
 from .optical import optical_correction
+from .inputs import read_quality_mask
 from .references import ORIGINAL_LIBRARY_CREDIT
 from .calibration import toa_radiance, toa_reflectance, read_mtl
 
@@ -19,6 +20,7 @@ __all__ = [
     "toa_radiance",
     "toa_reflectance",
     "read_mtl",
+    "read_quality_mask",
     "single_window",
     "split_window",
     "water_vapor",

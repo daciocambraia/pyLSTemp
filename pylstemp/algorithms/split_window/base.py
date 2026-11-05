@@ -32,6 +32,8 @@ class SplitWindowParentLST(BaseTemperatureAlgorithm):
             Land-surface temperature in Kelvin.
         """
         result, mask = self._compute_lst(**kwargs)
+        if kwargs.get("diagnostic", False):
+            return np.where(mask | ~np.isfinite(result), np.nan, result)
         return self._finalize(result, mask=mask)
 
     def _compute_lst(self, **kwargs):

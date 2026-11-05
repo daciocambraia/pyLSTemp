@@ -73,6 +73,15 @@ def toa_radiance(dn, *, metadata, band, mask=None):
     Uses the matching MTL: L = RADIANCE_MULT_BAND_x * DN + RADIANCE_ADD_BAND_x.
     DN <= 0, nonfinite values and mask=True become NaN. No solar correction,
     atmospheric correction, emissivity correction or clipping is performed.
+
+
+    Quality inputs
+    --------------
+    Before this calculation, call read_quality_mask(qa_pixel_path,
+    qa_radsat_path, reference_path=...) and pass the aligned boolean result
+    combined with input nodata as mask=. True means invalid. QA files are
+    not read by this numerical function; mask=None applies no QA screening.
+    LandsatScene.calibrated() prepares and returns its QA mask automatically.
     """
     _level1(metadata)
     if isinstance(band, (bool, np.bool_)) or not isinstance(band, (int, np.integer)) or band not in range(1, 12):
@@ -105,6 +114,15 @@ def brightness(thermal_band, band, sensor=None, rad_gain=None, rad_bias=None, ma
     by rad_gain/rad_bias. Conflicting sensor/MTL or overrides with MTL are rejected.
     True mask entries, nonpositive radiance and nonfinite inputs become NaN.
     This is TOA BT, not emissivity/atmosphere-corrected surface temperature.
+
+
+    Quality inputs
+    --------------
+    Before this calculation, call read_quality_mask(qa_pixel_path,
+    qa_radsat_path, reference_path=...) and pass the aligned boolean result
+    combined with input nodata as mask=. True means invalid. QA files are
+    not read by this numerical function; mask=None applies no QA screening.
+    LandsatScene.calibrated() prepares and returns its QA mask automatically.
     """
     key = normalize_thermal_band(band)
     number = int(key[-2:])
@@ -145,6 +163,15 @@ def toa_reflectance(dn, *, metadata, band, mask=None, sun_elevation=None):
     sun_elevation may be a scalar or an aligned per-pixel angle in degrees.
     By default the MTL scene-centre angle is used. Values are not clipped to
     [0, 1]: outliers remain available for quality assessment.
+
+
+    Quality inputs
+    --------------
+    Before this calculation, call read_quality_mask(qa_pixel_path,
+    qa_radsat_path, reference_path=...) and pass the aligned boolean result
+    combined with input nodata as mask=. True means invalid. QA files are
+    not read by this numerical function; mask=None applies no QA screening.
+    LandsatScene.calibrated() prepares and returns its QA mask automatically.
     """
     _level1(metadata)
     if isinstance(band, (bool, np.bool_)) or not isinstance(band, (int, np.integer)) or band not in range(1, 10):

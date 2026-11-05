@@ -88,6 +88,15 @@ def optical_correction(toa_reflectance, *, method="chavez-cost", sun_elevation=N
     For tiles supply parameters and omit fitting options; their method must
     match. Invalid corrected reflectance outside [0,1] becomes NaN, not clipped.
     Chavez is a TM-derived approximation, not validated OLI/LaSRC equivalence.
+
+
+    Quality inputs
+    --------------
+    Before this calculation, call read_quality_mask(qa_pixel_path,
+    qa_radsat_path, reference_path=...) and pass the aligned boolean result
+    combined with input nodata as mask=. True means invalid. QA files are
+    not read by this numerical function; mask=None applies no QA screening.
+    LandsatScene.calibrated() prepares and returns its QA mask automatically.
     """
     if not isinstance(method,str) or method.strip().lower() not in {"chavez-dos","chavez-cost"}:
         raise ValueError("method must be chavez-dos or chavez-cost.")

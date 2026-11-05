@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 
 from ...exceptions import assert_required_keywords_provided
@@ -48,6 +50,7 @@ class SplitWindowKerr1992LST(SplitWindowParentLST):
         tuple
             Raw LST image in Kelvin and validated mask.
         """
+        warnings.warn("kerr-1992 is an AVHRR-to-Landsat adaptation; independent Landsat accuracy is not established by this library. See docs/scientific-methods.md.", RuntimeWarning, stacklevel=2)
         required_keywords = [
             "brightness_temperature_10",
             "brightness_temperature_11",

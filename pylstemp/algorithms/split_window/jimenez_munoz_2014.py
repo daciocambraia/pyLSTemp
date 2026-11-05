@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 
 from ...exceptions import assert_required_keywords_provided
@@ -89,9 +91,18 @@ class SplitWindowJimenezMunoz2014LST(SplitWindowParentLST):
                 brightness_temperature_10=tb_10,
             )
 
-        if cwv.ndim == 0 and (not np.isfinite(cwv) or cwv < 0):
+        diagnostic = kwargs.get("diagnostic", False)
+        if not diagnostic and cwv.ndim == 0 and (not np.isfinite(cwv) or cwv < 0):
             raise ValueError("water_vapor must be finite and nonnegative, in g/cm2.")
-        mask |= ~np.isfinite(cwv) | (cwv < 0)
+        mask |= ~np.isfinite(cwv)
+        if not diagnostic:
+            mask |= cwv < 0
+        # Table II tests PWV in 0..6 g/cm2; larger computable values are extrapolations.
+        if np.any(np.isfinite(cwv) & (cwv > 6) & ~mask):
+            warnings.warn(
+                "jimenez-munoz-2014-sw: water_vapor above 6 g/cm2 is outside "
+                "the source's evaluated PWV range; returning an extrapolation.",
+                RuntimeWarning, stacklevel=2)
         mean_e = (emissivity_10 + emissivity_11) / 2
         diff_e = emissivity_10 - emissivity_11
         diff_tb = tb_10 - tb_11

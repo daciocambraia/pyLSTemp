@@ -81,6 +81,16 @@ class LandsatScene:
             return src.read(1, window=((r0, r1), (c0, c1)))
         return np.array(src.crop((c0, r0, c1, r1)))
 
+    def quality_mask(self, window=None, *, exclude_water=False):
+        """Read required QA_PIXEL/QA_RADSAT for this window; True = invalid.
+
+        The constructor requires both aligned QA files in the scene folder.
+        Pass this mask to mask= when reading/calculating arrays manually;
+        calibrated() already calls this method before any calibration.
+        """
+        return quality_mask(self.read("QA_PIXEL", window), self.read("QA_RADSAT", window),
+                            exclude_water=exclude_water)
+
     def calibrated(self, window=None, *, exclude_water=False, optical_quantity="radiance"):
         """Return optical bands, thermal TOA BT [K], and invalid-pixel QA mask.
 
@@ -92,8 +102,7 @@ class LandsatScene:
         """
         if optical_quantity not in {"radiance", "reflectance"}:
             raise ValueError("optical_quantity must be 'radiance' or 'reflectance'.")
-        mask = quality_mask(self.read("QA_PIXEL", window), self.read("QA_RADSAT", window),
-                            exclude_water=exclude_water)
+        mask = self.quality_mask(window, exclude_water=exclude_water)
         optical = {}
         sun = None
         if "SZA" in self.sources:

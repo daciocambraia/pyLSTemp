@@ -24,31 +24,78 @@ Na raiz desta versao:
 python -m pip install -e ".[examples]"
 ```
 
-A pasta da cena deve conter **B4, B5, B10, B11, MTL.txt, QA_PIXEL e QA_RADSAT**,
+Para usar `LandsatScene`, a pasta deve conter **B4, B5, B10, B11, MTL.txt, QA_PIXEL e QA_RADSAT**,
 com os nomes originais. B2 e opcional; SZA e utilizado quando presente.
 Veja [instalacao](docs/installation.md) e [preparacao dos dados](exemple/README.md).
 
-## Exemplo de uso com uma imagem
+### Onde informar e aplicar as bandas QA
 
-Abra a pasta da cena, leia as bandas e chame a funcao de LST:
+**Nos exemplos com GeoTIFFs preparados, informe obrigatoriamente os caminhos de QA_PIXEL e QA_RADSAT na primeira célula de código.** A segunda célula lê as duas bandas, verifica sua grade e combina a máscara QA com nodata. A terceira chama o método com `mask=mascara`.
 
 ```python
-from pylstemp import split_window
+import numpy as np
+from pylstemp import read_quality_mask, emissivity
+
+mascara = read_quality_mask(
+    qa_pixel_path="cena_QA_PIXEL.TIF",
+    qa_radsat_path="cena_QA_RADSAT.TIF",
+    reference_path="vermelho_calibrado.tif",
+)
+# red e nir já carregados, na mesma grade; acrescentar nodata das entradas.
+mascara |= ~np.isfinite(red) | ~np.isfinite(nir)
+e10 = emissivity(red=red, nir=nir, band=10,
+                 method="rongali-2018", mask=mascara)
+```
+
+Os arquivos QA pertencem à mesma cena dos dados e devem coincidir em dimensões, CRS e transformação. Se as entradas são recortes, use recortes QA idênticos. Não calibre QA, não converta seus bits para reflectância e não interpole esses arquivos.
+
+| Etapa | Onde usar a máscara QA |
+| --- | --- |
+| DN → radiância/reflectância/BT | `toa_radiance(..., mask=mascara)`, `toa_reflectance(..., mask=mascara)` e `brightness(..., mask=mascara)` |
+| DOS/COST | `optical_correction(..., mask=mascara)`, **antes de estimar o percentil/objeto escuro** |
+| Emissividade e NDVI interno | `emissivity(..., mask=mascara)` |
+| PWV e suas janelas | `water_vapor(..., mask=mascara)`; o exemplo terrestre Wang usa `exclude_water=True` na leitura QA |
+| Temperatura final | `single_window(..., mask=mascara)` ou `split_window(..., mask=mascara)` |
+
+**Rota por pasta:** `LandsatScene(pasta)` exige B4/B5/B10/B11, MTL, QA_PIXEL e QA_RADSAT; B2/SZA são opcionais. `cena.calibrated()` aplica QA antes da calibração e retorna `bandas, bt, mascara`. Reutilize essa máscara nos métodos seguintes. Para leitura manual, `cena.quality_mask()` retorna a máscara sem calibrar as bandas.
+
+As funções numéricas continuam recebendo matrizes e `mask=`; não abrem arquivos por conta própria. `mask=None` não aplica seleção QA. As duas QA são obrigatórias em `read_quality_mask()` e nos 16 exemplos; a ausência ou o desalinhamento causa erro. `True` indica pixel inválido. A seleção QA e as flags de confiabilidade dos estimadores são etapas distintas. Veja [o fluxo completo de QA](docs/quality-inputs.md).
+
+
+## Exemplo de uso com uma imagem
+
+Abra a pasta da cena, prepare as emissividades uma vez e use os rasters prontos
+na funcao de LST. Se e10/e11 ja estiverem carregados, reutilize-os:
+
+```python
+from pylstemp import emissivity, split_window
 from pylstemp.scene import LandsatScene
 
 with LandsatScene("caminho/para/cena_landsat") as cena:
     bandas, bt, mascara = cena.calibrated()
+    e10 = emissivity(method="rongali-2018", band=10,
+                     red=bandas[4], nir=bandas[5], mask=mascara)
+    e11 = emissivity(method="rongali-2018", band=11,
+                     red=bandas[4], nir=bandas[5], mask=mascara)
     lst = split_window(
-        bt[10], bt[11], bandas[4], bandas[5],
+        bt[10], bt[11], emissivity_10=e10, emissivity_11=e11,
         lst_method="du-2015", unit="celsius", mask=mascara,
     )
     cena.write_geotiff("lst_du.tif", lst, units="celsius")
 ```
 
 `calibrated()` usa o MTL e o QA da propria imagem: B4/B5 sao radiancia TOA,
-e BT10/BT11 estao em kelvin. `split_window()` calcula NDVI e emissividades
-internamente; neste exemplo, Du usa os coeficientes gerais, sem PWV explicito.
+e BT10/BT11 estao em kelvin. `emissivity()` calcula o NDVI e prepara cada
+emissividade; `split_window()` usa esses valores sem recalcula-los. Du usa
+os coeficientes gerais, sem PWV explicito, neste exemplo.
 O GeoTIFF de saida preserva a grade da cena.
+
+**Emissividade pronta e a rota recomendada para reutilizar resultados.**
+Como alternativa, forneca vermelho/NIR e `emissivity_method` diretamente a
+funcao de LST, omitindo as emissividades prontas. O padrao por bandas e
+Avdan em `single_window()` e Rongali em `split_window()`; Avdan e bloqueado
+na rota interna de Split-window. Nao combinar as duas rotas. Kerr ainda exige
+NDVI pronto ou vermelho/NIR superficiais para seu fator de vegetacao.
 
 O exemplo le a cena inteira. Para uma demonstracao em recorte pequeno,
 execute [os exemplos prontos](exemple/README.md); os detalhes de janelas ficam
@@ -65,7 +112,7 @@ from pylstemp import (
     toa_radiance, toa_reflectance, brightness,
     emissivity, water_vapor,
     single_window, split_window, optical_correction,
-    list_algorithms,
+    list_algorithms, read_quality_mask,
 )
 from pylstemp.scene import LandsatScene
 ```
@@ -77,9 +124,10 @@ from pylstemp.scene import LandsatScene
 | `brightness` | Radiancia termica e K1/K2 do MTL | Temperatura de brilho TOA, K |
 | `emissivity` | Vermelho/NIR ou NDVI; metodo e parametros da banda | Emissividade, adimensional |
 | `water_vapor` | BT10/BT11 e vermelho/NIR; Wang ou Ren | PWV, g/cm2 |
-| `single_window` | BT10, B4/B5; radiancia10 e PWV para Jimenez SC | LST, K ou Celsius |
+| `single_window` | BT10 e emissividade B10 pronta ou B4/B5; radiancia10 e PWV para Jimenez SC | LST, K ou Celsius |
 | `split_window` | BT10/BT11 e bandas opticas ou emissividades prontas; PWV conforme o metodo | LST, K ou Celsius |
 | `optical_correction` | Reflectancia TOA, method=chavez-dos/chavez-cost, angulo ou parametros reutilizados | Reflectancia corrigida / diagnosticos |
+| `read_quality_mask` | Caminhos de QA_PIXEL, QA_RADSAT e reference_path, obrigatórios e alinhados | Máscara booleana; True = inválido |
 | `list_algorithms` | Sem imagens | Catalogo de metodos, referencias e requisitos |
 
 Nas chamadas diretas, use `emissivity(red=red, nir=nir, band=10)` ou
@@ -91,8 +139,7 @@ Nas chamadas diretas, use `emissivity(red=red, nir=nir, band=10)` ou
 
 ## Algoritmos e artigos
 
-A tabela inclui os **17 metodos disponiveis por familia**, as variantes de
-Sobrino2008 e as conversoes de calibracao TOA. Os links
+A tabela inclui os **14 métodos do fluxo principal** e as conversões de calibração TOA. Os links
 apontam para os artigos originais ou para as equacoes oficiais do USGS.
 O NDVI e calculado internamente pelos metodos que precisam dele, sem funcao
 publica separada nem entrada propria no catalogo.
@@ -103,10 +150,7 @@ publica separada nem entrada propria no catalogo.
 | Calibracao | `toa_reflectance` | [USGS: reflectancia TOA Level-1](https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product) |
 | Temperatura de brilho | `brightness` | [USGS: Landsat Level-1](https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product) |
 | Emissividade | `avdan-2016` | [Avdan e Jovanovska (2016)](https://doi.org/10.1155/2016/1480307) |
-| Emissividade | `gopinadh-2018` | [Rongali et al. (2018)](https://doi.org/10.1007/s41651-018-0021-y) |
-| Emissividade | `emissivity(method="sobrino-2004-tm6", band=6)` - Landsat TM5, banda 6 | [Sobrino, Jimenez-Munoz e Paolini (2004)](https://doi.org/10.1016/j.rse.2004.02.003) |
-| Emissividade | `emissivity(method="sobrino-2008", variant="simplified")` - Eq.9 | [Sobrino et al. (2008)](https://doi.org/10.1109/TGRS.2007.904834) |
-| Emissividade | `emissivity(method="sobrino-2008", variant="full")` - Eqs.5-8 | [Sobrino et al. (2008)](https://doi.org/10.1109/TGRS.2007.904834) |
+| Emissividade | `rongali-2018` | [Rongali et al. (2018)](https://doi.org/10.1007/s41651-018-0021-y) |
 | Single-channel | `mono-window-2016` | [Avdan e Jovanovska (2016)](https://doi.org/10.1155/2016/1480307) |
 | Single-channel | **`jimenez-munoz-2014-sc`** | [Jimenez-Munoz et al. (2014)](https://doi.org/10.1109/LGRS.2014.2312032) |
 | Split-window | `jimenez-munoz-2014-sw` | [Jimenez-Munoz et al. (2014)](https://doi.org/10.1109/LGRS.2014.2312032) |
@@ -114,7 +158,6 @@ publica separada nem entrada propria no catalogo.
 | Split-window | `sobrino-1993` | [Sobrino et al. (1993)](https://doi.org/10.1007/BF02524225) |
 | Split-window | `kerr-1992` | [Kerr, Lagouarde e Imbernon (1992)](https://doi.org/10.1016/0034-4257(92)90078-X) |
 | Split-window | `price-1984` | [Price (1984)](https://doi.org/10.1029/JD089iD05p07231) |
-| Split-window | `rozenstein-2014` | [Rozenstein et al. (2014)](https://doi.org/10.3390/s140405768) |
 | Vapor d'agua | `ren-2015` | [Ren et al. (2015)](https://doi.org/10.1002/2014JD022619) |
 | Vapor d'agua | `wang-2015` | [Wang et al. (2015)](https://doi.org/10.1080/2150704X.2015.1089363) |
 | Correcao optica | Chavez DOS - `optical_correction(method="chavez-dos", ...)` | [Chavez (1996)](https://static1.1.sqspcdn.com/static/f/891472/15133582/1321370214637/Chavez_P.S._1996.pdf) |
@@ -126,15 +169,11 @@ intervalo gera erro; pixels de PWV raster invalidos ou fora dele produzem NaN.
 Essa restricao responde a perda de precisao do ajuste polinomial descrita no artigo.
 Com PWV estimado por Wang, o fluxo SC ainda utiliza B11 nessa etapa atmosferica.
 
-Os [metodos adicionais](docs/image-only-methods.md) incluem Rozenstein,
-Ren/MSWCVR, Sobrino 2004/2008 e Chavez DOS/COST, com dominios e adaptacoes explicitos.
+Os [métodos adicionais](docs/image-only-methods.md) incluem Ren/MSWCVR e Chavez DOS/COST, com domínios e adaptações explícitos.
 Ren/MSWCVR esta disponivel como `water_vapor(..., method="ren-2015")`.
-Sobrino e selecionado em `emissivity(..., method="sobrino-2008")`;
-Chavez, em `optical_correction(..., method="chavez-cost")`. O catalogo inclui
-ambos. Sobrino2004 e especifico de TM6; Sobrino2008 exige parametros por banda.
-A variante full tambem requer reflectancia superficial vermelha e coeficientes
-de solo compativeis. Chavez recebe reflectancia TOA; `return_diagnostics=True`
-retorna a reflectancia corrigida e os parametros para reutilizar entre blocos.
+O catálogo contém 14 métodos disponíveis. Todos estão ativos; include_inactive=True retorna o mesmo conjunto. Métodos removidos não possuem chamadas explícitas.
+Chavez é selecionado em `optical_correction(..., method="chavez-cost")`;
+`return_diagnostics=True` retorna a reflectância corrigida e os parâmetros para reutilizar entre blocos.
 
 `split_window` aceita bandas opticas ou emissividades prontas, na mesma funcao:
 
@@ -145,10 +184,11 @@ lst = split_window(bt10, bt11, emissivity_10=e10, emissivity_11=e11,
 
 ## Exemplos por metodo
 
-Escolha um dos [17 notebooks em `exemple/`](exemple/README.md).
-Cada notebook apresenta uma introducao breve, o que o metodo precisa,
-a funcao geral e, logo abaixo, o detalhamento dos parametros. Depois le
-as imagens, aplica apenas aquele metodo e salva o resultado.
+Escolha um dos [16 notebooks em `exemple/`](exemple/README.md).
+Cada notebook começa pelas entradas necessárias e suas unidades, seguidas da
+chamada mínima. O exemplo executável lê somente os arquivos necessários,
+aplica o método e salva o resultado. A preparação de entradas que faltarem,
+as alternativas de uso e a referência completa dos parâmetros vêm depois.
 
 Os guias agregados e scripts anteriores foram retirados da distribuicao
 publica; as copias de verificacao permanecem no arquivo local.
@@ -182,31 +222,30 @@ v1.11/
     usage.md
     validation.md
   exemple/
-    avdan_2016_emissivity.ipynb
-    avdan_2016_lst.ipynb
-    brightness.ipynb
-    chavez_cost.ipynb
-    chavez_dos.ipynb
-    du_2015.ipynb
-    gopinadh_2018.ipynb
-    jimenez_munoz_2014_sc.ipynb
-    jimenez_munoz_2014_sw.ipynb
-    kerr_1992.ipynb
-    price_1984.ipynb
     README.md
-    ren_2015.ipynb
-    rozenstein_2014.ipynb
-    sobrino_1993.ipynb
-    sobrino_2004_tm6.ipynb
-    sobrino_2008.ipynb
-    wang_2015.ipynb
+    brightness.ipynb
+    emissivity__avdan-2016.ipynb
+    emissivity__rongali-2018.ipynb
+    optical_correction__chavez-cost.ipynb
+    optical_correction__chavez-dos.ipynb
+    single_window__jimenez-munoz-2014-sc.ipynb
+    single_window__mono-window-2016.ipynb
+    split_window__du-2015.ipynb
+    split_window__jimenez-munoz-2014-sw.ipynb
+    split_window__kerr-1992.ipynb
+    split_window__price-1984.ipynb
+    split_window__sobrino-1993.ipynb
+    toa_radiance.ipynb
+    toa_reflectance.ipynb
+    water_vapor__ren-2015.ipynb
+    water_vapor__wang-2015.ipynb
   pylstemp/
     algorithms/
       emissivity/
         __init__.py
         avdan_2016.py
         base.py
-        gopinadh_2018.py
+        rongali_2018.py
       single_channel/
         __init__.py
         base.py
@@ -219,7 +258,6 @@ v1.11/
         jimenez_munoz_2014.py
         kerr_1992.py
         price_1984.py
-        rozenstein_2014.py
         sobrino_1993.py
       thermal/
         __init__.py
@@ -308,7 +346,7 @@ python -m build
 A suite essencial em `tests/` usa apenas casos sinteticos e equacoes de referencia;
 a CI a executa contra o wheel instalado em Windows e Linux. A bateria completa,
 verificadores de cenas, artigos, imagens e relatorios continuam em `Verificacao/`,
-fora do Git e dos pacotes. As [20 fichas metodologicas](docs/method-cards.md)
+fora do Git e dos pacotes. As [16 fichas metodologicas](docs/method-cards.md)
 registram equacoes, coeficientes, dominios e adaptacoes de todos os metodos.
 
 ## Creditos
@@ -316,3 +354,7 @@ registram equacoes, coeficientes, dominios e adaptacoes de todos os metodos.
 Biblioteca original: **pylandtemp**, de **Oladimeji Mudele**.
 Repositorio original: <https://github.com/pylandtemp/pylandtemp>.
 Veja [CREDITS.md](CREDITS.md) e [referencias](docs/references.md).
+
+## Diagnostic quality mode
+
+`water_vapor`, `single_window` and `split_window` accept `quality_mode="diagnostic"` to retain mathematically calculable PWV/LST and export per-pixel quality flags. Default screened behavior is unchanged. See [diagnostic mode](docs/diagnostic-quality.md).

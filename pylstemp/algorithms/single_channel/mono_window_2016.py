@@ -59,6 +59,8 @@ class MonoWindow2016LST(BaseTemperatureAlgorithm):
         result = brightness_temperature_10 / (
             1 + (((self.wavelength_band_10 * brightness_temperature_10) / self.rho) * np.log(emissivity_10))
         )
+        if kwargs.get("diagnostic", False):
+            return np.where(mask | ~np.isfinite(result), np.nan, result)
         return self._finalize(result, mask=mask)
 
 

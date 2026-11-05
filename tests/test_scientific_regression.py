@@ -49,19 +49,9 @@ class ScientificRegression(unittest.TestCase):
         n=np.array([0,.15,.315,.48,.8])
         for band,expected in [(10,[.971,.971,.979,.987,.987]),(11,[.977,.977,.983,.989,.989])]:
             with self.subTest(band=band):
-                np.testing.assert_allclose(emissivity(n,band=band,emissivity_method='gopinadh-2018'),expected)
+                np.testing.assert_allclose(emissivity(n,band=band,emissivity_method='rongali-2018'),expected)
 
-    def test_sobrino_2004_native_tm6(self):
-        result=emissivity(np.array([.1,.2,.35,.5,.8]),method="sobrino-2004-tm6",band=6)
-        self.assertTrue(np.isnan(result[0]))
-        np.testing.assert_allclose(result[1:],[.986,.987,.990,.99])
 
-    def test_sobrino_2008_both_variants(self):
-        n=np.array([.1,.35,.8]); es=.96; ev=.98
-        np.testing.assert_allclose(emissivity(n,method="sobrino-2008",soil_emissivity=es,vegetation_emissivity=ev),[.96,.965,.98])
-        expected=[.97-.1*.2,.965+(1-.96)*.98*.55*.75,.985]
-        np.testing.assert_allclose(emissivity(n,method="sobrino-2008",soil_emissivity=es,vegetation_emissivity=ev,
-            variant='full',red_surface=np.full(3,.2),soil_red_coefficients=(.97,-.1)),expected)
 
     def test_mono_window_absolute_kelvin(self):
         t=np.array([[290.,300.]]); red=np.ones((1,2)); nir=np.full((1,2),3.) # NDVI=.5, e=.978
@@ -112,21 +102,6 @@ class ScientificRegression(unittest.TestCase):
                         water_vapor=w if key=='jimenez-munoz-2014-sw' else None,ndvi_image=np.array([.415]) if key=='kerr-1992' else None)
                     np.testing.assert_allclose(actual,expected,rtol=0,atol=2e-10)
 
-    def test_rozenstein_profiles_and_temperature_tables(self):
-        profiles=[('us-standard-1976',1.0286,-.1146,1.0083,-.1568),('midlatitude-summer',1.0335,-.1134,1.0078,-.1546)]
-        tables=[('0-60',-64.4661,.4398,-68.8678,.4755),('0-30',-59.1391,.4213,-63.3921,.4565),('0-40',-60.9196,.4276,-65.2240,.4629),('10-40',-62.8065,.4338,-67.1728,.4694),('10-50',-64.6081,.4399,-69.0215,.4756)]
-        for profile,i,s,j,r in profiles:
-            for interval,a,b,c,d in tables:
-                with self.subTest(profile=profile,interval=interval):
-                    t10,t11=299.,298.; w=1.; e10,e11=.97,.98
-                    p,q=i+s*w,j+r*w; C=e10*p; D=e11*q
-                    x=(1-p)*(1+(1-e10)*p); y=(1-q)*(1+(1-e11)*q)
-                    den=y*C-x*D; A=x/den; E1=y*(1-C-x)/den; E2=x*(1-D-y)/den
-                    expected=E1*a+E2*c+(1+A+E1*b)*t10-(A+E2*d)*t11
-                    lo,hi=map(float,interval.split('-'))
-                    if not lo+273.15<=expected<=hi+273.15: expected=np.nan
-                    actual=split_window(np.array([t10]),np.array([t11]),emissivity_10=np.array([e10]),emissivity_11=np.array([e11]),lst_method='rozenstein-2014',water_vapor=w,atmospheric_profile=profile,temperature_range=interval)
-                    np.testing.assert_allclose(actual,expected,rtol=0,atol=2e-10)
 
     def test_wang_and_ren_are_distinct_estimators(self):
         x=np.arange(121,dtype=float).reshape(11,11)/10+290; y=.9*x+25
@@ -160,6 +135,70 @@ class ScientificRegression(unittest.TestCase):
         with self.assertRaises(ValueError):
             split_window(t,t-2,red,nir,lst_method='du-2015',optical_quantity='dn')
 
+    def test_jimenez_sw_warns_only_for_unmasked_extrapolation(self):
+        t=np.full(3,300.); u=t-2; e10=np.full(3,.97); e11=np.full(3,.98)
+        w=np.array([0.,6.,6.1])
+        def retrieve(pwv,mask=None):
+            return split_window(t,u,lst_method='jimenez-munoz-2014-sw',
+                emissivity_10=e10,emissivity_11=e11,water_vapor=pwv,mask=mask)
+        with self.assertWarnsRegex(RuntimeWarning,'extrapolation'):
+            result=retrieve(w)
+        expected=300+1.378*2+.183*4-.268+(54.3-2.238*w)*.025+(-129.2+16.4*w)*(-.01)
+        np.testing.assert_allclose(result,expected,rtol=0,atol=1e-12)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter('always')
+            masked=retrieve(w,np.array([False,False,True]))
+            retrieve(6.)
+        self.assertFalse(caught)
+        self.assertTrue(np.isnan(masked[2]))
+        with self.assertWarnsRegex(RuntimeWarning,'extrapolation'):retrieve(6.1)
+
+    def test_legacy_transfers_warn_without_changing_source_oracles(self):
+        t=np.array([300.]); u=np.array([298.]); e10=np.array([.97]); e11=np.array([.98])
+        expected={
+            'price-1984':(300+3.33*2)*(5.5-.97)/4.5+.75*298*(-.01),
+            'sobrino-1993':300+1.06*2+.46*4+53*.03-53*(-.01),
+            'kerr-1992':300*3.35+298*(-2.35)+.35}
+        for method,value in expected.items():
+            with self.subTest(method=method):
+                kw={'ndvi_image':np.array([.415])} if method=='kerr-1992' else {}
+                with self.assertWarnsRegex(RuntimeWarning,'AVHRR-to-Landsat adaptation'):
+                    result=split_window(t,u,lst_method=method,emissivity_10=e10,
+                                        emissivity_11=e11,**kw)
+                np.testing.assert_allclose(result,[value],rtol=0,atol=1e-12)
+
+    def test_pwv_domains_mask_rasters_and_reject_invalid_scalars(self):
+        t=np.full(4,300.); u=t-2; e10=np.full(4,.97); e11=np.full(4,.98)
+        for method,lower,upper,options in [
+            ('du-2015',0.,6.3,{})]:
+            with self.subTest(method=method):
+                def retrieve(w):
+                    return split_window(t,u,lst_method=method,emissivity_10=e10,
+                        emissivity_11=e11,water_vapor=w,**options)
+                for bad in [lower-.01,upper+.01,np.nan,np.inf]:
+                    with self.assertRaises(ValueError):retrieve(bad)
+                raster=retrieve(np.array([lower,upper,upper+.01,np.nan]))
+                self.assertTrue(np.isnan(raster.reshape(-1)[2:]).all())
+                for idx,value in enumerate([lower,upper]):
+                    np.testing.assert_array_equal(raster[idx],retrieve(value)[idx])
+                with self.assertRaises(InputShapesNotEqual):retrieve(np.ones(2))
+        for method in ['jimenez-munoz-2014-sw','jimenez-munoz-2014-sc']:
+            with self.subTest(method=method):
+                def retrieve(w):
+                    if method.endswith('-sc'):
+                        return single_window(t.reshape(1,4),np.ones((1,4)),np.full((1,4),2.),lst_method=method,
+                            radiance_band_10=np.full((1,4),10.),
+                            water_vapor=np.atleast_2d(w) if np.ndim(w) else w)
+                    return split_window(t,u,lst_method=method,emissivity_10=e10,
+                        emissivity_11=e11,water_vapor=w)
+                for bad in [-.01,np.nan,np.inf]:
+                    with self.assertRaises(ValueError):retrieve(bad)
+                raster=retrieve(np.array([0.,3.,-.01,np.nan]))
+                self.assertTrue(np.isnan(raster.reshape(-1)[2:]).all())
+                if method.endswith('-sc'):
+                    with self.assertRaises(ValueError):retrieve(3.01)
+                with self.assertRaises(InputShapesNotEqual):retrieve(np.ones(2))
+
     def test_physical_masks_and_no_broadcasting(self):
         t=np.array([300.,0.,np.nan,300.]); u=np.full(4,298.); e=np.array([.97,.97,.97,1.1])
         out=split_window(t,u,emissivity_10=e,emissivity_11=np.full(4,.98),lst_method='du-2015')
@@ -169,14 +208,14 @@ class ScientificRegression(unittest.TestCase):
 
     def test_catalog_has_audited_contract_for_every_registered_method(self):
         cards=json.loads(Path(pylstemp.__file__).with_name('method_cards.json').read_text(encoding='utf8'))
-        self.assertEqual(len(cards),20)
+        self.assertEqual(len(cards),16)
         names={c['method'] for c in cards}
-        for family, entries in pylstemp.list_algorithms().items():
+        for family, entries in pylstemp.list_algorithms(include_inactive=True).items():
             if family=='credit': continue
             for key, entry in entries.items():
-                self.assertIn("sobrino-2008-simplified" if key=="sobrino-2008" else key,names)
+                self.assertIn(key,names)
                 self.assertIn('Primary',entry['source_review_status'])
-        self.assertEqual(len({c['method'] for c in cards}),20)
+        self.assertEqual(len({c['method'] for c in cards}),16)
         for card in cards:
             self.assertEqual(len(card['source_sha256']),64)
             self.assertNotIn('not re-audited',card['source_review_status'])
